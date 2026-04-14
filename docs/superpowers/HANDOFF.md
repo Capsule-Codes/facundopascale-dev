@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-14
-**Current commit:** `a483c89`
+**Current commit:** `e6d594a`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **16 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **17 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -60,7 +60,7 @@ QA and Devil's Advocate are custom — invent a prompt per task following the pa
 
 ---
 
-## Completed Tasks (16 / 27)
+## Completed Tasks (17 / 27)
 
 ### Phase 1 — Foundation (Tasks 1-4)
 
@@ -102,6 +102,7 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 
 | # | Task | Commits | Notes |
 |---|---|---|---|
+| 17 | Callout MDX component + `@/` path alias | `e6d594a` | **1 commit, combined review stage next.** Created `src/components/mdx/Callout.astro` (4 variants: info/warning/success/danger + optional title), `src/components/mdx/index.ts` convenience registry, and added `baseUrl: "."` + `"@/*": ["src/*"]` to `tsconfig.json`. **Deviation from the plan on contrast:** the plan used `text-yellow-400`/`text-green-400`/`text-red-400` which FAIL WCAG AA on the light-mode `bg-elevated` (#f5f5f4): yellow-400 1.56:1, green-400 1.76:1, red-400 3.23:1. Applied the Task-15-proven `text-{color}-700 dark:text-{color}-400` pattern instead — warning 5.16:1 / 10.9:1, success 5.68:1 / 9.7:1, danger 6.67:1 / 5.6:1, info (`--color-accent`) 5.24:1 / 6.22:1. All 4 variants × 2 themes pass AA. Borders kept at `-500` per plan (decorative, redundant with `[INFO]`/`[WARNING]`/`[OK]`/`[DANGER]` prefix text — non-blocking WCAG 1.4.11 since essential meaning is in text; warning/success borders are soft ~2.22:1 in light mode, logged as follow-up #30). The `mdxComponents` registry in `index.ts` is **convenience re-export only**, NOT auto-wired — Astro's `@astrojs/mdx` has no global `mdx-components.tsx` equivalent, so authors must explicitly import components in MDX files. JSDoc in `index.ts` documents this explicitly. Smoke-tested via a temp `src/pages/[locale]/qa-callout.astro` importing `Callout` via `@/components/mdx/Callout.astro` and `Layout` via `@/components/Layout.astro` (exercises the new alias), placed the callout inside `<div class="prose dark:prose-invert">` to verify Prose doesn't break the component; built HTML confirmed all 4 variant class strings rendered correctly, compiled `_astro/*.css` contains `text-yellow-400`, `text-yellow-700`, `dark:text-yellow-400` (and green/red equivalents) plus `border-*-500`, and the `dark:` variant correctly expands to `:where([data-theme=dark],[data-theme=dark] *)` via the Task 13 custom variant (NOT `prefers-color-scheme`). Cleanup: smoke file deleted, final build 13 pages, gates all green. |
 | 16 | Shiki dual-theme config + CodeBlock wrapper | `eae8408` → `e956b20` → `a483c89` | **3 commits. DA rejected round 1** for two blocking issues: (1) WCAG 2.2 SC 4.1.3 Status Messages — static `aria-label="Copy code"` hid the visible `copy`/`copied!` text change from screen readers (same clause that killed Task 14 round 1); (2) functional regression — script snapshotted `target.textContent` AFTER mutation, so a second click within the 2s window permanently stuck the button on `copied!`. DA also flagged two cleanups to bundle. **Round 2 fixes (`a483c89`):** (1) on click, mutate BOTH `textContent` AND `aria-label` — `setAttribute('aria-label', 'Copied')` on success, `'Copy failed'` on catch, restore to `'Copy code'`; chose dynamic aria-label over a separate `role="status"` live region because the button is already the focused element at click time. (2) Never snapshot — restore strings are literal `'copy'`/`'failed'`; per-button timeout handles tracked via `WeakMap<HTMLButtonElement, number>` with `clearTimeout` of any pending handle BEFORE scheduling the new one, eliminating the overlap race entirely. (3) Split the Shiki CSS bridge into 4 rules — `.shiki` owns container concerns (`color`, `background-color`), `.shiki span` owns token concerns only (`color`, `font-style`, `font-weight`, `text-decoration`); same split for `:root[data-theme='light']` override. (4) Moved lang label from `right-14` (which got covered by the 66px-wide `copied!` text) to `left-2` — label now sits in Shiki's top-left padding gutter, clear of the button regardless of button text width. **Also bundled two optional fixes** the DA called low-risk: (a) added `focus:opacity-100` alongside `focus-visible:opacity-100` so Android touch users (which fires `:focus` but not `:focus-visible`) can see the button; (b) on clipboard rejection, button text flips to `failed` + `aria-label="Copy failed"` for 2s so HTTPS-origin / permissions failures aren't silent. Smoke-tested again: built an `/[locale]/qa-codeblock.astro` with two `CodeBlock` instances, inspected dist HTML — confirmed initial `aria-label="Copy code"`, compiled script contains `WeakMap`, `clearTimeout`, dynamic `setAttribute('aria-label', 'Copied'|'Copy failed')`, literal restore strings; compiled CSS in `_astro/*.css` has 4 separated rules. Smoke file removed, 13 pages confirmed. Base architecture from round 1 unchanged: Dual themes via `themes: { light: 'vitesse-light', dark: 'vesper' }` + `defaultColor: false` in `astro.config.ts`; CodeBlock is a **manual opt-in wrapper** (not an `mdxComponents` auto-override — deferred to Task 17); uses `text-muted` and the project-standard focus ring. Copy script is a plain `<script>` deduped & bundled as `<script type="module">` inline by Astro. `aria-label="Copy code"`/`"Copied"`/`"Copy failed"` hardcoded English — see updated follow-up #27. |
 
 ### Phase 3 (cont.) — Contact form + Actions
@@ -114,11 +115,10 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 
 ---
 
-## Pending Tasks (12 / 27)
+## Pending Tasks (10 / 27)
 
 ### Phase 4 — MDX Content Features
 
-- **Task 17: Callout MDX component** — info/warning/success/danger variants. Register via `mdxComponents` and `@/` path alias in `tsconfig.json`.
 - **Task 18: RSS feeds per locale** — `src/pages/[locale]/rss.xml.ts` using `@astrojs/rss`.
 - **Task 19: OG image generation via Satori** — dynamic `/og/[...slug].png.ts` endpoint using `@vercel/og`. Needs install.
 - **Task 20: Sitemap i18n + robots + 404 + hreflang** — sitemap config update, `public/robots.txt`, `src/pages/404.astro`, hreflang alternates in Layout `<head>`.
@@ -220,11 +220,25 @@ Items flagged by reviewers but deferred. Address as noted:
 
 26. **Plan file needs update to reflect Task 15 lessons (stretch).** `docs/superpowers/plans/2026-04-13-personal-site.md` lines 1934-1935 still contain the unsafe hard-coded `text-red-400`/`text-yellow-400` classes. Future tasks referencing the plan verbatim could regress. Update the plan to use `text-red-700 dark:text-red-400` pattern.
 
-27. **`CodeBlock.astro` hardcoded English a11y strings (Task 16, updated Round 2).** The a11y pattern is now DYNAMIC — on copy success the button's `aria-label` flips `'Copy code'` → `'Copied'` and the visible text flips `'copy'` → `'copied!'`; on clipboard rejection it flips to `'Copy failed'` / `'failed'`. WCAG SC 4.1.3 is satisfied, but all six strings (`'Copy code'`, `'Copied'`, `'Copy failed'`, `'copy'`, `'copied!'`, `'failed'`) are hardcoded English. Consistent with ThemeToggle (#11/#17) and LanguageSwitcher (#16) hardcoded-EN aria precedent. The i18n follow-up still applies — thread a locale dictionary into `CodeBlock.astro` props (or into a per-page `data-*` attribute the inline script reads) when the Header-level i18n pass happens.
+27. **Hardcoded English strings across MDX components (Tasks 16, 17).**
+    - **`CodeBlock.astro` (Task 16, Round 2).** The a11y pattern is DYNAMIC — on copy success the button's `aria-label` flips `'Copy code'` → `'Copied'` and the visible text flips `'copy'` → `'copied!'`; on clipboard rejection it flips to `'Copy failed'` / `'failed'`. WCAG SC 4.1.3 is satisfied, but all six strings (`'Copy code'`, `'Copied'`, `'Copy failed'`, `'copy'`, `'copied!'`, `'failed'`) are hardcoded English.
+    - **`Callout.astro` (Task 17).** The variant prefix labels rendered inside the callout (`'INFO'`, `'WARNING'`, `'OK'`, `'DANGER'`) are hardcoded English, and the optional `title` prop is passed through verbatim (the author controls localization at the MDX call site, so `title` itself is fine — the deviation is only the prefix labels).
+
+    Consistent with ThemeToggle (#11/#17) and LanguageSwitcher (#16) hardcoded-EN aria precedent. The i18n follow-up still applies — thread a locale dictionary into the MDX components (either via an Astro prop or via a per-page `data-*` attribute the inline script / template reads) when the Header-level i18n pass happens.
 
 28. **`CodeBlock` is manual opt-in only (Task 16).** Authors must explicitly wrap a fenced block with `<CodeBlock lang="...">\`\`\`lang\n...\`\`\`</CodeBlock>` to get the lang label + copy button. Plain fenced blocks still get Shiki highlighting via the global `mdx()` `shikiConfig`, but no copy affordance. Task 17 plans to wire `mdxComponents` — if that task ever auto-overrides `<pre>` with CodeBlock, the `lang` will need to be parsed out of the child `<code>`'s `className="language-xxx"` (Astro's MDX integration does not forward `data-language` or `lang` to replaced `<pre>` components out of the box). Keep manual opt-in as the default and only add auto-override if a real need surfaces.
 
 29. **Shiki dual-theme CSS bridge lives in `src/styles/global.css` (Task 16).** `astro.config.ts` sets `shikiConfig: { themes: { light: 'vitesse-light', dark: 'vesper' }, defaultColor: false, wrap: true }`. Every token carries both `--shiki-light` and `--shiki-dark` CSS vars with NO direct color, and a pair of CSS rules under the `/* Shiki dual-theme bridge */` comment picks the right variable based on `:root[data-theme='light']` (falls through to dark as the default). This ties into the project's manual `data-theme` system instead of raw `prefers-color-scheme`. If someone ever replaces the themes, verify both still read cleanly on `#0c0a09` (dark bg) and `#fafaf9` (light bg), and watch for vesper's own background `#101010` bleeding through the page `<pre>` — currently fine because `--shiki-dark-bg` is scoped to `.shiki` elements only. Task 19 (OG images) and Task 21-23 (seed content with code blocks) are the next consumers.
+
+30. **`Callout.astro` soft borders in light mode (Task 17).** The four variants use `border-{color}-500` per the plan's palette intent. On the light-mode `bg-elevated` (#f5f5f4):
+    - `border-yellow-500` (#eab308) → 2.22:1 (decorative-soft)
+    - `border-green-500` (#22c55e) → 2.22:1 (decorative-soft)
+    - `border-red-500` (#ef4444) → 3.77:1 (OK)
+    - `border-[var(--color-accent)]` (#c2410e in light) → 5.24:1 (OK)
+
+    WCAG 1.4.11 Non-text Contrast requires 3:1 only when the UI component CONVEYS essential meaning. In the Callout, variant meaning is redundantly conveyed by the `[INFO]`/`[WARNING]`/`[OK]`/`[DANGER]` prefix text (which passes AA 4.5:1 via the `-700 dark:-400` pattern), so the border is decorative and the 2.22:1 warning/success borders are non-blocking. If you ever want crispy light-mode borders, a full palette bump is needed: warning `-700` (`#a16207`) ≈ 5.16:1, success `-700` (`#15803d`) ≈ 5.68:1, danger `-700` (`#b91c1c`) ≈ 6.67:1 — which happens to be the same colors the Callout already uses for the PREFIX TEXT in light mode. So you could alias `border-{color}-500 dark:border-{color}-500` + light-override to `-700` if you want them to match. Leaving as-is for now — palette intent preserved, contrast guarantees come from the prefix text.
+
+31. **`src/components/mdx/index.ts` convenience registry is NOT auto-wired (Task 17).** The file exports `mdxComponents = { Callout, CodeBlock }` for ergonomics, but `@astrojs/mdx` does not read this object — Astro has no global `mdx-components.tsx` equivalent à la Next.js. Authors must still explicitly import components in each MDX file (`import Callout from '@/components/mdx/Callout.astro'`). The actually-useful part of Task 17 is the `@/` path alias in `tsconfig.json` (`baseUrl: "."` + `"@/*": ["src/*"]`). JSDoc on the registry documents this limitation. If Tasks 21–23 (content seeding) want true auto-wiring, the options are (a) a custom renderer that passes `components={mdxComponents}` to `<Content />`, or (b) every MDX file imports from `@/components/mdx` (DRY but still manual). Task 22/23 implementer decides which pattern fits the real seeds.
 
 ---
 
