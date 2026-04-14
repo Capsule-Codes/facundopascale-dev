@@ -68,7 +68,7 @@ export default function ContactForm({ locale }: Props) {
 
   const inputClass =
     'w-full bg-transparent border border-[var(--color-border)] px-3 py-2 focus:border-[var(--color-accent)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]';
-  const labelClass = 'block text-[var(--color-text-dim)] uppercase text-xs mb-1';
+  const labelClass = 'block text-[var(--color-text-muted)] uppercase text-xs mb-1';
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 font-mono text-sm">
