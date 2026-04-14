@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-14
-**Current commit:** `34814f7`
+**Current commit:** `13aebb6`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **14 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **15 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -15,7 +15,7 @@ You are continuing execution of the facundopascale-dev implementation plan. **14
 2. Read `docs/superpowers/specs/2026-04-13-personal-site-design.md` (the approved spec).
 3. Read `docs/superpowers/plans/2026-04-13-personal-site.md` (the 27-task plan). **Warning: the plan is static and does NOT reflect the small deviations listed in "Known deviations" below.**
 4. Run `git log --oneline` to confirm state matches the commits listed here.
-5. Resume with **Task 15** using the 4-agent pipeline described below.
+5. Resume with **Task 16** using the 4-agent pipeline described below.
 
 ---
 
@@ -60,7 +60,7 @@ QA and Devil's Advocate are custom — invent a prompt per task following the pa
 
 ---
 
-## Completed Tasks (14 / 27)
+## Completed Tasks (15 / 27)
 
 ### Phase 1 — Foundation (Tasks 1-4)
 
@@ -98,15 +98,17 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 | 13 | Theme toggle + light-mode WCAG fix + prose-invert sweep | `788b1f2` → `5a15af9` | 2 commits. Round 1 rejected by DA for spec violation (§8.1 "respects `prefers-color-scheme`" not honored) and asymmetric `localStorage` handling. Round 2 fix: inline script + island both read `matchMedia('(prefers-color-scheme: light)')` as fallback when no stored theme; island `useEffect` wrapped in try/catch; `toggle` keeps in-memory `setTheme` + `dataset.theme` unconditional, only wraps `localStorage.setItem` in try/catch (theme still applies visually in private-mode Safari). `aria-pressed` toggle button pattern (Option A) with static `aria-label="Toggle theme"` — stable accessible name pre-hydration. Light-mode accent: `#c2410e` (4.96:1) / hover `#9a3412` (7.00:1). 6 pages swapped `prose-invert` → `dark:prose-invert`. Tailwind 4 custom variant `@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *))` added to `src/styles/global.css`. |
 | 14 | Language switcher island + missing-translation toast | `a38bace` → `34814f7` | 2 commits. Round 1 rejected by DA for WCAG 2.2 SC 4.1.3 violation — dynamically-created toast `<div>` had no `role="status"`, so screen readers would silently miss the fallback message. Round 2 fix: single-line `t.setAttribute('role', 'status')` added to the inline toast script in `Layout.astro`; controller applied directly (no full implementer pipeline for one-liner; DA accepted). Island is a `<button>` (plan-specified; non-blocking follow-up to consider anchor). Type narrowed to `currentCollection?: 'blog' \| 'work'` because `pages` collection schema lacks `translationId`. Implementation: `src/components/islands/LanguageSwitcher.tsx` (sessionStorage try/catch for miss-path flag), `Header.astro` uses if/else `getCollection` branching to avoid casts under strictest TS, `Layout.astro` threads `currentDocId` + `currentCollection` via conditional spread (`exactOptionalPropertyTypes`), inline `is:inline` toast script before `</body>` wrapped in try/catch, reads `document.documentElement.lang` for ES/EN text. Slug pages (`blog/[slug]`, `work/[slug]`, `trabajo/[slug]`) pass `currentDocId={entry.id}`. Static pages do NOT pass docId/collection — switcher falls through to `targetHomePath` (home of other locale) for them (known gap — see Open Concerns). |
 
-**Current state:** 25 commits on main (includes the 2 pre-work commits for spec + plan). `pnpm check`, `pnpm build`, `pnpm lint`, `pnpm format:check`, `pnpm test` all green. 11 pages built. Working tree clean.
+### Phase 3 (cont.) — Contact form + Actions
+
+| # | Task | Commits | Notes |
+|---|---|---|---|
+| 15 | Contact form + Astro Actions + Resend + Vercel adapter | `422939b` → `92dc4b2` → `13aebb6` | **3 commits. DA rejected TWICE** on WCAG 1.4.3 (both misses were contrast violations in `ContactForm.tsx`). Round 1: `text-dim` on 12px form labels gave 2.67:1 dark / 2.49:1 light (FAIL AA 4.5:1). Round 2 fix: one-line `text-dim` → `text-muted` (8.27:1 / 7.33:1). Round 2 DA approved the label fix but self-caught a round-1 miss — `text-red-400` on light bg ≈ 2.91:1 and `text-yellow-400` on light bg ≈ 1.56:1 (practically invisible). Round 3 fix: `text-red-700 dark:text-red-400` + `text-yellow-700 dark:text-yellow-400` (6.67:1 / 6.59:1 and 5.16:1 / 12.28:1 — all AA). Controller applied both fixes directly as one-liners; DA verified compiled CSS `.dark\:text-red-400:where([data-theme=dark],[data-theme=dark] *)` correctly targets the `@custom-variant dark` from Task 13, NOT `prefers-color-scheme`. **Key architecture changes:** added `@astrojs/vercel@10.0.4` adapter (`output: 'static'` + adapter = hybrid, actions dynamic, pages prerendered); Astro Action `sendContact` (`src/actions/index.ts`) uses `astro/zod` (NOT deprecated `astro:schema`), `z.email()` (Zod 4 idiom), `createRateLimiter` extracted to `src/lib/rate-limit.ts` with clock injection for testability (6 unit tests in `tests/unit/rate-limit.test.ts`, 21 total). ContactForm island uses `SubmitEvent<HTMLFormElement>` (React 19 deprecates `FormEvent`), captures `formEl = e.currentTarget` BEFORE `await` (React nulls synthetic event targets post-handler), parses `x-forwarded-for` chain (first IP only), env guard for missing `RESEND_API_KEY`/`CONTACT_EMAIL_TO`. Accessibility: `htmlFor`/`id` pairs, honeypot `aria-hidden="true" tabIndex={-1}`, status messages in `role="status" aria-live="polite"` container with `min-h-[1.5rem]` to avoid CLS, focus-visible outlines on inputs + button. Contact pages use `<div>` wrapper (Layout owns `<main>`). Rate limit is per-instance on serverless (documented tradeoff, spec §13.4 defers Upstash). `from: 'contact@facundopascale.dev'` hardcoded; domain not yet purchased/verified — runtime send will 403 until Task 27 provisions DNS. |
+
+**Current state:** 29 commits on main (includes the 2 pre-work commits for spec + plan). `pnpm check`, `pnpm build`, `pnpm lint`, `pnpm format:check`, `pnpm test` all green. 13 pages built. Working tree clean.
 
 ---
 
-## Pending Tasks (13 / 27)
-
-### Phase 3 (remaining) — React Islands
-
-- **Task 15: Contact form** (`ContactForm.tsx` + Astro Action + Resend). Most complex React island. Uses Astro Actions API (Astro 6 native), rate limiting via in-memory Map, honeypot spam guard. Requires `RESEND_API_KEY` + `CONTACT_EMAIL_TO` env vars. May require adding `@astrojs/vercel` adapter to support server Actions.
+## Pending Tasks (12 / 27)
 
 ### Phase 4 — MDX Content Features
 
@@ -196,6 +198,22 @@ Items flagged by reviewers but deferred. Address as noted:
 17. **ThemeToggle `aria-label` still hardcoded English (from Task 13 follow-up #11).** Now that Task 14 shipped with its own hardcoded English aria-label, consider a single Header-level i18n pass that threads a locale-aware labels dictionary into BOTH islands. Do this together when the next Header refactor happens.
 
 18. **Playwright test hook for missing-translation toast (Task 24).** When Playwright lands, add an axe + functional test that injects `sessionStorage.setItem('missing-translation', '1')` before navigation and asserts the toast renders with `role="status"`. Catches regressions if someone refactors the inline script.
+
+19. **[CRITICAL] `--color-text-dim` token fails WCAG AA theme-wide.** Dark `#57534e` on `#0c0a09` ≈ 2.67:1. Light `#a8a29e` on `#fafaf9` ≈ 2.49:1. Both fail AA 4.5:1 for normal text. Currently consumed by `PostMeta.astro`, `Footer.astro`, `ProjectCard.astro`, `PostCard.astro`, `Toc.astro`, `src/pages/[locale]/trabajo/[slug].astro`, `src/pages/[locale]/work/[slug].astro`, home hero section, and all pages that use `text-dim` for meta labels. **Action:** audit every consumer via `rg 'text-\[var\(--color-text-dim\)\]'`, then either (a) bump the token to a readable pair like `#78716c` (stone-500) dark / `#44403c` (stone-700) light, which gives ~5.5:1 both ways; or (b) reserve `text-dim` for decorative non-text only and swap consumers to `text-muted`. Option (a) is cleaner — preserves intent, passes AA globally. File blocking before launch.
+
+20. **Dead-code honeypot double-check (Task 15).** `src/actions/index.ts` has `if (input.honeypot) throw BAD_REQUEST` AFTER Zod's `z.string().max(0).optional()` validates. An empty string is falsy so the check never fires; a non-empty string already failed Zod. Either remove the dead check or tighten Zod to reject empty strings too (non-blocker).
+
+21. **Double-submit race in ContactForm (Task 15).** `onSubmit` has no `if (state === 'sending') return` entry guard. Rapid double-click before the disabled button re-renders can fire two concurrent `sendContact` calls. Rate limiter catches it but 2 emails may send first. Add entry guard.
+
+22. **No progressive enhancement on contact form (Task 15).** Form has no `action`/`method` attrs — without JS it does nothing. Astro Actions supports `action={actions.sendContact}` on the form element for PE. Non-blocking per spec, but easy to add.
+
+23. **Task 15 `from: 'contact@facundopascale.dev'` requires DNS verification in Resend.** Runtime sends will 403 until the domain is purchased, DNS records set, and Resend's domain is verified. Not a code bug — deployment pre-req for Task 27.
+
+24. **Rate limit is per-instance on serverless (Task 15, spec §13.4 defer).** Cold starts multiply allowance by instance count. Spec explicitly defers Upstash/Redis until launch. Documented in `src/lib/rate-limit.ts` JSDoc.
+
+25. **Contrast lint rule (stretch follow-up from Task 15 DA).** Consider adding a CI check (stylelint plugin or custom script) that flags `text-*-300/400/500` without a `dark:` variant, and `text-*-700/800/900` without a light-fallback. Would prevent Task-15-style round-2 DA misses from reaching review.
+
+26. **Plan file needs update to reflect Task 15 lessons (stretch).** `docs/superpowers/plans/2026-04-13-personal-site.md` lines 1934-1935 still contain the unsafe hard-coded `text-red-400`/`text-yellow-400` classes. Future tasks referencing the plan verbatim could regress. Update the plan to use `text-red-700 dark:text-red-400` pattern.
 
 ---
 
