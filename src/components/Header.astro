@@ -8,8 +8,8 @@ const { locale } = Astro.props;
 
 const nav = [
   { key: 'work' as const, label: locale === 'es' ? 'Trabajo' : 'Work' },
-  { key: 'blog' as const, label: 'Writing' },
-  { key: 'uses' as const, label: 'Uses' },
+  { key: 'blog' as const, label: locale === 'es' ? 'Notas' : 'Writing' },
+  { key: 'uses' as const, label: locale === 'es' ? 'Herramientas' : 'Uses' },
   { key: 'about' as const, label: locale === 'es' ? 'Sobre mí' : 'About' },
   { key: 'contact' as const, label: locale === 'es' ? 'Contacto' : 'Contact' },
 ];
