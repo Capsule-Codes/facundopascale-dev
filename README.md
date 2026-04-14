@@ -1,43 +1,33 @@
-# Astro Starter Kit: Minimal
+# facundopascale.dev
 
-```sh
-pnpm create astro@latest -- --template minimal
+Personal website and blog for Facundo Pascale. Built with Astro.
+
+## Stack
+
+- Astro 6 + React 19
+- Tailwind CSS 4
+- MDX content collections with i18n (ES/EN)
+- Vitest + Playwright
+- Deployed on Vercel
+
+## Development
+
+```bash
+pnpm install        # install dependencies
+pnpm dev            # start dev server at http://localhost:4321
+pnpm check          # type-check
+pnpm lint           # lint
+pnpm format:check   # verify formatting
+pnpm test           # run unit tests
+pnpm build          # production build
+pnpm preview        # preview production build locally
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Project docs
 
-## 🚀 Project Structure
+- Design spec: `docs/superpowers/specs/2026-04-13-personal-site-design.md`
+- Implementation plan: `docs/superpowers/plans/2026-04-13-personal-site.md`
 
-Inside of your Astro project, you'll see the following folders and files:
+## License
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                | Action                                           |
-| :--------------------- | :----------------------------------------------- |
-| `pnpm install`         | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+All rights reserved. Content and code are for personal use unless stated otherwise.
