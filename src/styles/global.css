@@ -76,19 +76,22 @@ pre {
  * Default (no `data-theme='light'`): dark theme wins. This covers the SSR
  * default `<html data-theme="dark">`.
  */
-.shiki,
-.shiki span {
+.shiki {
   color: var(--shiki-dark);
   background-color: var(--shiki-dark-bg);
+}
+.shiki span {
+  color: var(--shiki-dark);
   font-style: var(--shiki-dark-font-style);
   font-weight: var(--shiki-dark-font-weight);
   text-decoration: var(--shiki-dark-text-decoration);
 }
-
-:root[data-theme='light'] .shiki,
-:root[data-theme='light'] .shiki span {
+:root[data-theme='light'] .shiki {
   color: var(--shiki-light);
   background-color: var(--shiki-light-bg);
+}
+:root[data-theme='light'] .shiki span {
+  color: var(--shiki-light);
   font-style: var(--shiki-light-font-style);
   font-weight: var(--shiki-light-font-weight);
   text-decoration: var(--shiki-light-text-decoration);

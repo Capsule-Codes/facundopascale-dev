@@ -39,14 +39,14 @@ const { lang } = Astro.props;
 <div class="relative group my-6">
   {
     lang && (
-      <span class="absolute top-2 right-14 font-mono text-xs text-[var(--color-text-muted)] uppercase pointer-events-none">
+      <span class="absolute top-2 left-2 font-mono text-xs text-[var(--color-text-muted)] uppercase pointer-events-none z-10">
         {lang}
       </span>
     )
   }
   <button
     type="button"
-    class="copy-btn absolute top-2 right-2 font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2 py-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] transition"
+    class="copy-btn absolute top-2 right-2 font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2 py-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] transition"
     aria-label="Copy code"
   >
     copy
@@ -58,21 +58,48 @@ const { lang } = Astro.props;
   // Wire every copy button on the page. Astro dedupes this script, so
   // multiple CodeBlock instances share a single listener installation.
   // Scope: each button copies the `<pre>` sibling inside its own wrapper.
+  //
+  // WCAG 2.2 SC 4.1.3 Status Messages: on copy success we mutate BOTH the
+  // visible text and the `aria-label` so screen readers announce the state
+  // change when the user re-focuses/re-reads the button after clicking. The
+  // button is the currently-focused element at the moment of the click, so
+  // an aria-label change is simpler than a separate live region.
+  //
+  // Per-button timeout handles tracked via WeakMap so we can clearTimeout
+  // any pending restore BEFORE scheduling a new one — eliminates the race
+  // where a second click within the 2s window would permanently stick the
+  // label on 'copied!'. The restore strings are literal, never snapshotted.
+  const timers = new WeakMap<HTMLButtonElement, number>();
   document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach((btn) => {
     btn.addEventListener('click', async (event) => {
       const target = event.currentTarget;
       if (!(target instanceof HTMLButtonElement)) return;
       const pre = target.parentElement?.querySelector('pre');
       if (!pre) return;
+      const schedule = (restoreText: string, restoreLabel: string) => {
+        const prev = timers.get(target);
+        if (prev !== undefined) window.clearTimeout(prev);
+        timers.set(
+          target,
+          window.setTimeout(() => {
+            target.textContent = restoreText;
+            target.setAttribute('aria-label', restoreLabel);
+            timers.delete(target);
+          }, 2000)
+        );
+      };
       try {
         await navigator.clipboard.writeText(pre.innerText);
-        const original = target.textContent;
         target.textContent = 'copied!';
-        window.setTimeout(() => {
-          target.textContent = original;
-        }, 2000);
+        target.setAttribute('aria-label', 'Copied');
+        schedule('copy', 'Copy code');
       } catch {
-        // Clipboard API blocked (insecure context, permissions, etc). Fail silent.
+        // Clipboard API blocked (insecure context, permissions, etc).
+        // Surface the failure to the user — both visual text and aria-label
+        // — so they don't silently wonder if the copy worked.
+        target.textContent = 'failed';
+        target.setAttribute('aria-label', 'Copy failed');
+        schedule('copy', 'Copy code');
       }
     });
   });
