@@ -143,8 +143,10 @@ export default function ContactForm({ locale }: Props) {
       {/* Announce status changes to assistive tech via a live region. */}
       <div role="status" aria-live="polite" className="min-h-[1.5rem]">
         {state === 'success' && <p className="text-[var(--color-accent)]">{t.success}</p>}
-        {state === 'error' && <p className="text-red-400">{t.error}</p>}
-        {state === 'rate-limit' && <p className="text-yellow-400">{t.rateLimit}</p>}
+        {state === 'error' && <p className="text-red-700 dark:text-red-400">{t.error}</p>}
+        {state === 'rate-limit' && (
+          <p className="text-yellow-700 dark:text-yellow-400">{t.rateLimit}</p>
+        )}
       </div>
     </form>
   );
