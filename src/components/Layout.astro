@@ -24,9 +24,9 @@ const { title, description, locale } = Astro.props;
   </head>
   <body class="min-h-screen flex flex-col">
     <Header locale={locale} />
-    <div class="flex-1">
+    <main id="main" class="flex-1">
       <slot />
-    </div>
+    </main>
     <Footer locale={locale} />
   </body>
 </html>

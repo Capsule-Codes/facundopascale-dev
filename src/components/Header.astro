@@ -16,19 +16,28 @@ const nav = [
 ---
 
 <header class="border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+  <a
+    href="#main"
+    class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:bg-[var(--color-bg-elevated)] focus-visible:text-[var(--color-text)] focus-visible:px-3 focus-visible:py-2 focus-visible:border focus-visible:border-[var(--color-accent)]"
+  >
+    {locale === 'es' ? 'Saltar al contenido' : 'Skip to content'}
+  </a>
   <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
     <a
       href={localizedPath('home', locale)}
-      class="font-mono text-xs uppercase tracking-widest text-[var(--color-text)]"
+      class="font-mono text-xs uppercase tracking-widest text-[var(--color-text)] focus-visible:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
     >
       FACUNDO.DEV
     </a>
-    <nav class="flex items-center gap-6 text-sm">
+    <nav
+      aria-label={locale === 'es' ? 'Principal' : 'Primary'}
+      class="flex items-center gap-6 text-sm"
+    >
       {
         nav.map((item) => (
           <a
             href={localizedPath(item.key, locale)}
-            class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+            class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] focus-visible:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] transition-colors"
           >
             {item.label}
           </a>

@@ -23,13 +23,16 @@ const socials = [
       <p>© {year} Facundo Pascale</p>
       <p>{locale === 'es' ? 'Construido con' : 'Built with'} Astro</p>
     </div>
-    <div class="flex flex-wrap gap-4 text-sm">
+    <nav
+      aria-label={locale === 'es' ? 'Redes sociales' : 'Social'}
+      class="flex flex-wrap gap-4 text-sm"
+    >
       {
         socials.map((s) => (
           <a
             href={s.href}
-            class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)]"
-            rel="me"
+            class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] focus-visible:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            rel="me noopener noreferrer"
             target="_blank"
           >
             {s.label}
@@ -42,6 +45,6 @@ const socials = [
       >
         → Capsule Codes
       </a>
-    </div>
+    </nav>
   </div>
 </footer>
