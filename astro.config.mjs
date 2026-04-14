@@ -22,7 +22,6 @@ export default defineConfig({
       prefixDefaultLocale: true,
       redirectToDefaultLocale: false,
     },
-    fallback: { en: 'es' },
   },
 
   output: 'static',

@@ -18,9 +18,7 @@ const PATHS = {
 export type PageKey = keyof typeof PATHS;
 
 export function localizedPath(key: PageKey, locale: Locale, slug?: string): string {
-  const pathsForKey = PATHS[key];
-  if (!pathsForKey) throw new Error(`Unknown page key: ${key}`);
-  const segment = pathsForKey[locale];
+  const segment = PATHS[key][locale];
   const base = segment ? `/${locale}/${segment}` : `/${locale}`;
   return slug ? `${base}/${slug}` : base;
 }
