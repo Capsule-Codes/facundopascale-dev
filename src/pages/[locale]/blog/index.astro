@@ -1,0 +1,64 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../../components/Layout.astro';
+import PostCard from '../../../components/PostCard.astro';
+import { isLocale, type Locale } from '../../../lib/i18n';
+import { filterPublished, byLocale, sortByDate } from '../../../lib/content';
+
+export function getStaticPaths() {
+  return [{ params: { locale: 'es' } }, { params: { locale: 'en' } }];
+}
+
+const { locale } = Astro.params;
+if (!locale || !isLocale(locale)) return Astro.redirect('/');
+const loc: Locale = locale;
+
+const posts = sortByDate(filterPublished(byLocale(await getCollection('blog'), loc)));
+
+const copy = {
+  es: {
+    title: 'Notas',
+    sub: 'Notas sobre arquitectura, craft, herramientas y el oficio de construir software.',
+    empty: 'Notas próximamente.',
+  },
+  en: {
+    title: 'Writing',
+    sub: 'Notes on architecture, craft, tools, and the business of building software.',
+    empty: 'Posts coming soon.',
+  },
+}[loc];
+---
+
+<Layout title={`${copy.title} — Facundo Pascale`} description={copy.sub} locale={loc}>
+  <div class="mx-auto max-w-3xl px-6 py-24">
+    <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// {copy.title.toLowerCase()}</p>
+    <h1 class="text-5xl font-display mb-4">{copy.title}</h1>
+    <p class="text-[var(--color-text-muted)] mb-12">{copy.sub}</p>
+
+    {
+      posts.length > 0 ? (
+        <div class="divide-y divide-[var(--color-border)]">
+          {posts.map((p) => {
+            const slug = p.id.replace(`${loc}/`, '').replace(/\.mdx$/, '');
+            // readingTime is attached by the remark plugin at build time but NOT in the Zod schema,
+            // so it lives on the frontmatter output. We read it defensively here.
+            const rt = (p.data as unknown as { readingTime?: number }).readingTime;
+            return (
+              <PostCard
+                locale={loc}
+                slug={slug}
+                title={p.data.title}
+                description={p.data.description}
+                publishedAt={p.data.publishedAt}
+                readingTime={rt}
+                tags={p.data.tags}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <p class="text-[var(--color-text-muted)] font-mono text-sm">{copy.empty}</p>
+      )
+    }
+  </div>
+</Layout>

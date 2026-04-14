@@ -1,0 +1,32 @@
+---
+import { type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  publishedAt: Date;
+  updatedAt?: Date | null | undefined;
+  readingTime?: number | undefined;
+  tags: string[];
+}
+
+const { locale, publishedAt, updatedAt, readingTime, tags } = Astro.props;
+const fmt = locale === 'es' ? 'es-AR' : 'en-US';
+const pub = publishedAt.toLocaleDateString(fmt, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<div class="font-mono text-xs text-[var(--color-text-dim)] flex flex-wrap gap-3 items-center">
+  <time datetime={publishedAt.toISOString()}>{pub}</time>
+  {
+    updatedAt && (
+      <span>
+        · {locale === 'es' ? 'actualizado' : 'updated'} {updatedAt.toLocaleDateString(fmt)}
+      </span>
+    )
+  }
+  {readingTime !== undefined && <span>· {readingTime} min</span>}
+  {tags.length > 0 && <span>· {tags.join(' · ')}</span>}
+</div>

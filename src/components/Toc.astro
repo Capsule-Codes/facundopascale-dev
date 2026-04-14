@@ -1,0 +1,39 @@
+---
+import { type Locale } from '../lib/i18n';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+  locale: Locale;
+}
+
+const { headings, locale } = Astro.props;
+const filtered = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+const label = locale === 'es' ? 'En esta página' : 'On this page';
+const ariaLabel = locale === 'es' ? 'Tabla de contenidos' : 'Table of contents';
+---
+
+{
+  filtered.length > 0 && (
+    <nav aria-label={ariaLabel} class="hidden lg:block sticky top-24 float-right ml-8 w-56 text-sm">
+      <p class="font-mono text-xs text-[var(--color-text-dim)] uppercase mb-3">{label}</p>
+      <ul class="space-y-2">
+        {filtered.map((h) => (
+          <li style={`padding-left: ${(h.depth - 2) * 12}px`}>
+            <a
+              href={`#${h.slug}`}
+              class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
