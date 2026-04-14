@@ -6,14 +6,14 @@ export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);
 }
 
-const PATHS: Record<string, Record<Locale, string>> = {
+const PATHS = {
   home: { es: '', en: '' },
   about: { es: 'sobre-mi', en: 'about' },
   work: { es: 'trabajo', en: 'work' },
   blog: { es: 'blog', en: 'blog' },
   uses: { es: 'uses', en: 'uses' },
   contact: { es: 'contacto', en: 'contact' },
-};
+} as const satisfies Record<string, Record<Locale, string>>;
 
 export type PageKey = keyof typeof PATHS;
 
