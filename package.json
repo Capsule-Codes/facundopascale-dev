@@ -12,7 +12,8 @@
     "check": "astro check",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "format:check": "prettier --check .",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "prepare": "husky"
