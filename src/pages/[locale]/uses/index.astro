@@ -32,7 +32,7 @@ const description = entry?.data.description ?? fallbackDescription;
     <h1 class="text-5xl font-display mb-8">{title}</h1>
     {
       Content ? (
-        <div class="prose prose-invert max-w-none text-[var(--color-text-muted)] leading-relaxed">
+        <div class="prose dark:prose-invert max-w-none text-[var(--color-text-muted)] leading-relaxed">
           <Content />
         </div>
       ) : (

@@ -21,6 +21,18 @@ const { title, description, locale } = Astro.props;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script is:inline>
+      (function () {
+        try {
+          const stored = localStorage.getItem('theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.dataset.theme = stored;
+          }
+        } catch {
+          /* ignore: localStorage unavailable */
+        }
+      })();
+    </script>
   </head>
   <body class="min-h-screen flex flex-col">
     <Header locale={locale} />

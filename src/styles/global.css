@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @import '@fontsource-variable/fraunces/index.css';
 @import '@fontsource-variable/inter/index.css';
 @import '@fontsource-variable/jetbrains-mono/index.css';
@@ -27,6 +29,8 @@
   --color-text: #0c0a09;
   --color-text-muted: #57534e;
   --color-text-dim: #a8a29e;
+  --color-accent: #c2410e;
+  --color-accent-hover: #9a3412;
 }
 
 html {

@@ -1,5 +1,6 @@
 ---
 import { localizedPath, type Locale } from '../lib/i18n';
+import ThemeToggle from './islands/ThemeToggle.tsx';
 
 interface Props {
   locale: Locale;
@@ -43,6 +44,7 @@ const nav = [
           </a>
         ))
       }
+      <ThemeToggle client:load />
     </nav>
   </div>
 </header>
