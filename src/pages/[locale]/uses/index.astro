@@ -1,0 +1,43 @@
+---
+import { getEntry, render } from 'astro:content';
+import Layout from '../../../components/Layout.astro';
+import { isLocale, type Locale } from '../../../lib/i18n';
+
+export function getStaticPaths() {
+  return [{ params: { locale: 'es' } }, { params: { locale: 'en' } }];
+}
+
+const { locale } = Astro.params;
+if (!locale || !isLocale(locale)) return Astro.redirect('/');
+const loc: Locale = locale;
+
+const entry = await getEntry('pages', `${loc}/uses`);
+const rendered = entry ? await render(entry) : null;
+const Content = rendered?.Content;
+
+const fallbackTitle = loc === 'es' ? 'Uses' : 'Uses';
+const fallbackDescription =
+  loc === 'es'
+    ? 'Herramientas, hardware y software que uso día a día.'
+    : 'Tools, hardware, and software I use every day.';
+const fallbackCopy = loc === 'es' ? 'Contenido próximamente.' : 'Content coming soon.';
+
+const title = entry?.data.title ?? fallbackTitle;
+const description = entry?.data.description ?? fallbackDescription;
+---
+
+<Layout title={`${title} — Facundo Pascale`} description={description} locale={loc}>
+  <div class="mx-auto max-w-3xl px-6 py-24">
+    <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// uses</p>
+    <h1 class="text-5xl font-display mb-8">{title}</h1>
+    {
+      Content ? (
+        <div class="prose prose-invert max-w-none text-[var(--color-text-muted)] leading-relaxed">
+          <Content />
+        </div>
+      ) : (
+        <p class="text-lg text-[var(--color-text-muted)] leading-relaxed">{fallbackCopy}</p>
+      )
+    }
+  </div>
+</Layout>

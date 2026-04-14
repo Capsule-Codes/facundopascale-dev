@@ -51,6 +51,7 @@
     "@astrojs/check": "^0.9.8",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^25.6.0",
     "@vitest/ui": "^4.1.4",
     "eslint": "^10.2.0",

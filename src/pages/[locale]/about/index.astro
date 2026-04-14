@@ -1,0 +1,36 @@
+---
+import { getEntry, render } from 'astro:content';
+import Layout from '../../../components/Layout.astro';
+import type { Locale } from '../../../lib/i18n';
+
+export function getStaticPaths() {
+  return [{ params: { locale: 'en' } }];
+}
+
+const loc: Locale = 'en';
+
+const entry = await getEntry('pages', 'en/about');
+const rendered = entry ? await render(entry) : null;
+const Content = rendered?.Content;
+
+const title = entry?.data.title ?? 'About';
+const description =
+  entry?.data.description ??
+  'Senior software architect with 15+ years of experience building serious software.';
+---
+
+<Layout title={`${title} — Facundo Pascale`} description={description} locale={loc}>
+  <div class="mx-auto max-w-3xl px-6 py-24">
+    <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// about</p>
+    <h1 class="text-5xl font-display mb-8">{title}</h1>
+    {
+      Content ? (
+        <div class="prose prose-invert max-w-none text-[var(--color-text-muted)] leading-relaxed">
+          <Content />
+        </div>
+      ) : (
+        <p class="text-lg text-[var(--color-text-muted)] leading-relaxed">Content coming soon.</p>
+      )
+    }
+  </div>
+</Layout>
