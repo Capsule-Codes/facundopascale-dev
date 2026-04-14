@@ -1,0 +1,79 @@
+---
+/**
+ * CodeBlock — opt-in wrapper around an MDX fenced code block.
+ *
+ * Usage in MDX (manual wrapper, NOT an mdxComponents override):
+ *
+ *     import CodeBlock from '../../components/mdx/CodeBlock.astro';
+ *
+ *     <CodeBlock lang="ts">
+ *     ```ts
+ *     const x = 1;
+ *     ```
+ *     </CodeBlock>
+ *
+ * (Task 17 will add the `@/` path alias so you can write
+ * `import CodeBlock from '@/components/mdx/CodeBlock.astro'`.)
+ *
+ * Shiki is configured at the `mdx()` integration level (see `astro.config.ts`)
+ * with dual themes (`vitesse-light` / `vesper`) and `defaultColor: false`, so
+ * the `<slot />` already renders a highlighted `<pre class="shiki ...">` block
+ * whose visible color is decided by CSS rules in `src/styles/global.css`
+ * keyed on `data-theme`.
+ *
+ * This component adds two affordances:
+ *   - a language label (top-right)
+ *   - a copy-to-clipboard button (top-right, revealed on hover or keyboard focus)
+ *
+ * The `<script>` tag below is deduplicated by Astro across pages, so a single
+ * handler wires every `.copy-btn` on the page regardless of how many CodeBlock
+ * instances exist.
+ */
+interface Props {
+  lang?: string;
+}
+
+const { lang } = Astro.props;
+---
+
+<div class="relative group my-6">
+  {
+    lang && (
+      <span class="absolute top-2 right-14 font-mono text-xs text-[var(--color-text-muted)] uppercase pointer-events-none">
+        {lang}
+      </span>
+    )
+  }
+  <button
+    type="button"
+    class="copy-btn absolute top-2 right-2 font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2 py-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] transition"
+    aria-label="Copy code"
+  >
+    copy
+  </button>
+  <slot />
+</div>
+
+<script>
+  // Wire every copy button on the page. Astro dedupes this script, so
+  // multiple CodeBlock instances share a single listener installation.
+  // Scope: each button copies the `<pre>` sibling inside its own wrapper.
+  document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async (event) => {
+      const target = event.currentTarget;
+      if (!(target instanceof HTMLButtonElement)) return;
+      const pre = target.parentElement?.querySelector('pre');
+      if (!pre) return;
+      try {
+        await navigator.clipboard.writeText(pre.innerText);
+        const original = target.textContent;
+        target.textContent = 'copied!';
+        window.setTimeout(() => {
+          target.textContent = original;
+        }, 2000);
+      } catch {
+        // Clipboard API blocked (insecure context, permissions, etc). Fail silent.
+      }
+    });
+  });
+</script>

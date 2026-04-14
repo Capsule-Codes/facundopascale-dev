@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-14
-**Current commit:** `13aebb6`
+**Current commit:** `(Task 16 pending commit — update after)`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **15 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **16 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -60,7 +60,7 @@ QA and Devil's Advocate are custom — invent a prompt per task following the pa
 
 ---
 
-## Completed Tasks (15 / 27)
+## Completed Tasks (16 / 27)
 
 ### Phase 1 — Foundation (Tasks 1-4)
 
@@ -98,6 +98,12 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 | 13 | Theme toggle + light-mode WCAG fix + prose-invert sweep | `788b1f2` → `5a15af9` | 2 commits. Round 1 rejected by DA for spec violation (§8.1 "respects `prefers-color-scheme`" not honored) and asymmetric `localStorage` handling. Round 2 fix: inline script + island both read `matchMedia('(prefers-color-scheme: light)')` as fallback when no stored theme; island `useEffect` wrapped in try/catch; `toggle` keeps in-memory `setTheme` + `dataset.theme` unconditional, only wraps `localStorage.setItem` in try/catch (theme still applies visually in private-mode Safari). `aria-pressed` toggle button pattern (Option A) with static `aria-label="Toggle theme"` — stable accessible name pre-hydration. Light-mode accent: `#c2410e` (4.96:1) / hover `#9a3412` (7.00:1). 6 pages swapped `prose-invert` → `dark:prose-invert`. Tailwind 4 custom variant `@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *))` added to `src/styles/global.css`. |
 | 14 | Language switcher island + missing-translation toast | `a38bace` → `34814f7` | 2 commits. Round 1 rejected by DA for WCAG 2.2 SC 4.1.3 violation — dynamically-created toast `<div>` had no `role="status"`, so screen readers would silently miss the fallback message. Round 2 fix: single-line `t.setAttribute('role', 'status')` added to the inline toast script in `Layout.astro`; controller applied directly (no full implementer pipeline for one-liner; DA accepted). Island is a `<button>` (plan-specified; non-blocking follow-up to consider anchor). Type narrowed to `currentCollection?: 'blog' \| 'work'` because `pages` collection schema lacks `translationId`. Implementation: `src/components/islands/LanguageSwitcher.tsx` (sessionStorage try/catch for miss-path flag), `Header.astro` uses if/else `getCollection` branching to avoid casts under strictest TS, `Layout.astro` threads `currentDocId` + `currentCollection` via conditional spread (`exactOptionalPropertyTypes`), inline `is:inline` toast script before `</body>` wrapped in try/catch, reads `document.documentElement.lang` for ES/EN text. Slug pages (`blog/[slug]`, `work/[slug]`, `trabajo/[slug]`) pass `currentDocId={entry.id}`. Static pages do NOT pass docId/collection — switcher falls through to `targetHomePath` (home of other locale) for them (known gap — see Open Concerns). |
 
+### Phase 4 — MDX Content Features
+
+| # | Task | Commits | Notes |
+|---|---|---|---|
+| 16 | Shiki dual-theme config + CodeBlock wrapper | `(pending)` | Dual themes via `themes: { light: 'vitesse-light', dark: 'vesper' }` + `defaultColor: false` in `astro.config.ts`. Every Shiki token carries `--shiki-light`/`--shiki-dark` vars; the visible color is chosen by a CSS bridge in `src/styles/global.css` keyed on `:root[data-theme='light']` (dark is the default). `src/components/mdx/CodeBlock.astro` is a **manual opt-in wrapper** (not an `mdxComponents` auto-override — that's deferred to Task 17) with a `lang` label + a copy-to-clipboard button. Uses `text-muted` (NOT `text-dim`, respecting Open Concern #19) and the project-standard `focus-visible:outline-*-[var(--color-accent)]` focus ring. Button reveals on both `group-hover:opacity-100` and `focus-visible:opacity-100`/`group-focus-within:opacity-100` so keyboard users can find it. Copy script is a plain `<script>` (deduped & bundled as `<script type="module">` inline by Astro) with `instanceof HTMLButtonElement` narrowing. Smoke-tested with a temp MDX page — inspected dist HTML to confirm: dual CSS vars on tokens, correct CodeBlock DOM, copy script inlined, multi-instance on the same page OK. Smoke test files removed before commit. `aria-label="Copy code"` hardcoded English per the same precedent as ThemeToggle/LanguageSwitcher — see new follow-up #27. |
+
 ### Phase 3 (cont.) — Contact form + Actions
 
 | # | Task | Commits | Notes |
@@ -112,7 +118,6 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 
 ### Phase 4 — MDX Content Features
 
-- **Task 16: Shiki config + CodeBlock** — custom theme (vesper or similar warm-dark), CodeBlock wrapper with copy-to-clipboard button.
 - **Task 17: Callout MDX component** — info/warning/success/danger variants. Register via `mdxComponents` and `@/` path alias in `tsconfig.json`.
 - **Task 18: RSS feeds per locale** — `src/pages/[locale]/rss.xml.ts` using `@astrojs/rss`.
 - **Task 19: OG image generation via Satori** — dynamic `/og/[...slug].png.ts` endpoint using `@vercel/og`. Needs install.
@@ -214,6 +219,12 @@ Items flagged by reviewers but deferred. Address as noted:
 25. **Contrast lint rule (stretch follow-up from Task 15 DA).** Consider adding a CI check (stylelint plugin or custom script) that flags `text-*-300/400/500` without a `dark:` variant, and `text-*-700/800/900` without a light-fallback. Would prevent Task-15-style round-2 DA misses from reaching review.
 
 26. **Plan file needs update to reflect Task 15 lessons (stretch).** `docs/superpowers/plans/2026-04-13-personal-site.md` lines 1934-1935 still contain the unsafe hard-coded `text-red-400`/`text-yellow-400` classes. Future tasks referencing the plan verbatim could regress. Update the plan to use `text-red-700 dark:text-red-400` pattern.
+
+27. **`CodeBlock.astro` `aria-label="Copy code"` hardcoded English (Task 16).** Consistent with ThemeToggle (#11/#17) and LanguageSwitcher (#16) hardcoded-EN aria precedent. Add to the next Header-level i18n pass that threads a locale dictionary into the islands and component slot props. A second string also needs locale threading: the transient `copied!` toast text on successful clipboard write.
+
+28. **`CodeBlock` is manual opt-in only (Task 16).** Authors must explicitly wrap a fenced block with `<CodeBlock lang="...">\`\`\`lang\n...\`\`\`</CodeBlock>` to get the lang label + copy button. Plain fenced blocks still get Shiki highlighting via the global `mdx()` `shikiConfig`, but no copy affordance. Task 17 plans to wire `mdxComponents` — if that task ever auto-overrides `<pre>` with CodeBlock, the `lang` will need to be parsed out of the child `<code>`'s `className="language-xxx"` (Astro's MDX integration does not forward `data-language` or `lang` to replaced `<pre>` components out of the box). Keep manual opt-in as the default and only add auto-override if a real need surfaces.
+
+29. **Shiki dual-theme CSS bridge lives in `src/styles/global.css` (Task 16).** `astro.config.ts` sets `shikiConfig: { themes: { light: 'vitesse-light', dark: 'vesper' }, defaultColor: false, wrap: true }`. Every token carries both `--shiki-light` and `--shiki-dark` CSS vars with NO direct color, and a pair of CSS rules under the `/* Shiki dual-theme bridge */` comment picks the right variable based on `:root[data-theme='light']` (falls through to dark as the default). This ties into the project's manual `data-theme` system instead of raw `prefers-color-scheme`. If someone ever replaces the themes, verify both still read cleanly on `#0c0a09` (dark bg) and `#fafaf9` (light bg), and watch for vesper's own background `#101010` bleeding through the page `<pre>` — currently fine because `--shiki-dark-bg` is scoped to `.shiki` elements only. Task 19 (OG images) and Task 21-23 (seed content with code blocks) are the next consumers.
 
 ---
 

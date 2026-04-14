@@ -11,7 +11,27 @@ import { remarkReadingTime } from './src/lib/reading-time';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://facundopascale.dev',
-  integrations: [react(), mdx({ remarkPlugins: [remarkReadingTime] }), sitemap()],
+  integrations: [
+    react(),
+    mdx({
+      remarkPlugins: [remarkReadingTime],
+      shikiConfig: {
+        // Dual themes. Shiki emits both styles as `--shiki-light` and
+        // `--shiki-dark` CSS variables on every token. With `defaultColor: false`
+        // no direct color is inlined, so the visible color is chosen by the
+        // override rules in `src/styles/global.css` keyed on `data-theme`.
+        // This matches the project's manual theme system and does NOT rely
+        // on raw `prefers-color-scheme` media queries on the root.
+        themes: {
+          light: 'vitesse-light',
+          dark: 'vesper',
+        },
+        defaultColor: false,
+        wrap: true,
+      },
+    }),
+    sitemap(),
+  ],
 
   vite: {
     plugins: [tailwindcss()],

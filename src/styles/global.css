@@ -64,6 +64,36 @@ pre {
   font-family: var(--font-mono);
 }
 
+/*
+ * Shiki dual-theme bridge.
+ * `astro.config.ts` configures Shiki with `themes: { light: 'vitesse-light',
+ * dark: 'vesper' }` and `defaultColor: false`, so every token carries both
+ * `--shiki-light` and `--shiki-dark` CSS vars but no inline color. We pick the
+ * right variable here based on the project's `data-theme` attribute (not the
+ * raw `prefers-color-scheme` media query — that is handled by the inline boot
+ * script in `Layout.astro` and the ThemeToggle island).
+ *
+ * Default (no `data-theme='light'`): dark theme wins. This covers the SSR
+ * default `<html data-theme="dark">`.
+ */
+.shiki,
+.shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+:root[data-theme='light'] .shiki,
+:root[data-theme='light'] .shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
