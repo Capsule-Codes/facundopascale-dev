@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
-**Last updated:** 2026-04-13
-**Current commit:** `b78ac94`
+**Last updated:** 2026-04-14
+**Current commit:** `5a15af9`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. The previous session completed **12 of 27 tasks** before context got full. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **13 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -15,7 +15,7 @@ You are continuing execution of the facundopascale-dev implementation plan. The 
 2. Read `docs/superpowers/specs/2026-04-13-personal-site-design.md` (the approved spec).
 3. Read `docs/superpowers/plans/2026-04-13-personal-site.md` (the 27-task plan). **Warning: the plan is static and does NOT reflect the small deviations listed in "Known deviations" below.**
 4. Run `git log --oneline` to confirm state matches the commits listed here.
-5. Resume with **Task 13** using the 4-agent pipeline described below.
+5. Resume with **Task 14** using the 4-agent pipeline described below.
 
 ---
 
@@ -60,7 +60,7 @@ QA and Devil's Advocate are custom — invent a prompt per task following the pa
 
 ---
 
-## Completed Tasks (12 / 27)
+## Completed Tasks (13 / 27)
 
 ### Phase 1 — Foundation (Tasks 1-4)
 
@@ -91,15 +91,19 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 | 11 | Work index + [slug] | `6acbba6` | Clean. 4 files: `trabajo/index`, `work/index`, `trabajo/[slug]`, `work/[slug]`. Empty collection handled via `getStaticPaths` returning `[]` for slugs and placeholder text for indexes. Case study outer wrapper is `<article>` (not `<main>`). |
 | 12 | Blog index + [slug] + PostMeta + Toc | `b78ac94` | Clean. Blog index and post route are single files serving both locales. Toc is bilingual via `locale` prop. |
 
-**Current state:** 21 commits on main (includes the 2 pre-work commits for spec + plan). `pnpm check`, `pnpm build`, `pnpm lint`, `pnpm format:check`, `pnpm test` all green. 11 pages built. Working tree clean.
+### Phase 3 (partial) — React Islands
+
+| # | Task | Commits | Notes |
+|---|---|---|---|
+| 13 | Theme toggle + light-mode WCAG fix + prose-invert sweep | `788b1f2` → `5a15af9` | 2 commits. Round 1 rejected by DA for spec violation (§8.1 "respects `prefers-color-scheme`" not honored) and asymmetric `localStorage` handling. Round 2 fix: inline script + island both read `matchMedia('(prefers-color-scheme: light)')` as fallback when no stored theme; island `useEffect` wrapped in try/catch; `toggle` keeps in-memory `setTheme` + `dataset.theme` unconditional, only wraps `localStorage.setItem` in try/catch (theme still applies visually in private-mode Safari). `aria-pressed` toggle button pattern (Option A) with static `aria-label="Toggle theme"` — stable accessible name pre-hydration. Light-mode accent: `#c2410e` (4.96:1) / hover `#9a3412` (7.00:1). 6 pages swapped `prose-invert` → `dark:prose-invert`. Tailwind 4 custom variant `@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *))` added to `src/styles/global.css`. |
+
+**Current state:** 23 commits on main (includes the 2 pre-work commits for spec + plan). `pnpm check`, `pnpm build`, `pnpm lint`, `pnpm format:check`, `pnpm test` all green. 11 pages built. Working tree clean.
 
 ---
 
-## Pending Tasks (15 / 27)
+## Pending Tasks (14 / 27)
 
 ### Phase 3 (remaining) — React Islands
-
-- **Task 13: Theme toggle** (`ThemeToggle.tsx`). React island with anti-FOUC inline head script, localStorage persistence, accessible button. **⚠ CRITICAL: must also fix the light-mode accent contrast issue.** Currently `#f97316` on `#fafaf9` = 2.03:1, fails WCAG AA. Use a darker orange (e.g. `#c2410e` / orange-700) in the `:root[data-theme='light']` override in `src/styles/global.css`.
 
 - **Task 14: Language switcher** (`LanguageSwitcher.tsx`). React island. Uses `findTranslation` (from Task 7) to find the sibling doc. Requires threading `currentDocId` + `currentCollection` props through `Layout.astro` → `Header.astro`. Includes fallback toast when sibling doesn't exist.
 
@@ -158,9 +162,9 @@ These are differences between what's in the plan document and what's actually in
 
 Items flagged by reviewers but deferred. Address as noted:
 
-1. **Light-mode accent contrast (Task 13 MUST FIX).** `#f97316` on `#fafaf9` is 2.03:1, fails WCAG AA. In the `:root[data-theme='light']` CSS block, override `--color-accent` to `#c2410e` (orange-700) and `--color-accent-hover` to `#9a3412` (orange-800). Applies to the home CTA button, links, and PostCard/ProjectCard borders.
+1. ~~**Light-mode accent contrast (Task 13 MUST FIX).**~~ **RESOLVED in commit `788b1f2`.** Light block now overrides `--color-accent: #c2410e` (4.96:1) and `--color-accent-hover: #9a3412` (7.00:1). Dark mode accent unchanged.
 
-2. **Prose inverted is hardcoded (Task 13 also fix).** About, Uses, blog post, and case study pages all use `prose-invert`. In light mode, prose should switch to regular `prose` (no invert). Use `prose dark:prose-invert` or a theme-aware variant.
+2. ~~**Prose inverted is hardcoded (Task 13 also fix).**~~ **RESOLVED in commit `788b1f2`.** All 6 pages now use `prose dark:prose-invert`. Tailwind 4 custom variant added to `src/styles/global.css` so `dark:` responds to `data-theme='dark'`.
 
 3. **Draft posts invisible in dev** (Task 6 concern, spec §4.4 promise broken). The spec says drafts should appear in `astro dev` but be excluded in production. Current `filterPublished` hides drafts in both. Fix when the user starts using drafts — add an `{ includeDrafts }` option or an `import.meta.env.DEV` bypass.
 
@@ -177,6 +181,12 @@ Items flagged by reviewers but deferred. Address as noted:
 9. **Toc visual tightness on desktop**. With `max-w-3xl` container + `w-56 + ml-8` float, prose wraps in ~464px. Revisit once Task 23 seeds blog content and you can see a real post.
 
 10. **Plan document has 1 typo-level bug** (line 775 of `docs/superpowers/plans/2026-04-13-personal-site.md`): `entries.filter((e) => !e.data.draft || true)` — the `|| true` makes it a no-op. This was deliberately omitted from the implementation (Task 6) per instructions. Don't re-add it.
+
+11. **`ThemeToggle.tsx` `aria-label` is hardcoded English ("Toggle theme").** Task 13 DA accepted this as scope-controlled tradeoff — Header doesn't thread `locale` into the island yet. Follow-up: thread `locale` prop through `Header.astro → <ThemeToggle locale={locale} />` and localize via a small dictionary ("Cambiar tema" / "Toggle theme"). Do this when Task 14 (Language switcher) is done — it also needs locale threading into islands, so combine the work.
+
+12. **`ThemeToggle` glyph (☀/☾) still flickers for ~1 frame on first paint for users with light-mode OS or `theme=light` stored.** The `data-theme` flips instantly (inline script), colors paint correctly, and the `aria-label`/`aria-pressed` are stable — so SR users are NOT affected. Only the 1-char visual glyph inside the button briefly shows the wrong icon until React hydrates. Pure polish. Fix only if a user complains: render the initial glyph via CSS `::before content: attr(data-theme...)` instead of React state, or have the inline script patch the button's textContent by `id`. Not worth it for a theme button.
+
+13. **`eslint.config.js` `tseslint.config` signature deprecation hint** (pre-existing, not introduced by Task 13). Clean up next time someone touches the ESLint config.
 
 ---
 
