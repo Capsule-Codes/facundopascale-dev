@@ -1,0 +1,23 @@
+---
+import Layout from '../../../components/Layout.astro';
+import ContactForm from '../../../components/islands/ContactForm.tsx';
+import type { Locale } from '../../../lib/i18n';
+
+export function getStaticPaths() {
+  return [{ params: { locale: 'es' } }];
+}
+
+const loc: Locale = 'es';
+const title = 'Contacto';
+const description =
+  'Escribime para hablar de un proyecto, una consulta técnica o trabajar juntos desde Capsule Codes.';
+---
+
+<Layout title={`${title} — Facundo Pascale`} description={description} locale={loc}>
+  <div class="mx-auto max-w-2xl px-6 py-24">
+    <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// contacto</p>
+    <h1 class="text-5xl font-display mb-4">{title}</h1>
+    <p class="text-[var(--color-text-muted)] mb-12 leading-relaxed">{description}</p>
+    <ContactForm client:load locale="es" />
+  </div>
+</Layout>
