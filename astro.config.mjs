@@ -8,9 +8,22 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://facundopascale.dev',
   integrations: [react(), mdx(), sitemap()],
 
   vite: {
     plugins: [tailwindcss()],
   },
+
+  i18n: {
+    locales: ['es', 'en'],
+    defaultLocale: 'es',
+    routing: {
+      prefixDefaultLocale: true,
+      redirectToDefaultLocale: false,
+    },
+    fallback: { en: 'es' },
+  },
+
+  output: 'static',
 });
