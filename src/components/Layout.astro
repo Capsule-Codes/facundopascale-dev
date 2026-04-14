@@ -27,9 +27,11 @@ const { title, description, locale } = Astro.props;
           const stored = localStorage.getItem('theme');
           if (stored === 'light' || stored === 'dark') {
             document.documentElement.dataset.theme = stored;
+          } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.dataset.theme = 'light';
           }
         } catch {
-          /* ignore: localStorage unavailable */
+          /* ignore: localStorage/matchMedia unavailable */
         }
       })();
     </script>
