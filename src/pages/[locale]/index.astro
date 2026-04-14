@@ -1,0 +1,21 @@
+---
+import Layout from '../../components/Layout.astro';
+import { isLocale, type Locale } from '../../lib/i18n';
+
+export function getStaticPaths() {
+  return [{ params: { locale: 'es' } }, { params: { locale: 'en' } }];
+}
+
+const { locale } = Astro.params;
+if (!locale || !isLocale(locale)) return Astro.redirect('/');
+---
+
+<Layout title="Facundo Pascale" description="Senior software architect" locale={locale as Locale}>
+  <main style="padding: 4rem; max-width: 600px; margin: 0 auto;">
+    <h1 style="font-size: 4rem; margin-bottom: 1rem;">Construyo software serio.</h1>
+    <p style="color: var(--color-text-muted);">
+      Fonts and tokens smoke test — locale: {locale}
+    </p>
+    <p style="color: var(--color-accent); font-family: var(--font-mono);">→ accent check</p>
+  </main>
+</Layout>
