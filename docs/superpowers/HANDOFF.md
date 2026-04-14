@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-14
-**Current commit:** `5a15af9`
+**Current commit:** `34814f7`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **13 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **14 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -15,7 +15,7 @@ You are continuing execution of the facundopascale-dev implementation plan. **13
 2. Read `docs/superpowers/specs/2026-04-13-personal-site-design.md` (the approved spec).
 3. Read `docs/superpowers/plans/2026-04-13-personal-site.md` (the 27-task plan). **Warning: the plan is static and does NOT reflect the small deviations listed in "Known deviations" below.**
 4. Run `git log --oneline` to confirm state matches the commits listed here.
-5. Resume with **Task 14** using the 4-agent pipeline described below.
+5. Resume with **Task 15** using the 4-agent pipeline described below.
 
 ---
 
@@ -60,7 +60,7 @@ QA and Devil's Advocate are custom — invent a prompt per task following the pa
 
 ---
 
-## Completed Tasks (13 / 27)
+## Completed Tasks (14 / 27)
 
 ### Phase 1 — Foundation (Tasks 1-4)
 
@@ -96,16 +96,15 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 | # | Task | Commits | Notes |
 |---|---|---|---|
 | 13 | Theme toggle + light-mode WCAG fix + prose-invert sweep | `788b1f2` → `5a15af9` | 2 commits. Round 1 rejected by DA for spec violation (§8.1 "respects `prefers-color-scheme`" not honored) and asymmetric `localStorage` handling. Round 2 fix: inline script + island both read `matchMedia('(prefers-color-scheme: light)')` as fallback when no stored theme; island `useEffect` wrapped in try/catch; `toggle` keeps in-memory `setTheme` + `dataset.theme` unconditional, only wraps `localStorage.setItem` in try/catch (theme still applies visually in private-mode Safari). `aria-pressed` toggle button pattern (Option A) with static `aria-label="Toggle theme"` — stable accessible name pre-hydration. Light-mode accent: `#c2410e` (4.96:1) / hover `#9a3412` (7.00:1). 6 pages swapped `prose-invert` → `dark:prose-invert`. Tailwind 4 custom variant `@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *))` added to `src/styles/global.css`. |
+| 14 | Language switcher island + missing-translation toast | `a38bace` → `34814f7` | 2 commits. Round 1 rejected by DA for WCAG 2.2 SC 4.1.3 violation — dynamically-created toast `<div>` had no `role="status"`, so screen readers would silently miss the fallback message. Round 2 fix: single-line `t.setAttribute('role', 'status')` added to the inline toast script in `Layout.astro`; controller applied directly (no full implementer pipeline for one-liner; DA accepted). Island is a `<button>` (plan-specified; non-blocking follow-up to consider anchor). Type narrowed to `currentCollection?: 'blog' \| 'work'` because `pages` collection schema lacks `translationId`. Implementation: `src/components/islands/LanguageSwitcher.tsx` (sessionStorage try/catch for miss-path flag), `Header.astro` uses if/else `getCollection` branching to avoid casts under strictest TS, `Layout.astro` threads `currentDocId` + `currentCollection` via conditional spread (`exactOptionalPropertyTypes`), inline `is:inline` toast script before `</body>` wrapped in try/catch, reads `document.documentElement.lang` for ES/EN text. Slug pages (`blog/[slug]`, `work/[slug]`, `trabajo/[slug]`) pass `currentDocId={entry.id}`. Static pages do NOT pass docId/collection — switcher falls through to `targetHomePath` (home of other locale) for them (known gap — see Open Concerns). |
 
-**Current state:** 23 commits on main (includes the 2 pre-work commits for spec + plan). `pnpm check`, `pnpm build`, `pnpm lint`, `pnpm format:check`, `pnpm test` all green. 11 pages built. Working tree clean.
+**Current state:** 25 commits on main (includes the 2 pre-work commits for spec + plan). `pnpm check`, `pnpm build`, `pnpm lint`, `pnpm format:check`, `pnpm test` all green. 11 pages built. Working tree clean.
 
 ---
 
-## Pending Tasks (14 / 27)
+## Pending Tasks (13 / 27)
 
 ### Phase 3 (remaining) — React Islands
-
-- **Task 14: Language switcher** (`LanguageSwitcher.tsx`). React island. Uses `findTranslation` (from Task 7) to find the sibling doc. Requires threading `currentDocId` + `currentCollection` props through `Layout.astro` → `Header.astro`. Includes fallback toast when sibling doesn't exist.
 
 - **Task 15: Contact form** (`ContactForm.tsx` + Astro Action + Resend). Most complex React island. Uses Astro Actions API (Astro 6 native), rate limiting via in-memory Map, honeypot spam guard. Requires `RESEND_API_KEY` + `CONTACT_EMAIL_TO` env vars. May require adding `@astrojs/vercel` adapter to support server Actions.
 
@@ -187,6 +186,16 @@ Items flagged by reviewers but deferred. Address as noted:
 12. **`ThemeToggle` glyph (☀/☾) still flickers for ~1 frame on first paint for users with light-mode OS or `theme=light` stored.** The `data-theme` flips instantly (inline script), colors paint correctly, and the `aria-label`/`aria-pressed` are stable — so SR users are NOT affected. Only the 1-char visual glyph inside the button briefly shows the wrong icon until React hydrates. Pure polish. Fix only if a user complains: render the initial glyph via CSS `::before content: attr(data-theme...)` instead of React state, or have the inline script patch the button's textContent by `id`. Not worth it for a theme button.
 
 13. **`eslint.config.js` `tseslint.config` signature deprecation hint** (pre-existing, not introduced by Task 13). Clean up next time someone touches the ESLint config.
+
+14. **LanguageSwitcher static-page fallback gap (Task 14).** On static pages (`/es/sobre-mi`, `/en/about`, `/es/uses`, `/en/uses`, home, blog index, work index), clicking the switcher sends the user to `/en/` or `/es/` (home of other locale) + toast — even though the translated counterpart exists via `localizedPath`. Root cause: the `pages` content-collection schema omits `translationId`, so Task 14 narrowed `currentCollection` to `'blog' | 'work'`. Fix options: (a) add `translationId` to the `pages` schema in `src/content.config.ts`, seed it in the pages MDX during Task 22, and expand the Header logic back to include `'pages'`; or (b) add a small static-page translation map in `Header.astro` keyed on `PageKey` for the 5 static routes. Option (a) is cleaner and matches the plan's original intent. Address before launch.
+
+15. **Language switcher is `<button>`, not `<a href>` (Task 14).** Plan-specified, but suboptimal: cmd/ctrl/middle-click don't open in new tab, screen readers announce "button" instead of "link", no JS-less fallback. Consider rewriting as an Astro-rendered `<a href>` for the happy path (targetPath known) and keeping the React island only for the miss-path (toast + redirect). Non-blocking polish.
+
+16. **LanguageSwitcher toast strings hardcoded in inline script (Task 14).** Cannot import from i18n dictionary trivially (inline scripts run pre-hydration). Acceptable tradeoff. If the strings ever need more complexity, switch to a Layout-provided data attribute and read it from the script.
+
+17. **ThemeToggle `aria-label` still hardcoded English (from Task 13 follow-up #11).** Now that Task 14 shipped with its own hardcoded English aria-label, consider a single Header-level i18n pass that threads a locale-aware labels dictionary into BOTH islands. Do this together when the next Header refactor happens.
+
+18. **Playwright test hook for missing-translation toast (Task 24).** When Playwright lands, add an axe + functional test that injects `sessionStorage.setItem('missing-translation', '1')` before navigation and asserts the toast renders with `role="status"`. Catches regressions if someone refactors the inline script.
 
 ---
 
