@@ -54,6 +54,7 @@ const { title, description, locale, currentDocId, currentCollection } = Astro.pr
           if (sessionStorage.getItem('missing-translation') !== '1') return;
           sessionStorage.removeItem('missing-translation');
           const t = document.createElement('div');
+          t.setAttribute('role', 'status');
           t.textContent =
             document.documentElement.lang === 'es'
               ? 'Esta página aún no está traducida.'
