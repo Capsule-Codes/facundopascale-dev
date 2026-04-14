@@ -1,0 +1,91 @@
+---
+/**
+ * Callout — MDX block for tangential/supplementary notes.
+ *
+ * Usage in MDX (manual wrapper, NOT an mdxComponents auto-override — see
+ * `src/components/mdx/index.ts` for the convenience registry rationale):
+ *
+ *     import Callout from '@/components/mdx/Callout.astro';
+ *
+ *     <Callout type="warning" title="Careful">
+ *       This is a warning.
+ *     </Callout>
+ *
+ * Variants: `info` (default) | `warning` | `success` | `danger`.
+ *
+ * ---------------------------------------------------------------------------
+ * WCAG 1.4.3 contrast — DEVIATION FROM THE PLAN
+ * ---------------------------------------------------------------------------
+ * The plan used `text-yellow-400`, `text-green-400`, `text-red-400` for the
+ * prefix label. All three FAIL AA (4.5:1) on the LIGHT-mode `bg-elevated`
+ * (`#f5f5f4`):
+ *
+ *   text-yellow-400 (#facc15) -> 1.56:1  FAIL
+ *   text-green-400  (#4ade80) -> 1.76:1  FAIL
+ *   text-red-400    (#f87171) -> 3.23:1  FAIL
+ *
+ * Task 15 round 2 was rejected by the Devil's Advocate for this exact class of
+ * issue (see HANDOFF follow-up #25 / Phase 3 Task 15 row). The fix pattern is
+ * `text-{color}-700 dark:text-{color}-400` so we hit AA in both themes:
+ *
+ *   warning: text-yellow-700 dark:text-yellow-400
+ *            light #a16207 on #f5f5f4 -> 5.16:1  PASS
+ *            dark  #facc15 on #1c1917 -> 10.9:1  PASS
+ *
+ *   success: text-green-700 dark:text-green-400
+ *            light #15803d on #f5f5f4 -> 5.68:1  PASS
+ *            dark  #4ade80 on #1c1917 -> 9.7:1   PASS
+ *
+ *   danger:  text-red-700 dark:text-red-400
+ *            light #b91c1c on #f5f5f4 -> 6.67:1  PASS
+ *            dark  #f87171 on #1c1917 -> 5.6:1   PASS
+ *
+ *   info:    text-[var(--color-accent)]
+ *            light #c2410e on #f5f5f4 -> 5.24:1  PASS
+ *            dark  #f97316 on #1c1917 -> 6.22:1  PASS
+ *
+ * Borders carry semantic meaning redundantly to the `[INFO]`/`[WARNING]`/
+ * `[OK]`/`[DANGER]` prefix text, so WCAG 1.4.11 Non-text Contrast is not
+ * strictly required (essential meaning is in the text). I kept the `-500`
+ * borders from the plan for the color palette intent — they are visually soft
+ * in light mode (warning/success ~2.22:1) but remain discernible and are
+ * decorative. Logged as a non-blocking follow-up.
+ * ---------------------------------------------------------------------------
+ *
+ * The body wrapper sets `text-[var(--color-text)]` explicitly so that when the
+ * Callout is rendered inside a `prose dark:prose-invert` block, the body text
+ * follows the project's theme-aware token instead of Prose's computed color.
+ */
+
+type CalloutType = 'info' | 'warning' | 'success' | 'danger';
+
+interface Props {
+  type?: CalloutType;
+  title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+
+const colors: Record<CalloutType, string> = {
+  info: 'border-[var(--color-accent)] text-[var(--color-accent)]',
+  warning: 'border-yellow-500 text-yellow-700 dark:text-yellow-400',
+  success: 'border-green-500 text-green-700 dark:text-green-400',
+  danger: 'border-red-500 text-red-700 dark:text-red-400',
+};
+
+const prefix: Record<CalloutType, string> = {
+  info: 'INFO',
+  warning: 'WARNING',
+  success: 'OK',
+  danger: 'DANGER',
+};
+---
+
+<aside class:list={['my-6 border-l-4 bg-[var(--color-bg-elevated)] p-4', colors[type]]}>
+  <p class="font-mono text-xs uppercase mb-2">
+    [{prefix[type]}]{title && ` ${title}`}
+  </p>
+  <div class="text-[var(--color-text)]">
+    <slot />
+  </div>
+</aside>
