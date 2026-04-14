@@ -1,0 +1,68 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../../components/Layout.astro';
+import { byLocale } from '../../../lib/content';
+import { type Locale } from '../../../lib/i18n';
+
+export async function getStaticPaths() {
+  const all = byLocale(await getCollection('work'), 'en');
+  return all.map((entry) => ({
+    params: {
+      locale: 'en',
+      slug: entry.id.replace('en/', '').replace(/\.mdx$/, ''),
+    },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const d = entry.data;
+const loc: Locale = 'en';
+---
+
+<Layout title={`${d.title} — Work`} description={d.description} locale={loc}>
+  <article class="mx-auto max-w-3xl px-6 py-24">
+    <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// {d.year} · {d.role}</p>
+    <h1 class="text-5xl font-display mb-4">{d.title}</h1>
+    <p class="text-xl text-[var(--color-text-muted)] mb-8">{d.tagline}</p>
+    <div class="flex flex-wrap gap-2 font-mono text-xs mb-12">
+      {
+        d.stack.map((t) => (
+          <span class="px-2 py-1 border border-[var(--color-border)] text-[var(--color-text-dim)]">
+            {t}
+          </span>
+        ))
+      }
+    </div>
+    <div class="prose prose-invert max-w-none text-[var(--color-text-muted)] leading-relaxed">
+      <Content />
+    </div>
+    {
+      (d.links.live || d.links.github) && (
+        <div class="mt-12 flex gap-4 font-mono text-sm">
+          {d.links.live && (
+            <a
+              href={d.links.live}
+              rel="noopener noreferrer"
+              target="_blank"
+              class="text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            >
+              → Live
+            </a>
+          )}
+          {d.links.github && (
+            <a
+              href={d.links.github}
+              rel="noopener noreferrer"
+              target="_blank"
+              class="text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            >
+              → GitHub
+            </a>
+          )}
+        </div>
+      )
+    }
+  </article>
+</Layout>
