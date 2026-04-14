@@ -1,0 +1,39 @@
+---
+import { localizedPath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+
+const nav = [
+  { key: 'work' as const, label: locale === 'es' ? 'Trabajo' : 'Work' },
+  { key: 'blog' as const, label: 'Writing' },
+  { key: 'uses' as const, label: 'Uses' },
+  { key: 'about' as const, label: locale === 'es' ? 'Sobre mí' : 'About' },
+  { key: 'contact' as const, label: locale === 'es' ? 'Contacto' : 'Contact' },
+];
+---
+
+<header class="border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+  <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+    <a
+      href={localizedPath('home', locale)}
+      class="font-mono text-xs uppercase tracking-widest text-[var(--color-text)]"
+    >
+      FACUNDO.DEV
+    </a>
+    <nav class="flex items-center gap-6 text-sm">
+      {
+        nav.map((item) => (
+          <a
+            href={localizedPath(item.key, locale)}
+            class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] transition-colors"
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>
