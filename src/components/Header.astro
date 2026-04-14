@@ -1,11 +1,43 @@
 ---
+import { getCollection } from 'astro:content';
 import { localizedPath, type Locale } from '../lib/i18n';
+import { findTranslation } from '../lib/translations';
+import LanguageSwitcher from './islands/LanguageSwitcher.tsx';
 import ThemeToggle from './islands/ThemeToggle.tsx';
 
 interface Props {
   locale: Locale;
+  currentDocId?: string;
+  currentCollection?: 'blog' | 'work';
 }
-const { locale } = Astro.props;
+const { locale, currentDocId, currentCollection } = Astro.props;
+
+const other: Locale = locale === 'es' ? 'en' : 'es';
+
+// Resolve a sibling translation for the current doc (if any) so the
+// language switcher can deep-link across locales. Empty collections and
+// missing siblings both collapse to `null`, in which case the island falls
+// back to `targetHomePath`.
+type TranslatableEntry = { id: string; data: { lang: Locale; translationId: string } };
+let targetPath: string | null = null;
+
+if (currentDocId && currentCollection) {
+  let all: TranslatableEntry[] = [];
+  if (currentCollection === 'blog') {
+    all = await getCollection('blog');
+  } else if (currentCollection === 'work') {
+    all = await getCollection('work');
+  }
+  const current = all.find((d) => d.id === currentDocId);
+  if (current) {
+    const sibling = findTranslation(current, all, other);
+    if (sibling) {
+      const slug = sibling.id.replace(`${other}/`, '').replace(/\.mdx$/, '');
+      const key = currentCollection === 'blog' ? 'blog' : 'work';
+      targetPath = localizedPath(key, other, slug);
+    }
+  }
+}
 
 const nav = [
   { key: 'work' as const, label: locale === 'es' ? 'Trabajo' : 'Work' },
@@ -45,6 +77,12 @@ const nav = [
         ))
       }
       <ThemeToggle client:load />
+      <LanguageSwitcher
+        client:load
+        currentLocale={locale}
+        targetPath={targetPath}
+        targetHomePath={localizedPath('home', other)}
+      />
     </nav>
   </div>
 </header>

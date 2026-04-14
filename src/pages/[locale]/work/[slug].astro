@@ -21,7 +21,13 @@ const d = entry.data;
 const loc: Locale = 'en';
 ---
 
-<Layout title={`${d.title} — Work`} description={d.description} locale={loc}>
+<Layout
+  title={`${d.title} — Work`}
+  description={d.description}
+  locale={loc}
+  currentDocId={entry.id}
+  currentCollection="work"
+>
   <article class="mx-auto max-w-3xl px-6 py-24">
     <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// {d.year} · {d.role}</p>
     <h1 class="text-5xl font-display mb-4">{d.title}</h1>

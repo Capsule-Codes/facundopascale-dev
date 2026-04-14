@@ -8,9 +8,11 @@ interface Props {
   title: string;
   description: string;
   locale: Locale;
+  currentDocId?: string;
+  currentCollection?: 'blog' | 'work';
 }
 
-const { title, description, locale } = Astro.props;
+const { title, description, locale, currentDocId, currentCollection } = Astro.props;
 ---
 
 <!doctype html>
@@ -37,10 +39,35 @@ const { title, description, locale } = Astro.props;
     </script>
   </head>
   <body class="min-h-screen flex flex-col">
-    <Header locale={locale} />
+    <Header
+      locale={locale}
+      {...currentDocId !== undefined ? { currentDocId } : {}}
+      {...currentCollection !== undefined ? { currentCollection } : {}}
+    />
     <main id="main" class="flex-1">
       <slot />
     </main>
     <Footer locale={locale} />
+    <script is:inline>
+      (function () {
+        try {
+          if (sessionStorage.getItem('missing-translation') !== '1') return;
+          sessionStorage.removeItem('missing-translation');
+          const t = document.createElement('div');
+          t.textContent =
+            document.documentElement.lang === 'es'
+              ? 'Esta página aún no está traducida.'
+              : "This page isn't translated yet.";
+          t.style.cssText =
+            'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--color-bg-elevated);border:1px solid var(--color-accent);padding:10px 18px;font-family:var(--font-mono);font-size:12px;z-index:1000';
+          document.body.appendChild(t);
+          setTimeout(function () {
+            t.remove();
+          }, 4000);
+        } catch {
+          /* ignore: sessionStorage unavailable */
+        }
+      })();
+    </script>
   </body>
 </html>

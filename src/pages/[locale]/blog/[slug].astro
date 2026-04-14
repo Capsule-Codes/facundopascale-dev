@@ -32,6 +32,8 @@ const rt = (entry.data as unknown as { readingTime?: number }).readingTime;
   title={`${entry.data.title} — Facundo Pascale`}
   description={entry.data.description}
   locale={loc}
+  currentDocId={entry.id}
+  currentCollection="blog"
 >
   <div class="mx-auto max-w-3xl px-6 py-24">
     <Toc headings={headings} locale={loc} />
