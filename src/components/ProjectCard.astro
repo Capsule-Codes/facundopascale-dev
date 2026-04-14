@@ -1,0 +1,40 @@
+---
+import { localizedPath, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  slug: string;
+  title: string;
+  tagline: string;
+  stack: string[];
+  year: number;
+}
+
+const { locale, slug, title, tagline, stack, year } = Astro.props;
+---
+
+<a
+  href={localizedPath('work', locale, slug)}
+  class="group block border border-[var(--color-border)] p-6 hover:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] transition-colors"
+>
+  <div class="flex items-baseline justify-between mb-2">
+    <h3
+      class="text-xl font-display font-medium text-[var(--color-text)] group-hover:text-[var(--color-accent)]"
+    >
+      {title}
+    </h3>
+    <span class="font-mono text-xs text-[var(--color-text-dim)]">{year}</span>
+  </div>
+  <p class="text-[var(--color-text-muted)] mb-4">{tagline}</p>
+  <div class="flex flex-wrap gap-2 font-mono text-xs">
+    {
+      stack
+        .slice(0, 6)
+        .map((tech) => (
+          <span class="px-2 py-1 border border-[var(--color-border)] text-[var(--color-text-dim)]">
+            {tech}
+          </span>
+        ))
+    }
+  </div>
+</a>

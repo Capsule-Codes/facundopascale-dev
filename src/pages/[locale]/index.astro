@@ -1,6 +1,10 @@
 ---
+import { getCollection } from 'astro:content';
 import Layout from '../../components/Layout.astro';
-import { isLocale, type Locale } from '../../lib/i18n';
+import PostCard from '../../components/PostCard.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { isLocale, type Locale, localizedPath } from '../../lib/i18n';
+import { filterPublished, byLocale, sortByDate } from '../../lib/content';
 
 export function getStaticPaths() {
   return [{ params: { locale: 'es' } }, { params: { locale: 'en' } }];
@@ -8,14 +12,127 @@ export function getStaticPaths() {
 
 const { locale } = Astro.params;
 if (!locale || !isLocale(locale)) return Astro.redirect('/');
+const loc: Locale = locale;
+
+const allBlog = await getCollection('blog');
+const allWork = await getCollection('work');
+
+const recentPosts = sortByDate(filterPublished(byLocale(allBlog, loc))).slice(0, 4);
+const featuredWork = byLocale(allWork, loc)
+  .filter((w) => w.data.featured)
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 3);
+
+const copy = {
+  es: {
+    tagline: '// senior architect · 15y',
+    headline1: 'Construyo',
+    headlineAccent: 'software serio',
+    headline2: '.',
+    sub: 'Frontend architect obsesionado con fundamentos. Mentoreo devs. Fundador de Capsule Codes.',
+    ctaWork: '→ Ver trabajo',
+    ctaBlog: '→ Leer el blog',
+    workTitle: 'Trabajo destacado',
+    workAll: '→ Ver todo el trabajo',
+    writingTitle: 'Últimos artículos',
+    writingAll: '→ Ver todos los artículos',
+  },
+  en: {
+    tagline: '// senior architect · 15y',
+    headline1: 'I build',
+    headlineAccent: 'serious software',
+    headline2: '.',
+    sub: 'Frontend architect obsessed with fundamentals. I mentor devs. Founder of Capsule Codes.',
+    ctaWork: '→ See the work',
+    ctaBlog: '→ Read the blog',
+    workTitle: 'Featured work',
+    workAll: '→ See all work',
+    writingTitle: 'Latest writing',
+    writingAll: '→ See all posts',
+  },
+}[loc];
 ---
 
-<Layout title="Facundo Pascale" description="Senior software architect" locale={locale as Locale}>
-  <main style="padding: 4rem; max-width: 600px; margin: 0 auto;">
-    <h1 style="font-size: 4rem; margin-bottom: 1rem;">Construyo software serio.</h1>
-    <p style="color: var(--color-text-muted);">
-      Fonts and tokens smoke test — locale: {locale}
-    </p>
-    <p style="color: var(--color-accent); font-family: var(--font-mono);">→ accent check</p>
+<Layout title="Facundo Pascale — Senior Software Architect" description={copy.sub} locale={loc}>
+  <main class="mx-auto max-w-5xl px-6">
+    <section class="py-24 md:py-32">
+      <p class="font-mono text-xs text-[var(--color-accent)] mb-4">{copy.tagline}</p>
+      <h1 class="text-5xl md:text-7xl leading-none mb-6">
+        {copy.headline1}<br />
+        <span class="text-[var(--color-accent)]">{copy.headlineAccent}</span>{copy.headline2}
+      </h1>
+      <p class="text-lg text-[var(--color-text-muted)] max-w-xl mb-8">{copy.sub}</p>
+      <div class="flex flex-wrap gap-4 font-mono text-sm">
+        <a
+          href={localizedPath('work', loc)}
+          class="bg-[var(--color-accent)] text-[var(--color-bg)] px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        >
+          {copy.ctaWork}
+        </a>
+        <a
+          href={localizedPath('blog', loc)}
+          class="border border-[var(--color-border)] px-4 py-2 hover:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+        >
+          {copy.ctaBlog}
+        </a>
+      </div>
+    </section>
+
+    {
+      featuredWork.length > 0 && (
+        <section class="py-16 border-t border-[var(--color-border)]">
+          <h2 class="text-3xl font-display mb-8">{copy.workTitle}</h2>
+          <div class="grid gap-4 md:grid-cols-3">
+            {featuredWork.map((w) => (
+              <ProjectCard
+                locale={loc}
+                slug={w.id.replace(`${loc}/`, '').replace(/\.mdx$/, '')}
+                title={w.data.title}
+                tagline={w.data.tagline}
+                stack={w.data.stack}
+                year={w.data.year}
+              />
+            ))}
+          </div>
+          <a
+            href={localizedPath('work', loc)}
+            class="inline-block mt-8 font-mono text-sm text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          >
+            {copy.workAll}
+          </a>
+        </section>
+      )
+    }
+
+    {
+      recentPosts.length > 0 && (
+        <section class="py-16 border-t border-[var(--color-border)]">
+          <h2 class="text-3xl font-display mb-8">{copy.writingTitle}</h2>
+          {recentPosts.map((p) => {
+            const slug = p.id.replace(`${loc}/`, '').replace(/\.mdx$/, '');
+            // readingTime is attached by the remark plugin at build time but NOT in the Zod schema,
+            // so it lives on the frontmatter output. We read it defensively here.
+            const rt = (p.data as unknown as { readingTime?: number }).readingTime;
+            return (
+              <PostCard
+                locale={loc}
+                slug={slug}
+                title={p.data.title}
+                description={p.data.description}
+                publishedAt={p.data.publishedAt}
+                readingTime={rt}
+                tags={p.data.tags}
+              />
+            );
+          })}
+          <a
+            href={localizedPath('blog', loc)}
+            class="inline-block mt-8 font-mono text-sm text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+          >
+            {copy.writingAll}
+          </a>
+        </section>
+      )
+    }
   </main>
 </Layout>
