@@ -1,7 +1,7 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-14
-**Current commit:** `(Task 16 pending commit — update after)`
+**Current commit:** `eae8408`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
@@ -102,7 +102,7 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 
 | # | Task | Commits | Notes |
 |---|---|---|---|
-| 16 | Shiki dual-theme config + CodeBlock wrapper | `(pending)` | Dual themes via `themes: { light: 'vitesse-light', dark: 'vesper' }` + `defaultColor: false` in `astro.config.ts`. Every Shiki token carries `--shiki-light`/`--shiki-dark` vars; the visible color is chosen by a CSS bridge in `src/styles/global.css` keyed on `:root[data-theme='light']` (dark is the default). `src/components/mdx/CodeBlock.astro` is a **manual opt-in wrapper** (not an `mdxComponents` auto-override — that's deferred to Task 17) with a `lang` label + a copy-to-clipboard button. Uses `text-muted` (NOT `text-dim`, respecting Open Concern #19) and the project-standard `focus-visible:outline-*-[var(--color-accent)]` focus ring. Button reveals on both `group-hover:opacity-100` and `focus-visible:opacity-100`/`group-focus-within:opacity-100` so keyboard users can find it. Copy script is a plain `<script>` (deduped & bundled as `<script type="module">` inline by Astro) with `instanceof HTMLButtonElement` narrowing. Smoke-tested with a temp MDX page — inspected dist HTML to confirm: dual CSS vars on tokens, correct CodeBlock DOM, copy script inlined, multi-instance on the same page OK. Smoke test files removed before commit. `aria-label="Copy code"` hardcoded English per the same precedent as ThemeToggle/LanguageSwitcher — see new follow-up #27. |
+| 16 | Shiki dual-theme config + CodeBlock wrapper | `eae8408` | Dual themes via `themes: { light: 'vitesse-light', dark: 'vesper' }` + `defaultColor: false` in `astro.config.ts`. Every Shiki token carries `--shiki-light`/`--shiki-dark` vars; the visible color is chosen by a CSS bridge in `src/styles/global.css` keyed on `:root[data-theme='light']` (dark is the default). `src/components/mdx/CodeBlock.astro` is a **manual opt-in wrapper** (not an `mdxComponents` auto-override — that's deferred to Task 17) with a `lang` label + a copy-to-clipboard button. Uses `text-muted` (NOT `text-dim`, respecting Open Concern #19) and the project-standard `focus-visible:outline-*-[var(--color-accent)]` focus ring. Button reveals on both `group-hover:opacity-100` and `focus-visible:opacity-100`/`group-focus-within:opacity-100` so keyboard users can find it. Copy script is a plain `<script>` (deduped & bundled as `<script type="module">` inline by Astro) with `instanceof HTMLButtonElement` narrowing. Smoke-tested with a temp MDX page — inspected dist HTML to confirm: dual CSS vars on tokens, correct CodeBlock DOM, copy script inlined, multi-instance on the same page OK. Smoke test files removed before commit. `aria-label="Copy code"` hardcoded English per the same precedent as ThemeToggle/LanguageSwitcher — see new follow-up #27. |
 
 ### Phase 3 (cont.) — Contact form + Actions
 
