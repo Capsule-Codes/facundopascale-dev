@@ -30,7 +30,21 @@ export default defineConfig({
         wrap: true,
       },
     }),
-    sitemap(),
+    // Sitemap with i18n alternates. `@astrojs/sitemap` v3.7 expects the
+    // shape `{ defaultLocale, locales: Record<string, string> }` where each
+    // value is the hreflang code. Verified against
+    // `node_modules/@astrojs/sitemap/dist/index.d.ts` (`SitemapOptions.i18n`).
+    // With this config the integration emits `<xhtml:link rel="alternate">`
+    // entries on every URL that has a locale-prefixed counterpart.
+    sitemap({
+      i18n: {
+        defaultLocale: 'es',
+        locales: {
+          es: 'es-AR',
+          en: 'en-US',
+        },
+      },
+    }),
   ],
 
   vite: {
