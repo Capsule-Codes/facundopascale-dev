@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import { type Locale } from '../lib/i18n';
+import { buildOgSlug, buildOgUrl, DEFAULT_OG_SLUG } from '../lib/og';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 
@@ -13,6 +14,28 @@ interface Props {
 }
 
 const { title, description, locale, currentDocId, currentCollection } = Astro.props;
+
+// Resolve the OG image URL for this page. The slug MUST match the one the
+// `src/pages/og/[...slug].png.ts` endpoint emits — `buildOgSlug` is the
+// single source of truth for that convention.
+//
+// When the current page is a content entry (blog post or work case study),
+// we derive the slug from `currentDocId` + `currentCollection`. Otherwise
+// we fall back to the locale-aware default image (`/og/default/<loc>.png`),
+// which the endpoint also prerenders.
+//
+// Under strictest TS, `Astro.site` is typed optional even though the project
+// sets it in `astro.config.ts`. `buildOgUrl` returns `null` in that case and
+// we skip the og:image tag rather than emit a relative URL — LinkedIn/Slack
+// require absolute URLs for previews to render.
+const ogSlug =
+  currentDocId && currentCollection
+    ? buildOgSlug({ id: currentDocId, collection: currentCollection, locale })
+    : `${DEFAULT_OG_SLUG}/${locale}`;
+const ogImageUrl = buildOgUrl(ogSlug, Astro.site);
+const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : null;
+const ogImageAlt =
+  locale === 'es' ? `Imagen de portada para: ${title}` : `Cover image for: ${title}`;
 ---
 
 <!doctype html>
@@ -23,6 +46,35 @@ const { title, description, locale, currentDocId, currentCollection } = Astro.pr
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    <meta property="og:type" content={currentCollection === 'blog' ? 'article' : 'website'} />
+    <meta property="og:site_name" content="Facundo Pascale" />
+    <meta property="og:locale" content={locale === 'es' ? 'es_AR' : 'en_US'} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+    {
+      ogImageUrl && (
+        <>
+          <meta property="og:image" content={ogImageUrl} />
+          <meta property="og:image:type" content="image/png" />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:image:alt" content={ogImageAlt} />
+        </>
+      )
+    }
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {
+      ogImageUrl && (
+        <>
+          <meta name="twitter:image" content={ogImageUrl} />
+          <meta name="twitter:image:alt" content={ogImageAlt} />
+        </>
+      )
+    }
     <link
       rel="alternate"
       type="application/rss+xml"
