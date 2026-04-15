@@ -1,0 +1,63 @@
+---
+// 404 — language-detection strategy.
+//
+// Under `output: 'static'`, this page is prerendered ONCE at build time.
+// There is no runtime `Astro.request` with real headers: `accept-language`
+// would always be `''` and `locale` would always be `'es'`. That makes the
+// plan's `Astro.request.headers.get('accept-language')` a NO-OP here.
+//
+// Strategy chosen: **(a) client-side language swap**. We render ES as the
+// default (so `lang="es"` is correct for screen readers out of the box, and
+// the locale matches `DEFAULT_LOCALE`) and a tiny `is:inline` script swaps
+// the title, subtitle, and home link to EN when `navigator.language` starts
+// with `en`. The FOUC is a single frame — the script runs before paint on
+// modern browsers because it mutates DOM during head/body parse.
+//
+// Why NOT split per-locale 404s (`/es/404.astro` + `/en/404.astro`): Vercel's
+// static adapter only routes unknown paths to the single top-level 404.html
+// (verified in `node_modules/@astrojs/vercel/dist/index.js:327` where the
+// adapter looks up the route with `pathname === "/404"`). Per-locale 404s
+// would NOT be served for out-of-locale misses.
+
+import Layout from '../components/Layout.astro';
+
+const title = 'Página no encontrada';
+const description = 'La página que estás buscando no existe o se movió de lugar.';
+---
+
+<Layout title={`404 — ${title}`} description={description} locale="es">
+  <div class="mx-auto max-w-2xl px-6 py-32 text-center">
+    <p class="font-mono text-xs text-[var(--color-accent)] mb-4">// 404</p>
+    <h1 id="fp-404-title" class="text-6xl font-display mb-4">Página no encontrada</h1>
+    <p id="fp-404-sub" class="text-[var(--color-text-muted)] mb-8">Se fue de viaje y no volvió.</p>
+    <a
+      id="fp-404-home"
+      href="/es"
+      class="font-mono text-sm text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+    >
+      → Volver al home
+    </a>
+  </div>
+  <script is:inline>
+    (function () {
+      try {
+        const lang = (navigator.language || '').toLowerCase();
+        if (!lang.startsWith('en')) return;
+        document.documentElement.lang = 'en';
+        const t = document.getElementById('fp-404-title');
+        const s = document.getElementById('fp-404-sub');
+        const h = document.getElementById('fp-404-home');
+        if (t) t.textContent = 'Page not found';
+        if (s) s.textContent = 'It went on a trip and never came back.';
+        if (h) {
+          h.setAttribute('href', '/en');
+          h.textContent = '\u2192 Back to home';
+        }
+        const titleEl = document.querySelector('title');
+        if (titleEl) titleEl.textContent = '404 — Page not found';
+      } catch {
+        /* ignore: navigator unavailable */
+      }
+    })();
+  </script>
+</Layout>
