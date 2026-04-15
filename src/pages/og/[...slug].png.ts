@@ -23,10 +23,12 @@ import { LOCALES, type Locale } from '../../lib/i18n';
  *       asset.
  *   (b) Commit a small Fraunces TTF to `src/assets/og/`. Chosen —
  *       deterministic, under 75 KB per weight, and NOT under `public/` so
- *       the raw font is not served to the web. Files are read via
- *       `fileURLToPath(new URL(..., import.meta.url))` which works in both
- *       the dev server and the production build without touching
- *       `process.cwd()`.
+ *       the raw font is not served to the web. Files are resolved from
+ *       `process.cwd()` rather than `import.meta.url`: Vite rewrites
+ *       `import.meta.url` during the server-bundle step and the TTFs are
+ *       never emitted to `dist/server/`, so a URL-based resolution fails
+ *       at prerender time. See the `FONT_DIR` block below for the inline
+ *       rationale.
  *   (c) Pass no `fonts` array and let `@vercel/og`'s bundled Geist Regular
  *       take over. Fine as a fallback, but the site's brand is typography-
  *       forward and Fraunces is the display face — the OG image should
@@ -131,6 +133,7 @@ export async function getStaticPaths(): Promise<
           collection: 'work',
           data: {
             title: entry.data.title,
+            description: entry.data.description,
             tagline: entry.data.tagline,
             lang: locale,
           },
@@ -169,7 +172,13 @@ export const GET: APIRoute = async ({ props }) => {
 
   const fallback = DEFAULT_COPY[locale];
   const title = entry?.data.title ?? fallback.title;
-  const subtitle = entry?.data.description ?? entry?.data.tagline ?? fallback.subtitle;
+  // Work entries carry BOTH a long `description` and a punchy `tagline`; the
+  // OG card has limited room so prefer the tagline. Blog entries only have
+  // `description`, and the fallback catches the no-entry case.
+  const subtitle =
+    entry?.collection === 'work'
+      ? (entry.data.tagline ?? entry.data.description ?? fallback.subtitle)
+      : (entry?.data.description ?? fallback.subtitle);
 
   const [fraunces, frauncesBold] = await Promise.all([
     fs.readFile(FRAUNCES_REGULAR_PATH),
