@@ -17,8 +17,23 @@ const PATHS = {
 
 export type PageKey = keyof typeof PATHS;
 
+/**
+ * Build a site-rooted path for a given page key and locale, always returning
+ * the trailing-slash form (e.g. `/es/`, `/en/about/`, `/es/blog/my-post/`).
+ *
+ * Why trailing slash: Astro's static output materializes every page as
+ * `dist/.../index.html`, which browsers and search engines canonicalize to
+ * the trailing-slash URL. The `<link rel="canonical">` and `<meta
+ * property="og:url">` tags emitted by Layout.astro are derived from
+ * `Astro.url.pathname`, which includes that trailing slash. The hreflang
+ * cluster MUST agree with the canonical — Google's guide is explicit: the
+ * canonical URL must be one of the hrefs listed in the hreflang cluster,
+ * otherwise the entire cluster is ignored. Emitting the trailing-slash form
+ * here keeps every consumer (Layout canonical, hreflang, anchors, RSS,
+ * language switcher) in lockstep with no per-caller glue.
+ */
 export function localizedPath(key: PageKey, locale: Locale, slug?: string): string {
   const segment = PATHS[key][locale];
   const base = segment ? `/${locale}/${segment}` : `/${locale}`;
-  return slug ? `${base}/${slug}` : base;
+  return slug ? `${base}/${slug}/` : `${base}/`;
 }
