@@ -175,10 +175,18 @@ export const GET: APIRoute = async ({ props }) => {
   // Work entries carry BOTH a long `description` and a punchy `tagline`; the
   // OG card has limited room so prefer the tagline. Blog entries only have
   // `description`, and the fallback catches the no-entry case.
-  const subtitle =
+  const rawSubtitle =
     entry?.collection === 'work'
       ? (entry.data.tagline ?? entry.data.description ?? fallback.subtitle)
       : (entry?.data.description ?? fallback.subtitle);
+  // Overflow guard: at 30px Fraunces in a 1040px column (1200 − 160 padding),
+  // roughly 45-55 chars fit per line. 3 lines ≈ 135-165 chars. We cap at 160
+  // chars + ellipsis so a worst-case 200-char blog description cannot push
+  // the subtitle into the footer. String-level cap is chosen over Satori CSS
+  // line-clamp because Satori's CSS subset is version-dependent and a hard
+  // truncation is 100% deterministic across any `@vercel/og` version.
+  const subtitle =
+    rawSubtitle.length > 160 ? `${rawSubtitle.slice(0, 159).trimEnd()}…` : rawSubtitle;
 
   const [fraunces, frauncesBold] = await Promise.all([
     fs.readFile(FRAUNCES_REGULAR_PATH),
