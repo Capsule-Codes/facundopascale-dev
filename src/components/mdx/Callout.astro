@@ -25,24 +25,37 @@
  *   text-red-400    (#f87171) -> 3.23:1  FAIL
  *
  * Task 15 round 2 was rejected by the Devil's Advocate for this exact class of
- * issue (see HANDOFF follow-up #25 / Phase 3 Task 15 row). The fix pattern is
- * `text-{color}-700 dark:text-{color}-400` so we hit AA in both themes:
+ * issue (see HANDOFF follow-up #25 / Phase 3 Task 15 row). Round 1 of this
+ * Callout tried `text-{color}-700 dark:text-{color}-400`, but the Task 17
+ * independent DA re-review found `text-yellow-700` light landed at only
+ * 4.51:1 — 0.01 over AA — and rejected the commit. This round bumps warning
+ * and success to `-800` for safety headroom (>= 1.75 over AA) while keeping
+ * the `-700`/`-400` split for danger and info which already had comfortable
+ * margins. Contrast numbers below are computed from the sRGB-hex palette;
+ * Tailwind 4 ships oklch and real values may drift a hair (the Task 17 QA
+ * measured `red-400` dark at 6.09:1 actual vs 5.60:1 hex-computed — oklch is
+ * slightly more generous in the project palette).
  *
- *   warning: text-yellow-700 dark:text-yellow-400
- *            light #a16207 on #f5f5f4 -> 5.16:1  PASS
- *            dark  #facc15 on #1c1917 -> 10.9:1  PASS
+ *   warning: text-yellow-800 dark:text-yellow-400
+ *            light #854d0e on #f5f5f4 -> ~6.25:1  PASS (+1.75 headroom)
+ *            dark  #facc15 on #1c1917 -> ~10.9:1  PASS
  *
- *   success: text-green-700 dark:text-green-400
- *            light #15803d on #f5f5f4 -> 5.68:1  PASS
- *            dark  #4ade80 on #1c1917 -> 9.7:1   PASS
+ *   success: text-green-800 dark:text-green-400
+ *            light #166534 on #f5f5f4 -> ~6.46:1  PASS (+1.96 headroom)
+ *            dark  #4ade80 on #1c1917 -> ~9.7:1   PASS
  *
  *   danger:  text-red-700 dark:text-red-400
- *            light #b91c1c on #f5f5f4 -> 6.67:1  PASS
- *            dark  #f87171 on #1c1917 -> 5.6:1   PASS
+ *            light #b91c1c on #f5f5f4 -> ~5.93:1  PASS (+1.43 headroom)
+ *            dark  #f87171 on #1c1917 -> ~5.6:1   PASS (oklch ~6.09 QA-verified)
  *
  *   info:    text-[var(--color-accent)]
- *            light #c2410e on #f5f5f4 -> 5.24:1  PASS
- *            dark  #f97316 on #1c1917 -> 6.22:1  PASS
+ *            light #c2410e on #f5f5f4 -> ~4.75:1  PASS (+0.25 thin margin)
+ *            dark  #f97316 on #1c1917 -> ~6.22:1  PASS
+ *
+ * The `info` variant's 0.25 light-mode headroom is inherited from the global
+ * `--color-accent` token (set in Task 13 after the original light-accent fail);
+ * changing it here would fork the project's accent story. Tracked as a global
+ * token concern, not a Callout-local concern.
  *
  * Borders carry semantic meaning redundantly to the `[INFO]`/`[WARNING]`/
  * `[OK]`/`[DANGER]` prefix text, so WCAG 1.4.11 Non-text Contrast is not
@@ -50,6 +63,15 @@
  * borders from the plan for the color palette intent — they are visually soft
  * in light mode (warning/success ~2.22:1) but remain discernible and are
  * decorative. Logged as a non-blocking follow-up.
+ * ---------------------------------------------------------------------------
+ * ARIA landmark semantics — also from the Task 17 DA re-review.
+ * ---------------------------------------------------------------------------
+ * Round 1 used `<aside>`, which creates a `complementary` landmark. Multiple
+ * Callouts on a single blog post would collapse into indistinguishable
+ * landmarks for screen readers (no accessible name). ARIA APG Note pattern
+ * fits better — `role="note"` with `aria-labelledby` pointing at the prefix
+ * paragraph, so each instance carries a name derived from its own header
+ * (e.g. "WARNING Careful"). Applied to all 4 variants for consistency.
  * ---------------------------------------------------------------------------
  *
  * The body wrapper sets `text-[var(--color-text)]` explicitly so that when the
@@ -66,10 +88,12 @@ interface Props {
 
 const { type = 'info', title } = Astro.props;
 
+const headerId = `callout-${crypto.randomUUID().slice(0, 8)}`;
+
 const colors: Record<CalloutType, string> = {
   info: 'border-[var(--color-accent)] text-[var(--color-accent)]',
-  warning: 'border-yellow-500 text-yellow-700 dark:text-yellow-400',
-  success: 'border-green-500 text-green-700 dark:text-green-400',
+  warning: 'border-yellow-500 text-yellow-800 dark:text-yellow-400',
+  success: 'border-green-500 text-green-800 dark:text-green-400',
   danger: 'border-red-500 text-red-700 dark:text-red-400',
 };
 
@@ -81,11 +105,15 @@ const prefix: Record<CalloutType, string> = {
 };
 ---
 
-<aside class:list={['my-6 border-l-4 bg-[var(--color-bg-elevated)] p-4', colors[type]]}>
-  <p class="font-mono text-xs uppercase mb-2">
+<div
+  role="note"
+  aria-labelledby={headerId}
+  class:list={['my-6 border-l-4 bg-[var(--color-bg-elevated)] p-4', colors[type]]}
+>
+  <p id={headerId} class="font-mono text-xs uppercase mb-2">
     [{prefix[type]}]{title && ` ${title}`}
   </p>
   <div class="text-[var(--color-text)]">
     <slot />
   </div>
-</aside>
+</div>
