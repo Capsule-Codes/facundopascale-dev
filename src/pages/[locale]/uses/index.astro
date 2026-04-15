@@ -26,7 +26,12 @@ const title = entry?.data.title ?? fallbackTitle;
 const description = entry?.data.description ?? fallbackDescription;
 ---
 
-<Layout title={`${title} — Facundo Pascale`} description={description} locale={loc}>
+<Layout
+  title={`${title} — Facundo Pascale`}
+  description={description}
+  locale={loc}
+  currentPageKey="uses"
+>
   <div class="mx-auto max-w-3xl px-6 py-24">
     <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// uses</p>
     <h1 class="text-5xl font-display mb-8">{title}</h1>

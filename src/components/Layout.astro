@@ -1,7 +1,15 @@
 ---
+import { getCollection } from 'astro:content';
 import '../styles/global.css';
-import { type Locale } from '../lib/i18n';
+import { type Locale, type PageKey } from '../lib/i18n';
 import { buildOgSlug, buildOgUrl, DEFAULT_OG_SLUG } from '../lib/og';
+import {
+  computeHreflangPair,
+  X_DEFAULT_PATH,
+  type HreflangPair,
+  type PageDescriptor,
+} from '../lib/hreflang';
+import { findTranslation } from '../lib/translations';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 
@@ -9,11 +17,19 @@ interface Props {
   title: string;
   description: string;
   locale: Locale;
+  /**
+   * For static pages (home, about, work index, blog index, uses, contact)
+   * pass the matching `PageKey` so Layout can compute hreflang alternates
+   * via `localizedPath`. For collection entries (a blog post or a work case
+   * study) leave this undefined and pass `currentDocId` + `currentCollection`
+   * instead — Layout will resolve the sibling translation on its own.
+   */
+  currentPageKey?: PageKey;
   currentDocId?: string;
   currentCollection?: 'blog' | 'work';
 }
 
-const { title, description, locale, currentDocId, currentCollection } = Astro.props;
+const { title, description, locale, currentPageKey, currentDocId, currentCollection } = Astro.props;
 
 // Resolve the OG image URL for this page. The slug MUST match the one the
 // `src/pages/og/[...slug].png.ts` endpoint emits — `buildOgSlug` is the
@@ -36,6 +52,51 @@ const ogImageUrl = buildOgUrl(ogSlug, Astro.site);
 const canonicalUrl = Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : null;
 const ogImageAlt =
   locale === 'es' ? `Imagen de portada para: ${title}` : `Cover image for: ${title}`;
+
+// Hreflang alternates.
+//
+// We lean on the shared descriptor type from `src/lib/hreflang.ts` so the
+// pure branching logic (static vs collection, sibling-exists vs orphan) is
+// unit-tested in isolation. Layout only wires up Astro-specific bits:
+//   - reading the sibling slug via `findTranslation` / `getCollection` when
+//     `currentDocId` + `currentCollection` are set
+//   - converting the site-rooted path pair into absolute URLs with `Astro.site`
+//
+// Pages that don't pass any of the hreflang hints (e.g. one-off endpoints)
+// simply get no alternates — the canonical link above still anchors SEO.
+let hreflangPair: HreflangPair | null = null;
+
+if (currentPageKey) {
+  const descriptor: PageDescriptor = { kind: 'static', pageKey: currentPageKey };
+  hreflangPair = computeHreflangPair(descriptor);
+} else if (currentDocId && currentCollection) {
+  // Collection entry: resolve the sibling via `findTranslation`. If the
+  // current doc or its sibling is missing we emit NO hreflang (the orphan
+  // case documented in the plan — a blind regex replace would 404).
+  const all =
+    currentCollection === 'blog' ? await getCollection('blog') : await getCollection('work');
+  const current = all.find((d) => d.id === currentDocId);
+  if (current) {
+    const other: Locale = locale === 'es' ? 'en' : 'es';
+    const sibling = findTranslation(current, all, other);
+    const currentSlug = currentDocId.replace(`${locale}/`, '').replace(/\.mdx$/, '');
+    const siblingSlug = sibling ? sibling.id.replace(`${other}/`, '').replace(/\.mdx$/, '') : null;
+    hreflangPair = computeHreflangPair({
+      kind: 'collection',
+      collection: currentCollection,
+      currentLocale: locale,
+      currentSlug,
+      siblingSlug,
+    });
+  }
+}
+
+const hreflangHref = (path: string): string | null =>
+  Astro.site ? new URL(path, Astro.site).toString() : null;
+
+const hreflangEsHref = hreflangPair ? hreflangHref(hreflangPair.es) : null;
+const hreflangEnHref = hreflangPair ? hreflangHref(hreflangPair.en) : null;
+const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
 ---
 
 <!doctype html>
@@ -47,6 +108,15 @@ const ogImageAlt =
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    {
+      hreflangEsHref && hreflangEnHref && hreflangXDefaultHref && (
+        <>
+          <link rel="alternate" hreflang="es" href={hreflangEsHref} />
+          <link rel="alternate" hreflang="en" href={hreflangEnHref} />
+          <link rel="alternate" hreflang="x-default" href={hreflangXDefaultHref} />
+        </>
+      )
+    }
     <meta property="og:type" content={currentCollection === 'blog' ? 'article' : 'website'} />
     <meta property="og:site_name" content="Facundo Pascale" />
     <meta property="og:locale" content={locale === 'es' ? 'es_AR' : 'en_US'} />
