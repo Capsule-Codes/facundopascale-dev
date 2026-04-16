@@ -531,7 +531,7 @@ const socials = [
       {socials.map((s) => (
         <a href={s.href} class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)]" rel="me" target="_blank">{s.label}</a>
       ))}
-      <a href="https://capsule.codes" class="text-[var(--color-accent)] font-mono text-xs uppercase tracking-widest">→ Capsule Codes</a>
+      <a href="https://capsulecodes.com" class="text-[var(--color-accent)] font-mono text-xs uppercase tracking-widest">→ Capsule Codes</a>
     </div>
   </div>
 </footer>
