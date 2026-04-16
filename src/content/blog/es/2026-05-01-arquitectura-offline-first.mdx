@@ -1,0 +1,115 @@
+---
+title: Arquitectura offline-first en la práctica
+description: Cómo diseñar apps que funcionen sin red y sincronicen cuando vuelvan, sin escribir tu propio CRDT.
+publishedAt: 2026-05-01
+tags: ['arquitectura', 'mobile', 'offline-first']
+lang: es
+translationId: offline-first-2026-05
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+La mayoría de los devs piensan en offline-first como un feature: "agregamos cache y listo." No. Offline-first es una **decisión de arquitectura** que afecta cada capa de tu sistema, desde el schema de la base de datos hasta cómo resolvés conflictos entre dispositivos. Si la tomás tarde, vas a reescribir la mitad de la app.
+
+Lo sé porque lo viví. En [FitCoach](/es/work/fitcoach) — una app de coaching fitness donde los usuarios necesitan acceder a sus rutinas en el gimnasio, muchas veces sin señal — tomamos esta decisión desde el día uno. Y cambió todo.
+
+## SQLite como source of truth, no como cache
+
+El error más común es tratar la base de datos local como un mirror del servidor. "Primero leo del servidor, si falla leo del cache local." Eso no es offline-first. Eso es online-first con fallback.
+
+En una arquitectura offline-first real, **la base de datos local es la fuente de verdad**. Toda lectura sale de SQLite. Toda escritura va primero a SQLite. El servidor es un nodo de sincronización, no la autoridad.
+
+```
+UI → Zustand Store → SQLite (source of truth) → Sync Service → Supabase
+```
+
+¿Por qué? Porque si invertís la dirección, cada operación depende de la red. Y la red, en un gimnasio, en el subte, en un avión, no existe.
+
+## El patrón pendingSync / syncedAt
+
+Cada tabla en la base de datos tiene dos campos extra:
+
+```typescript
+{
+  pendingSync: boolean,  // ¿este registro cambió localmente y no se sincronizó?
+  syncedAt: timestamp    // ¿cuándo fue la última vez que se sincronizó con éxito?
+}
+```
+
+El flujo es simple:
+
+1. El usuario hace un cambio. Se guarda en SQLite con `pendingSync: true`.
+2. El sync service (cada 5 minutos o manual) lee todos los registros con `pendingSync: true`.
+3. Los sube a Supabase. Si tiene éxito, marca `pendingSync: false` y actualiza `syncedAt`.
+4. Después, baja cambios remotos y los hace upsert en SQLite.
+
+<Callout type="warning" title="Orden de sincronización">
+  Si tenés relaciones entre tablas, el orden de sync importa. No podés sincronizar ejercicios antes
+  que las rutinas que los contienen. En FitCoach el orden es: `profiles → trainer_clients → routines
+  → routine_days → exercises → exercise_logs`. Padre antes que hijo, siempre.
+</Callout>
+
+Este patrón es deliberadamente simple. No es un CRDT, no es un event log, no es un Merkle tree. Es un flag booleano y un timestamp. ¿Es perfecto? No. ¿Cubre el 95% de los casos reales? Sí.
+
+## Resolución de conflictos: last-write-wins
+
+"¿Pero qué pasa si dos dispositivos editan lo mismo?" Esta es la pregunta que paraliza a los equipos. La respuesta honesta: **depende del dominio**.
+
+En FitCoach, cada tipo de dato tiene un solo escritor. El entrenador crea rutinas, el cliente registra ejercicios. No hay conflicto real. Entonces la estrategia es la más simple posible: **last-write-wins** via upsert.
+
+```typescript
+await db
+  .insert(schema.routines)
+  .values({ ...remoteRoutine, pendingSync: false, syncedAt: new Date() })
+  .onConflictDoUpdate({
+    target: schema.routines.id,
+    set: { ...remoteRoutine, syncedAt: new Date() },
+  });
+```
+
+¿Es esto aceptable para un editor colaborativo en tiempo real? Ni en pedo. ¿Es correcto para una app donde el trainer y el client operan sobre datos distintos? Absolutamente.
+
+<Callout type="danger" title="No te pases de listo">
+  Si tu dominio tiene escritores múltiples sobre los mismos registros, last-write-wins te va a
+  causar pérdida de datos. En ese caso necesitás CRDTs (Automerge, Yjs) o un log de eventos con
+  merge manual. Pero no arranques por ahí — el 80% de las apps no lo necesitan, y la complejidad que
+  agregan es brutal.
+</Callout>
+
+## Cuándo offline-first es overkill
+
+No toda app necesita esto. Antes de embarrarte en la complejidad de sync bidireccional, preguntate:
+
+1. **¿Los usuarios realmente operan sin red?** Si tu app es un dashboard de analytics que solo se usa en la oficina, no necesitás offline-first. Necesitás un buen loading state.
+2. **¿Cuánto estado mutable hay?** Si la app es mayormente lectura (un catálogo, un blog reader), un service worker con cache-first te alcanza. No necesitás SQLite local.
+3. **¿Tenés escritores múltiples sobre los mismos datos?** Si la respuesta es sí, la complejidad de resolución de conflictos se multiplica exponencialmente. Pensalo dos veces.
+4. **¿Tu equipo puede mantener esto?** Sync bidireccional es código que rompe en silencio. Si no tenés tests automatizados y logging robusto, se te va a pudrir en producción sin que te des cuenta.
+
+## La estructura que funciona
+
+Si decidiste que sí, que tu app necesita offline-first, esta es la estructura que recomiendo:
+
+```
+lib/
+  db.ts           → Inicialización de SQLite + helpers
+  schema.ts       → Schema con campos de sync en cada tabla
+  syncService.ts  → Push (local→remote) + Pull (remote→local)
+
+stores/
+  syncStore.ts    → Estado de sync (isOnline, lastSync, isSyncing)
+  [domain]Store.ts → CRUD que lee/escribe solo en SQLite
+```
+
+La clave es que **los stores de dominio no saben que existe un servidor**. Leen y escriben SQLite. Punto. El sync service es un proceso aparte que reconcilia. Esta separación es lo que hace que la app funcione igual con o sin red.
+
+## Lo que me llevaría a la próxima app
+
+Si arrancara un proyecto offline-first de cero hoy, cambiaría dos cosas:
+
+1. **Agregaría un campo `version` a cada registro** para detectar conflictos antes del upsert, en lugar de asumir last-write-wins ciego.
+2. **Implementaría un log de operaciones local** para poder hacer retry granular en vez de re-sincronizar tablas enteras.
+
+Pero ojo: estas mejoras agregan complejidad. En FitCoach no las necesité porque el modelo de un-solo-escritor me lo permitió. Conocé tu dominio antes de sobre-ingenierar.
+
+La arquitectura offline-first no es glamorosa. No hay frameworks trendy que la resuelvan con un import. Es laburo de fontanería: tuberías, válvulas, y saber por dónde puede perder. Pero cuando tu usuario abre la app en el subte y todo funciona como si tuviera 5G, esa es la recompensa.

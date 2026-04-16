@@ -1,0 +1,114 @@
+---
+title: Offline-first architecture in practice
+description: How to design apps that work without a network and sync when they reconnect, without writing your own CRDT.
+publishedAt: 2026-05-01
+tags: ['architecture', 'mobile', 'offline-first']
+lang: en
+translationId: offline-first-2026-05
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+Most devs think of offline-first as a feature: "we'll add some caching and call it a day." No. Offline-first is an **architecture decision** that affects every layer of your system, from the database schema to how you resolve conflicts between devices. If you make it late, you'll rewrite half the app.
+
+I know this because I lived it. In [FitCoach](/en/work/fitcoach) — a fitness coaching app where users need to access their routines at the gym, often with no signal — we made this decision from day one. And it changed everything.
+
+## SQLite as source of truth, not as cache
+
+The most common mistake is treating the local database as a mirror of the server. "First read from the server, if it fails read from local cache." That's not offline-first. That's online-first with a fallback.
+
+In a real offline-first architecture, **the local database is the source of truth**. Every read comes from SQLite. Every write goes to SQLite first. The server is a sync node, not the authority.
+
+```
+UI → Zustand Store → SQLite (source of truth) → Sync Service → Supabase
+```
+
+Why? Because if you reverse the direction, every operation depends on the network. And the network, at a gym, on the subway, on a plane, doesn't exist.
+
+## The pendingSync / syncedAt pattern
+
+Every table in the database has two extra fields:
+
+```typescript
+{
+  pendingSync: boolean,  // has this record changed locally without syncing?
+  syncedAt: timestamp    // when was the last successful sync?
+}
+```
+
+The flow is straightforward:
+
+1. The user makes a change. It's saved to SQLite with `pendingSync: true`.
+2. The sync service (every 5 minutes or manual) reads all records with `pendingSync: true`.
+3. Pushes them to Supabase. On success, sets `pendingSync: false` and updates `syncedAt`.
+4. Then pulls remote changes and upserts them into SQLite.
+
+<Callout type="warning" title="Sync ordering matters">
+  If you have relationships between tables, sync order matters. You can't sync exercises before the
+  routines that contain them. In FitCoach the order is: `profiles → trainer_clients → routines →
+  routine_days → exercises → exercise_logs`. Parent before child, always.
+</Callout>
+
+This pattern is deliberately simple. It's not a CRDT, not an event log, not a Merkle tree. It's a boolean flag and a timestamp. Is it perfect? No. Does it cover 95% of real-world cases? Yes.
+
+## Conflict resolution: last-write-wins
+
+"But what happens if two devices edit the same thing?" This is the question that paralyzes teams. The honest answer: **it depends on the domain**.
+
+In FitCoach, each data type has a single writer. The trainer creates routines, the client logs exercises. There's no real conflict. So the strategy is the simplest possible: **last-write-wins** via upsert.
+
+```typescript
+await db
+  .insert(schema.routines)
+  .values({ ...remoteRoutine, pendingSync: false, syncedAt: new Date() })
+  .onConflictDoUpdate({
+    target: schema.routines.id,
+    set: { ...remoteRoutine, syncedAt: new Date() },
+  });
+```
+
+Is this acceptable for a real-time collaborative editor? Absolutely not. Is it correct for an app where the trainer and client operate on different data? Absolutely.
+
+<Callout type="danger" title="Don't over-engineer">
+  If your domain has multiple writers on the same records, last-write-wins will cause data loss. In
+  that case you need CRDTs (Automerge, Yjs) or an event log with manual merge. But don't start there
+  — 80% of apps don't need it, and the complexity it adds is brutal.
+</Callout>
+
+## When offline-first is overkill
+
+Not every app needs this. Before you dive into the complexity of bidirectional sync, ask yourself:
+
+1. **Do users actually operate without a network?** If your app is an analytics dashboard used only in the office, you don't need offline-first. You need a good loading state.
+2. **How much mutable state is there?** If the app is mostly reads (a catalog, a blog reader), a service worker with cache-first is enough. You don't need local SQLite.
+3. **Do you have multiple writers on the same data?** If yes, conflict resolution complexity multiplies exponentially. Think twice.
+4. **Can your team maintain this?** Bidirectional sync is code that breaks silently. If you don't have automated tests and robust logging, it will rot in production without you noticing.
+
+## The structure that works
+
+If you've decided that yes, your app needs offline-first, here's the structure I recommend:
+
+```
+lib/
+  db.ts           → SQLite initialization + helpers
+  schema.ts       → Schema with sync fields on every table
+  syncService.ts  → Push (local→remote) + Pull (remote→local)
+
+stores/
+  syncStore.ts    → Sync state (isOnline, lastSync, isSyncing)
+  [domain]Store.ts → CRUD that reads/writes only to SQLite
+```
+
+The key is that **domain stores don't know a server exists**. They read and write SQLite. Period. The sync service is a separate process that reconciles. This separation is what makes the app work the same with or without a network.
+
+## What I'd take to the next app
+
+If I were starting an offline-first project from scratch today, I'd change two things:
+
+1. **Add a `version` field to every record** to detect conflicts before upsert, instead of blindly assuming last-write-wins.
+2. **Implement a local operation log** for granular retry instead of re-syncing entire tables.
+
+But here's the thing: these improvements add complexity. In FitCoach I didn't need them because the single-writer model allowed it. Know your domain before you over-engineer.
+
+Offline-first architecture isn't glamorous. There are no trendy frameworks that solve it with a single import. It's plumbing work: pipes, valves, and knowing where it might leak. But when your user opens the app on the subway and everything works as if they had 5G — that's the payoff.
