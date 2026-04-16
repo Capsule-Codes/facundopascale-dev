@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1c1410"/>
+  <line x1="1040" y1="80" x2="1040" y2="550" stroke="#f97316" stroke-width="3"/>
+  <rect x="80" y="480" width="120" height="4" fill="#78716c"/>
+  <rect x="220" y="480" width="80" height="4" fill="#78716c"/>
+  <text x="80" y="300" font-family="sans-serif" font-size="72" font-weight="bold" fill="#fafaf9">Estudialo AI</text>
+  <text x="80" y="360" font-family="sans-serif" font-size="28" fill="#78716c">AI-powered education, not AI gimmicks</text>
+  <text x="80" y="560" font-family="sans-serif" font-size="16" fill="#78716c">Next.js 16 + Vercel AI SDK + Supabase + Stripe</text>
+</svg>

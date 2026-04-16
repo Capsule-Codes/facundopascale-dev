@@ -1,0 +1,58 @@
+---
+title: 'Festival Pro'
+tagline: 'Dos apps de un solo codebase con EAS Build'
+description: 'App mobile para festivales de música con arquitectura dual-variant, OTA updates y un solo codebase React Native + Expo que genera dos apps distintas para App Store y Google Play.'
+publishedAt: 2025-01-15
+stack:
+  - React Native
+  - Expo SDK 54
+  - TypeScript
+  - EAS Build
+  - Zustand
+  - React Query
+  - React Navigation
+  - Zod
+role: 'Mobile lead · Arquitectura'
+year: 2024
+links: {}
+coverImage: /images/work/festivalpro.svg
+lang: es
+translationId: festivalpro
+featured: true
+order: 1
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Los festivales de música necesitan apps dedicadas: grillas horarias, mapas, notificaciones de cambios de último momento. El quilombo era que cada festival quería su propia app con su branding, pero el 90% de la funcionalidad era idéntica. Mantener dos codebases paralelos es un delirio — bugs duplicados, features que llegan tarde a una versión, y deploy manual para cada plataforma.
+
+## La solución
+
+Armé una arquitectura **dual-variant** donde un solo repositorio React Native + Expo genera dos apps completamente distintas: **Festival Pro Schedules** y **Folk Alliance 2026**. Cada variante tiene su propio bundle identifier, ícono, splash screen, esquema de colores y configuración de notificaciones, pero comparten el 100% de la lógica de negocio.
+
+La clave está en `app.config.js`: un switch por `EXPO_PUBLIC_APP_VARIANT` que carga `festival.config.js` o `folk.config.js`. EAS Build maneja el resto — cada variante tiene sus propios profiles de development, staging y production con channels separados para OTA updates.
+
+Lo más piola es el sistema de OTA updates con `expo-updates`. Cuando hay un cambio en la grilla de un festival (algo que pasa TODO el tiempo), no necesito pasar por review de App Store. Pusheo un update al channel correspondiente y los usuarios lo reciben en la próxima apertura. Cada variante tiene su propio canal: `production-festival` y `production-folk`.
+
+## Stack y decisiones clave
+
+- **Expo SDK 54 + React Native 0.81**: Managed workflow con prebuild para tener acceso a native modules cuando hace falta
+- **EAS Build con 10 profiles**: development, preview, staging, production y local builds para cada variante — el `eas.json` tiene la configuración más detallada que vas a ver
+- **Zustand para estado**: Liviano y TypeScript-first. Para una app de consulta con datos que cambian poco, Redux era matar moscas con un cañón
+- **React Query para data fetching**: Cache inteligente de grillas horarias — los usuarios consultan el schedule 50 veces por día
+- **Shopify FlashList**: Las listas de artistas y eventos necesitan performance real, no FlatList vanilla
+- **Zod 4 para validación**: Los datos vienen de un CMS externo y no me fío de nada que no pase por un schema
+
+<Callout type="info" title="El truco del prebuild">
+  El script de prebuild renombra las carpetas `ios` y `android` por variante (`ios-festival`,
+  `android-folk`) para que convivan en el mismo repo sin pisarse. Es feo pero funciona impecable — y
+  la alternativa era mantener dos repos.
+</Callout>
+
+## Aprendizajes
+
+La versión Android de Folk Alliance va por el **versionCode 45** y la de Festival Pro por el **61**. Cada build que subís a las stores necesita un versionCode único incremental, y cuando tenés dos variantes en paralelo, perder la cuenta es más fácil de lo que parece.
+
+Lo que haría diferente: desde el día uno hubiera configurado los versionCode como variables de entorno en EAS en vez de hardcodearlos en los configs. Y dedicaría más tiempo al sistema de notificaciones — `expo-notifications` + `expo-background-task` para sincronizar cambios de último momento es donde más tiempo invertí iterando.

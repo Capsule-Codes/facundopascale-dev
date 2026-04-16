@@ -1,0 +1,61 @@
+---
+title: 'FitCoach'
+tagline: 'Offline-first sync across mobile and desktop'
+description: 'Fitness coaching platform with a Turborepo monorepo, Expo mobile app, and Tauri v2 desktop app. SQLite as source of truth with bidirectional sync against Supabase.'
+publishedAt: 2025-06-01
+stack:
+  - React Native
+  - Expo SDK 54
+  - Tauri v2
+  - Turborepo
+  - Drizzle ORM
+  - SQLite
+  - Supabase
+  - Zustand
+  - RevenueCat
+  - NativeWind
+role: 'Architect · Fullstack'
+year: 2025
+links: {}
+coverImage: /images/work/fitcoach.svg
+lang: en
+translationId: fitcoach
+featured: true
+order: 3
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Personal trainers need to create routines from their computers (big screen, keyboard, comfort) but their clients check them on their phones at the gym — where there's often no WiFi or mobile data is unreliable. Here's the thing: no fitness app solves both well — authoring on desktop and offline consumption on mobile.
+
+## The solution
+
+FitCoach is a monorepo with **Turborepo** and **pnpm workspaces** sharing a typed package across three apps: mobile (Expo), desktop (Tauri v2 + React + Vite), and a shared package (`@fitcoach/shared`) with types, constants, validation, and i18n.
+
+The most important decision in the project: **SQLite is the source of truth, not Supabase**. Everything gets written to local SQLite with Drizzle ORM first, the UI updates instantly (optimistic UI), and a background sync service pushes changes to Supabase every 5 minutes or when connectivity is restored. The pull fetches remote changes and upserts them into SQLite.
+
+Every table has `pendingSync` and `syncedAt` fields. When a user modifies something, it's marked `pendingSync: true`. The sync service finds all pending records, pushes them to Supabase, and marks them as synced on success. Sync order matters: profiles first, then trainer_clients, then routines, routine_days, exercises, and finally exercise_logs. If you sync a child before its parent, Supabase rejects it on foreign key constraint.
+
+## Stack and key decisions
+
+- **Turborepo + pnpm workspaces**: The monorepo has `apps/mobile`, `apps/desktop`, and `packages/shared`. Turbo caches type-checks and lints across apps
+- **Drizzle ORM + expo-sqlite**: TypeScript-first ORM generating typed queries. Local IDs are generated with `Date.now() + random` because SQLite has no native UUID
+- **Zustand v5 for state**: 5 stores (auth, routines, sync, settings, subscription). No providers, no boilerplate, direct SQLite integration
+- **RevenueCat from day one**: Freemium with 3 free clients. The limit check lives in `canAddClient()` before every operation, not as a cosmetic guard
+- **Tauri v2 for desktop**: Rust backend with React frontend. No offline-first on desktop (stable connection assumed), direct Supabase access
+- **NativeWind v4**: Tailwind CSS in React Native. Same design tokens as the desktop app
+
+<Callout type="success" title="517 lines well spent">
+  The `syncService.ts` file is 517 lines long and it's the heart of the project. It syncs 6 tables
+  in hierarchical order, handles conflicts with last-write-wins, and works for both manual push
+  (pull-to-refresh) and automatic sync every 5 minutes. It's the most complex file in the project
+  and the one I'm most proud of.
+</Callout>
+
+## What I learned
+
+The most unexpected problem was ID generation. SQLite doesn't have `uuid_generate_v4()`, but Supabase does. The solution was generating local IDs with `Date.now()-random` on the client and letting Supabase accept text as primary key. It works, but if I started over I'd evaluate using `crypto.randomUUID()` from the React Native runtime.
+
+The biggest takeaway: offline-first is not "save to cache." It's rethinking the entire architecture so the local database is the source of truth and the server is just a sync mechanism. 80% of the effort goes into the sync, not the UI.

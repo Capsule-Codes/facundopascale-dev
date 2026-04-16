@@ -1,0 +1,59 @@
+---
+title: 'Estudialo AI'
+tagline: 'AI-powered education that teaches, not cheats'
+description: 'AI-powered education platform built with Gemini, Supabase, and Stripe. The AI helps students learn instead of just giving away answers.'
+publishedAt: 2025-03-10
+stack:
+  - Next.js 16
+  - Vercel AI SDK 5
+  - Gemini 2.5 Flash
+  - Supabase
+  - Stripe
+  - TypeScript
+  - Tailwind CSS 4
+  - next-intl
+role: 'Fullstack lead · AI architecture'
+year: 2025
+links: {}
+coverImage: /images/work/estudialo-ai.svg
+lang: en
+translationId: estudialo-ai
+featured: true
+order: 2
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Most "AI-powered education" apps are a ChatGPT wrapper where students paste the assignment and copy the answer. That's not education, it's automated cheating. The real challenge was building a platform where AI is a pedagogical tool: it guides, explains, generates exercises — but doesn't do the work for the student.
+
+## The solution
+
+Estudialo AI uses **Gemini 2.5 Flash** through the **Vercel AI SDK** with an action-based prompt system. When a student sends a message, a first LLM call classifies the intent (summarize, generate quiz, explain, correct, etc.) and routes the conversation to a specialized prompt. It's not a generic chatbot — each action has its own system prompt with pedagogical constraints.
+
+The system differentiates between three education levels (elementary, high school, university) and adapts response complexity accordingly. An elementary student gets explanations with everyday examples and short sentences. A university student gets academic terminology and in-depth concepts.
+
+Monetization runs on **Stripe**: free users get responses capped at 100 words, premium users up to 300. The system prompts change based on the tier — it's not a cosmetic truncation, it's a real difference in depth.
+
+## Stack and key decisions
+
+- **Next.js 16 with Turbopack**: Server Components for static pages, Client Components for the interactive chat
+- **Vercel AI SDK 5 + Gemini 2.5 Flash**: `generateText` for intent classification and title generation, streaming for chat responses
+- **Supabase for the entire backend**: Auth, database (conversations, messages, uploads), and RLS so each user only sees their own data
+- **Stripe with webhooks**: Monthly subscriptions with server-side tier verification
+- **next-intl**: i18n with three locales (en-US, es-ES, es-LA) — the LLM prompts are also localized
+- **File uploads**: Students upload PDFs parsed with `pdf2json` and injected as context into the conversation
+
+<Callout type="warning" title="Localized prompts">
+  System prompts ship in three languages (`prompts.json`, `prompts-es-ES.json`,
+  `prompts-es-LA.json`). It's not just about translating the UI — if the system prompt is in English
+  and the user writes in Spanish, the model mixes languages. Prompt localization is just as
+  important as interface localization.
+</Callout>
+
+## What I learned
+
+The most interesting decision was using `generateText` (not streaming) for intent classification. The first LLM call doesn't need streaming — it needs an exact response (`summarize-text`, `generate-quiz`, etc.) used to select the specialized prompt. That's two model calls per message, but the first one is near-instant with Flash and the final response quality is far better than a generic prompt.
+
+What surprised me: the difference between es-ES and es-LA prompts. Idioms and formality levels change so much that I had to maintain two separate Spanish prompt files. That's not something most AI tutorials will mention.
