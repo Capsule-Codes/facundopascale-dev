@@ -47,11 +47,11 @@ Cada tabla tiene campos `pendingSync` y `syncedAt`. Cuando el usuario modifica a
 - **Tauri v2 para desktop**: Rust backend con React frontend. Sin offline-first en desktop (conexión estable asumida), Supabase directo
 - **NativeWind v4**: Tailwind CSS en React Native. Mismos tokens de diseño que la app desktop
 
-<Callout type="success" title="517 lineas bien invertidas">
-  El archivo `syncService.ts` tiene 517 lineas y es el corazon del proyecto. Sincroniza 6 tablas en
-  orden jerarquico, maneja conflictos con last-write-wins, y funciona tanto con push manual
-  (pull-to-refresh) como automatico cada 5 minutos. Es el archivo mas complejo del proyecto y el que
-  mas orgullo me da.
+<Callout type="success" title="517 líneas bien invertidas">
+  El archivo `syncService.ts` tiene 517 líneas y es el corazón del proyecto. Sincroniza 6 tablas en
+  orden jerárquico, maneja conflictos con last-write-wins, y funciona tanto con push manual
+  (pull-to-refresh) como automático cada 5 minutos. Es el archivo más complejo del proyecto y el que
+  más orgullo me da.
 </Callout>
 
 ## Aprendizajes
