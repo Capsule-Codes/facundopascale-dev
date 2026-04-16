@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-16
-**Current commit:** `121ea17`
+**Current commit:** `89e37ac`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **21 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **23 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -122,18 +122,15 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 
 | # | Task | Commits | Notes |
 |---|---|---|---|
+| 23 | Seed 2 blog posts (1 published + 1 draft) (ES + EN) | `89e37ac` | Spec ACCEPT, QA ACCEPT, DA ACCEPT. Published post (`2026-04-15-hola-mundo/hello-world`, `translationId: hello-world-2026-04`) appears in blog index, home page, RSS feeds, and generates OG PNGs. Draft post (`2026-05-01-offline-first`, `translationId: offline-first-2026-05`, `draft: true`) is correctly excluded from all routes/indexes/RSS by `filterPublished` (which checks BOTH `draft` AND `publishedAt <= now`). Controller originally flagged "scheduling filter doesn't exist" as a plan bomb — implementer corrected: `filterPublished` in `src/lib/content.ts` DOES check `publishedAt` dates, so the scheduling filter is real. `draft: true` was used anyway for determinism. Draft post content is REAL technical depth about offline-first architecture sourced from FitCoach's `PROJECT_CONTEXT.md` (DA fact-checked all claims — exact match). **QA found OG endpoint generates PNGs for draft posts** — 2 unreachable PNGs in `dist/client/og/blog/` for the offline-first drafts. Not a blocker (no page links to them) but a correctness leak — follow-up: filter `draft: true` entries in the OG endpoint's `getStaticPaths`. ES tags localized (`arquitectura` vs `architecture`). Zero missing accents. Rioplatense voseo confirmed ("tenés", "querés", "bancá"). |
+| 22 | Seed About + Uses pages (ES + EN) | `edae440` → `a70fb8d` | Spec ACCEPT, QA ACCEPT, DA ACCEPT_WITH_CONCERNS. 4 MDX files in `src/content/pages/{es,en}/`. Existing route files (`about/index.astro`, `sobre-mi/index.astro`, `uses/index.astro`) already used `getEntry`/`<Content />` from the pages collection with placeholder text — no route modifications needed, content just rendered. "Astro 5" fixed to "Astro 6" in Uses. `updatedAt: 2026-04-16`. Pages schema has NO `translationId` (HANDOFF follow-up #14). DA found one anglicism "sessions" → "sesiones" (fixed in `a70fb8d`). DA also flagged underuse of explicit voseo in About page (present but subtle — "arranqué", "laburo" are Rioplatense markers without a literal `vos`), accepted as non-blocking. Hardware list (MacBook Pro M3 Max, Keychron Q1 Gateron Brown, Apple Studio Display, Shure SM7B + Cloudlifter) taken verbatim from plan — **USER MUST VERIFY** this matches actual equipment. |
 | 21 | Seed 3 featured work case studies (ES + EN) | `882b714` → `121ea17` | **DA rejected Round 1 for missing accents.** Spec ACCEPT, QA ACCEPT, DA REJECT → Round 2. Content extracted from REAL source repos: FestivalPro (`/Users/facundo/Desktop/Projects/festivalpro/calendarApp/` — Expo 54, RN 0.81, 10 EAS build profiles, dual-variant via `EXPO_PUBLIC_APP_VARIANT`, versionCode 61/45), Estudialo-AI (`/Users/facundo/Desktop/Projects/estudialo/estudialo-ai/` — Next.js 16, AI SDK 5 + `@ai-sdk/google` Gemini 2.5 Flash, 3-locale prompt files, Supabase SSR auth + RLS, Stripe tier-based), FitCoach (`/Users/facundo/Desktop/Projects/personal/fitcoach/` — Turborepo, Expo mobile + Tauri v2 desktop, shared typed package, Drizzle + SQLite offline-first sync with `pendingSync`/`syncedAt` on 6 tables, 517-line `syncService.ts`, RevenueCat freemium). DA fact-checked all 15+ technical claims against source repos — ALL matched. Round 1 blocker: 6 missing tildes in the Spanish FitCoach `<Callout>` ("líneas", "corazón", "jerárquico", "automático", "más" ×2). Round 2 fix `121ea17` corrected all 6. DA Round 2 swept all 3 ES files — no additional accent issues. Each MDX file uses `Callout` via `@/components/mdx/Callout.astro`. Spanish in Rioplatense register (quilombo, piola, laburo, la posta, voseo). 3 placeholder SVG cover images in `public/images/work/` at 1200×630 with brand palette. Build produces 6 new work HTML pages + 6 new per-entry OG PNGs + work indexes populated + home page shows featured projects + sitemap updated. Non-blocking concerns: SVG taglines in English only, `links: {}` empty (no live/github URLs provided), `year: 2024` vs `publishedAt: 2025-01-15` on FestivalPro (project started 2024, published 2025). |
 
 **Current state:** 44 commits on main. `pnpm check` 0 errors / 0 warnings / 1 pre-existing hint, `pnpm lint` clean, `pnpm format:check` clean, `pnpm test` 41/41 passing (6 test files). Last `pnpm build` emitted 19 HTML pages (13 pre-existing + 6 new work pages) + 2 RSS endpoints + sitemap + robots.txt + 404.html + 9 OG PNGs (3 default + 6 per-entry) + 3 cover SVGs. Working tree clean.
 
 ---
 
-## Pending Tasks (6 / 27)
-
-### Phase 5 — Seed Content
-
-- **Task 22: Seed About + Uses** (ES + EN) — 4 MDX files total.
-- **Task 23: Seed blog posts** — 1 published + 1 future-dated (to validate scheduling) × 2 locales = 4 files.
+## Pending Tasks (4 / 27)
 
 ### Phase 6 — Testing
 
