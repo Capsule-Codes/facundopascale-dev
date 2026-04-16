@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
-**Last updated:** 2026-04-15
-**Current commit:** `4d674ca`
+**Last updated:** 2026-04-16
+**Current commit:** `121ea17`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **20 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **21 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
 
 **How to resume:**
 
@@ -118,15 +118,20 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 |---|---|---|---|
 | 15 | Contact form + Astro Actions + Resend + Vercel adapter | `422939b` → `92dc4b2` → `13aebb6` | **3 commits. DA rejected TWICE** on WCAG 1.4.3 (both misses were contrast violations in `ContactForm.tsx`). Round 1: `text-dim` on 12px form labels gave 2.67:1 dark / 2.49:1 light (FAIL AA 4.5:1). Round 2 fix: one-line `text-dim` → `text-muted` (8.27:1 / 7.33:1). Round 2 DA approved the label fix but self-caught a round-1 miss — `text-red-400` on light bg ≈ 2.91:1 and `text-yellow-400` on light bg ≈ 1.56:1 (practically invisible). Round 3 fix: `text-red-700 dark:text-red-400` + `text-yellow-700 dark:text-yellow-400` (6.67:1 / 6.59:1 and 5.16:1 / 12.28:1 — all AA). Controller applied both fixes directly as one-liners; DA verified compiled CSS `.dark\:text-red-400:where([data-theme=dark],[data-theme=dark] *)` correctly targets the `@custom-variant dark` from Task 13, NOT `prefers-color-scheme`. **Key architecture changes:** added `@astrojs/vercel@10.0.4` adapter (`output: 'static'` + adapter = hybrid, actions dynamic, pages prerendered); Astro Action `sendContact` (`src/actions/index.ts`) uses `astro/zod` (NOT deprecated `astro:schema`), `z.email()` (Zod 4 idiom), `createRateLimiter` extracted to `src/lib/rate-limit.ts` with clock injection for testability (6 unit tests in `tests/unit/rate-limit.test.ts`, 21 total). ContactForm island uses `SubmitEvent<HTMLFormElement>` (React 19 deprecates `FormEvent`), captures `formEl = e.currentTarget` BEFORE `await` (React nulls synthetic event targets post-handler), parses `x-forwarded-for` chain (first IP only), env guard for missing `RESEND_API_KEY`/`CONTACT_EMAIL_TO`. Accessibility: `htmlFor`/`id` pairs, honeypot `aria-hidden="true" tabIndex={-1}`, status messages in `role="status" aria-live="polite"` container with `min-h-[1.5rem]` to avoid CLS, focus-visible outlines on inputs + button. Contact pages use `<div>` wrapper (Layout owns `<main>`). Rate limit is per-instance on serverless (documented tradeoff, spec §13.4 defers Upstash). `from: 'contact@facundopascale.dev'` hardcoded; domain not yet purchased/verified — runtime send will 403 until Task 27 provisions DNS. |
 
-**Current state:** 39 commits on main (Task 17 Round 2 fix + HANDOFF re-review doc + Task 19 feat + Task 19 surgical fix + Task 20 Round 1 three commits + Task 20 Round 2 fix). `pnpm check` 0 errors / 0 warnings / 1 pre-existing hint, `pnpm lint` clean, `pnpm format:check` clean, `pnpm test` 41/41 passing (6 test files — rate-limit 6, content 5, reading-time 5, findTranslation 5, og 11, hreflang 9). Last `pnpm build` emitted 13 HTML pages + 2 RSS endpoints + sitemap-index.xml + sitemap-0.xml + robots.txt + 404.html + 3 default OG PNGs. Vercel adapter output: `.vercel/output/static/` + catch-all 404 route in `.vercel/output/config.json`. Working tree clean.
+### Phase 5 (partial) — Seed Content
+
+| # | Task | Commits | Notes |
+|---|---|---|---|
+| 21 | Seed 3 featured work case studies (ES + EN) | `882b714` → `121ea17` | **DA rejected Round 1 for missing accents.** Spec ACCEPT, QA ACCEPT, DA REJECT → Round 2. Content extracted from REAL source repos: FestivalPro (`/Users/facundo/Desktop/Projects/festivalpro/calendarApp/` — Expo 54, RN 0.81, 10 EAS build profiles, dual-variant via `EXPO_PUBLIC_APP_VARIANT`, versionCode 61/45), Estudialo-AI (`/Users/facundo/Desktop/Projects/estudialo/estudialo-ai/` — Next.js 16, AI SDK 5 + `@ai-sdk/google` Gemini 2.5 Flash, 3-locale prompt files, Supabase SSR auth + RLS, Stripe tier-based), FitCoach (`/Users/facundo/Desktop/Projects/personal/fitcoach/` — Turborepo, Expo mobile + Tauri v2 desktop, shared typed package, Drizzle + SQLite offline-first sync with `pendingSync`/`syncedAt` on 6 tables, 517-line `syncService.ts`, RevenueCat freemium). DA fact-checked all 15+ technical claims against source repos — ALL matched. Round 1 blocker: 6 missing tildes in the Spanish FitCoach `<Callout>` ("líneas", "corazón", "jerárquico", "automático", "más" ×2). Round 2 fix `121ea17` corrected all 6. DA Round 2 swept all 3 ES files — no additional accent issues. Each MDX file uses `Callout` via `@/components/mdx/Callout.astro`. Spanish in Rioplatense register (quilombo, piola, laburo, la posta, voseo). 3 placeholder SVG cover images in `public/images/work/` at 1200×630 with brand palette. Build produces 6 new work HTML pages + 6 new per-entry OG PNGs + work indexes populated + home page shows featured projects + sitemap updated. Non-blocking concerns: SVG taglines in English only, `links: {}` empty (no live/github URLs provided), `year: 2024` vs `publishedAt: 2025-01-15` on FestivalPro (project started 2024, published 2025). |
+
+**Current state:** 44 commits on main. `pnpm check` 0 errors / 0 warnings / 1 pre-existing hint, `pnpm lint` clean, `pnpm format:check` clean, `pnpm test` 41/41 passing (6 test files). Last `pnpm build` emitted 19 HTML pages (13 pre-existing + 6 new work pages) + 2 RSS endpoints + sitemap + robots.txt + 404.html + 9 OG PNGs (3 default + 6 per-entry) + 3 cover SVGs. Working tree clean.
 
 ---
 
-## Pending Tasks (7 / 27)
+## Pending Tasks (6 / 27)
 
 ### Phase 5 — Seed Content
 
-- **Task 21: Seed 3 featured work case studies** (ES + EN) — FestivalPro, Estudialo-AI, FitCoach. Real screenshots go in `public/images/work/`. Starting content is in the plan at Task 21.
 - **Task 22: Seed About + Uses** (ES + EN) — 4 MDX files total.
 - **Task 23: Seed blog posts** — 1 published + 1 future-dated (to validate scheduling) × 2 locales = 4 files.
 
