@@ -18,7 +18,7 @@ test.describe('blog', () => {
 
   test('blog index does NOT list the draft post', async ({ page }) => {
     await page.goto('/es/blog/');
-    await expect(page.getByRole('heading', { level: 3, name: /offline-first/i })).not.toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: /offline-first/i })).toHaveCount(0);
   });
 
   test('post page renders with correct heading', async ({ page }) => {

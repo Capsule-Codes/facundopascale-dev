@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   use: { baseURL: 'http://localhost:4321', trace: 'on-first-retry' },
   webServer: {
-    command: 'pnpm build && npx serve .vercel/output/static -l 4321',
+    command: 'pnpm build && pnpm exec serve .vercel/output/static -l 4321',
     url: 'http://localhost:4321/es/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
