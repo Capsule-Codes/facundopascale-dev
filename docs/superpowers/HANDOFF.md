@@ -1,13 +1,13 @@
 # HANDOFF — facundopascale-dev
 
 **Last updated:** 2026-04-16
-**Current commit:** `89e37ac`
+**Current commit:** `417dba2`
 **Branch:** `main`
 **Working directory:** `/Users/facundo/Desktop/Projects/personal/facundopascale-dev`
 
 ## For the next Claude session
 
-You are continuing execution of the facundopascale-dev implementation plan. **23 of 27 tasks** are done. This document has everything you need to pick up exactly where the last session stopped.
+You are continuing execution of the facundopascale-dev implementation plan. **26 of 27 tasks** are done. Only **Task 27 (manual Vercel deploy)** remains — no more code work.
 
 **How to resume:**
 
@@ -15,7 +15,7 @@ You are continuing execution of the facundopascale-dev implementation plan. **23
 2. Read `docs/superpowers/specs/2026-04-13-personal-site-design.md` (the approved spec).
 3. Read `docs/superpowers/plans/2026-04-13-personal-site.md` (the 27-task plan). **Warning: the plan is static and does NOT reflect the small deviations listed in "Known deviations" below.**
 4. Run `git log --oneline` to confirm state matches the commits listed here.
-5. Resume with **Task 19** using the 4-agent pipeline described below.
+5. Execute **Task 27** manually (push to GitHub, import on Vercel, configure env vars, connect domain). No further code work needed.
 
 > ✅ **Tasks 17 and 18 re-review COMPLETE (2026-04-15).** Both were originally approved via the combined Spec+QA+DA reviewer and flagged for independent audit. The strict pipeline re-reviewed both with 3 separated agents:
 > - **Task 18:** passed all 3 reviewers on the first round. No blockers.
@@ -64,7 +64,7 @@ QA and Devil's Advocate are custom — invent a prompt per task following the pa
 
 ---
 
-## Completed Tasks (18 / 27)
+## Completed Tasks (26 / 27)
 
 ### Phase 1 — Foundation (Tasks 1-4)
 
@@ -126,21 +126,28 @@ Bonus commit: `6c71465` — replaced "Writing"/"Uses" English labels with "Notas
 | 22 | Seed About + Uses pages (ES + EN) | `edae440` → `a70fb8d` | Spec ACCEPT, QA ACCEPT, DA ACCEPT_WITH_CONCERNS. 4 MDX files in `src/content/pages/{es,en}/`. Existing route files (`about/index.astro`, `sobre-mi/index.astro`, `uses/index.astro`) already used `getEntry`/`<Content />` from the pages collection with placeholder text — no route modifications needed, content just rendered. "Astro 5" fixed to "Astro 6" in Uses. `updatedAt: 2026-04-16`. Pages schema has NO `translationId` (HANDOFF follow-up #14). DA found one anglicism "sessions" → "sesiones" (fixed in `a70fb8d`). DA also flagged underuse of explicit voseo in About page (present but subtle — "arranqué", "laburo" are Rioplatense markers without a literal `vos`), accepted as non-blocking. Hardware list (MacBook Pro M3 Max, Keychron Q1 Gateron Brown, Apple Studio Display, Shure SM7B + Cloudlifter) taken verbatim from plan — **USER MUST VERIFY** this matches actual equipment. |
 | 21 | Seed 3 featured work case studies (ES + EN) | `882b714` → `121ea17` | **DA rejected Round 1 for missing accents.** Spec ACCEPT, QA ACCEPT, DA REJECT → Round 2. Content extracted from REAL source repos: FestivalPro (`/Users/facundo/Desktop/Projects/festivalpro/calendarApp/` — Expo 54, RN 0.81, 10 EAS build profiles, dual-variant via `EXPO_PUBLIC_APP_VARIANT`, versionCode 61/45), Estudialo-AI (`/Users/facundo/Desktop/Projects/estudialo/estudialo-ai/` — Next.js 16, AI SDK 5 + `@ai-sdk/google` Gemini 2.5 Flash, 3-locale prompt files, Supabase SSR auth + RLS, Stripe tier-based), FitCoach (`/Users/facundo/Desktop/Projects/personal/fitcoach/` — Turborepo, Expo mobile + Tauri v2 desktop, shared typed package, Drizzle + SQLite offline-first sync with `pendingSync`/`syncedAt` on 6 tables, 517-line `syncService.ts`, RevenueCat freemium). DA fact-checked all 15+ technical claims against source repos — ALL matched. Round 1 blocker: 6 missing tildes in the Spanish FitCoach `<Callout>` ("líneas", "corazón", "jerárquico", "automático", "más" ×2). Round 2 fix `121ea17` corrected all 6. DA Round 2 swept all 3 ES files — no additional accent issues. Each MDX file uses `Callout` via `@/components/mdx/Callout.astro`. Spanish in Rioplatense register (quilombo, piola, laburo, la posta, voseo). 3 placeholder SVG cover images in `public/images/work/` at 1200×630 with brand palette. Build produces 6 new work HTML pages + 6 new per-entry OG PNGs + work indexes populated + home page shows featured projects + sitemap updated. Non-blocking concerns: SVG taglines in English only, `links: {}` empty (no live/github URLs provided), `year: 2024` vs `publishedAt: 2025-01-15` on FestivalPro (project started 2024, published 2025). |
 
-**Current state:** 44 commits on main. `pnpm check` 0 errors / 0 warnings / 1 pre-existing hint, `pnpm lint` clean, `pnpm format:check` clean, `pnpm test` 41/41 passing (6 test files). Last `pnpm build` emitted 19 HTML pages (13 pre-existing + 6 new work pages) + 2 RSS endpoints + sitemap + robots.txt + 404.html + 9 OG PNGs (3 default + 6 per-entry) + 3 cover SVGs. Working tree clean.
-
----
-
-## Pending Tasks (4 / 27)
-
 ### Phase 6 — Testing
 
-- **Task 24: Playwright E2E** — happy paths for home, blog post, contact form, language switcher. Needs `playwright.config.ts`, browser install, 4 spec files.
+| # | Task | Commits | Notes |
+|---|---|---|---|
+| 24 | Playwright E2E setup + happy paths | `7000198` → `28c0e30` | Spec ACCEPT, QA ACCEPT, DA ACCEPT_WITH_CONCERNS. Created `playwright.config.ts` (chromium-only, `webServer: pnpm build && pnpm exec serve .vercel/output/static -l 4321`, baseURL `http://localhost:4321/es/`, `trace: 'on-first-retry'`, retries=1 in CI). 4 spec files in `tests/e2e/`: `home.spec.ts`, `blog.spec.ts`, `language-switcher.spec.ts`, `contact-form.spec.ts`. Total 24 tests, ~11s wall time. Added `serve@14.2.6` as devDep (pinned for deterministic CI behavior). DA-flagged fix `28c0e30`: replaced flaky `not.toBeVisible()` with `toHaveCount(0)` on the draft-exclusion assertion (the visibility check could pass on a hidden-but-existing element, missing the bug if a draft sneaked through). Contact form spec only asserts DOM labels/attributes — does NOT submit (no Resend env on local/CI). Re-added `test:e2e` script to `package.json` (Task 1 had removed it; follow-up #6 closed). |
 
 ### Phase 7 — Deployment
 
-- **Task 25: Vercel Cron + Deploy Hook** — `vercel.json` with hourly cron, `src/pages/api/revalidate.ts` endpoint with `CRON_SECRET` bearer check.
-- **Task 26: GitHub Actions CI** — `.github/workflows/ci.yml` running check + lint + test + e2e on PRs.
-- **Task 27: Deploy to Vercel (manual)** — one-time human step: push to GitHub, import into Vercel, set env vars, connect custom domain once purchased.
+| # | Task | Commits | Notes |
+|---|---|---|---|
+| 25 | Vercel Cron + Deploy Hook | `46f59af` | Spec ACCEPT, QA ACCEPT_WITH_CONCERNS, **DA REJECT Round 1** for one BLOCKER + flagged 3 MAJOR/MINOR. Round 2 ACCEPT after all 4 fixed. Created `src/pages/api/revalidate.ts` (`prerender = false`, GET handler) and `vercel.json` (`crons: [{ path: '/api/revalidate', schedule: '0 * * * *' }]`). **DA Round 1 BLOCKER B1:** if `CRON_SECRET` env was unset, `expected = "Bearer undefined"` and any internet caller could trigger the deploy hook by sending exactly that header — a billing-DoS primitive. **Round 2 fix:** `const secret = import.meta.env.CRON_SECRET?.trim(); if (!secret) return 500` BEFORE the bearer compare (also closes QA's whitespace concern via `.trim()`). Wrapped `fetch(hook)` in try/catch returning 502 with `err instanceof Error ? err.message : 'unknown error'` (DA verified undici error messages don't leak the URL — that's in `err.cause`). Bumped existing `!res.ok` branch from 500→502 for semantic consistency (500 = local config error, 502 = upstream gateway). Updated spec line 337 to add `CRON_SECRET` to the env vars list (M2 — spec was out of sync). `.env.example` already documented both env vars from Task 1. Vercel adapter (`@astrojs/vercel@10.0.4`, hybrid mode) emits the route as a function under `.vercel/output/functions/` per `.vercel/output/config.json` route `{"src": "^/api/revalidate/?$", "dest": "_render"}`. `vercel.json` `crons` is read by Vercel independently of the Build Output API; not in `config.json`. **Followed plan even though Vercel knowledge update prefers `vercel.ts`** — single hourly cron with no dynamic logic doesn't need TS, plan-letter respected. |
+| 26 | GitHub Actions CI | `417dba2` | Spec ACCEPT_WITH_CONCERNS, QA ACCEPT, **DA Round 1 ACCEPT_WITH_CONCERNS** with 3 MAJORs (no `timeout-minutes`, no `concurrency` group, no Playwright artifact upload) + 3 MINORs. Round 2 ACCEPT after MAJORs fixed. Created `.github/workflows/ci.yml` running on `pull_request` + `push: main`. **Plan deviations (justified):** uses pnpm 10.17.1 (vs plan's 9 — required by `package.json` `packageManager` field, corepack would error otherwise); Node 22 (vs plan's 20 — required by `engines.node: ">=22.12.0"`); added `pnpm format:check` step (lint-staged covers commits, but bypassed hooks / direct pushes can drift). **Build coverage gap closed transitively:** `pnpm build` is NOT a workflow step but runs inside `playwright.config.ts` `webServer` (`pnpm build && pnpm exec serve …`), so a broken build fails E2E within Playwright's 120s startup timeout. **Round 2 hardening:** added `timeout-minutes: 20` (5× headroom on cold-run worst case ~3-4 min); top-level `concurrency: { group: ${{ github.workflow }}-${{ github.ref }}, cancel-in-progress: true }` (cancels superseded runs per ref, parallel for different PRs); final step `Upload Playwright report` with `if: ${{ failure() }}`, `actions/upload-artifact@v4`, paths `playwright-report/` + `test-results/`, `retention-days: 7`, `if-no-files-found: ignore`. **Deferred MINORs (follow-ups doc):** SHA pinning vs `@v4` mutable tags, corepack vs `pnpm/action-setup`, `format:check` belt-and-suspenders debate. |
+
+**Current state:** 47 commits on main. `pnpm check` 0 errors / 0 warnings / 1 pre-existing hint, `pnpm lint` clean, `pnpm format:check` clean, `pnpm test` 41/41 passing (6 test files), `pnpm test:e2e` 24/24 passing (Playwright chromium, ~11s). Working tree clean. README expanded, LICENSE (MIT) added, content licensed under CC BY-NC 4.0 per README footer.
+
+---
+
+## Pending Tasks (1 / 27)
+
+### Phase 7 — Deployment
+
+- **Task 27: Deploy to Vercel (manual)** — one-time human step: push to GitHub (`git@github.com:facupascale/facundopascale-dev.git`), import into Vercel, set env vars (`RESEND_API_KEY`, `CONTACT_EMAIL_TO`, `CRON_SECRET`, `VERCEL_DEPLOY_HOOK_URL`), connect custom domain `facundopascale.dev` once purchased and Resend domain verified.
 
 ---
 
