@@ -334,7 +334,7 @@ The static HTML is enhanced with a minimal set of React islands and Astro Action
 
 - **Hosting:** Vercel.
 - **Branches:** `main` → production, feature branches → preview deploys.
-- **Environment variables:** `RESEND_API_KEY`, `CONTACT_EMAIL_TO`, `VERCEL_DEPLOY_HOOK_URL` (used by the cron).
+- **Environment variables:** `RESEND_API_KEY`, `CONTACT_EMAIL_TO`, `VERCEL_DEPLOY_HOOK_URL` (used by the cron), `CRON_SECRET` (bearer token Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>` to authenticate the rebuild trigger).
 - **Cron:** `0 * * * *` hitting a Vercel endpoint that `fetch`es the Deploy Hook to trigger an hourly rebuild and publish any posts whose `publishedAt` has passed.
 - **Analytics:** Vercel Analytics + Speed Insights enabled out of the box.
 - **Monitoring:** Vercel's default function logs. No external APM at MVP scale.
