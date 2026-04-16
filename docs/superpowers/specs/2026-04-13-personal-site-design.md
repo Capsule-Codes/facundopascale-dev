@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-A bilingual (ES/EN) personal website for Facundo Pascale, positioned as a senior software architect with 15+ years of experience. The site is the digital home for his personal brand, with Capsule Codes (his business) and his featured apps acting as proof of work, and a hybrid blog supporting AI-written, batch-scheduled content.
+A bilingual (ES/EN) personal website for Facundo Pascale, positioned as a software architect, founder of Capsule Codes, and indie builder. The site is the digital home for his personal brand, with Capsule Codes (his business) and his featured apps acting as proof of work, and a hybrid blog supporting AI-written, batch-scheduled content.
 
 The site replaces the legacy `porfolio` (Astro, 2025) and coexists with the separate `capsule-codes-website` — it does **not** absorb or duplicate Capsule Codes content, only links to it.
 

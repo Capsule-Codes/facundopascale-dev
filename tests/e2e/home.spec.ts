@@ -22,7 +22,7 @@ test.describe('home', () => {
 
   test('displays eyebrow tagline', async ({ page }) => {
     await page.goto('/es/');
-    await expect(page.getByText('// senior architect · 15y')).toBeVisible();
+    await expect(page.getByText('// software architect · indie builder')).toBeVisible();
   });
 
   test('featured work projects are visible', async ({ page }) => {

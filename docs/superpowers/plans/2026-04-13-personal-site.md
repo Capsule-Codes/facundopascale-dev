@@ -1090,7 +1090,7 @@ const featuredWork = byLocale(allWork, loc)
 
 const copy = {
   es: {
-    tagline: '// senior architect · 15y',
+    tagline: '// software architect · indie builder',
     headline1: 'Construyo',
     headlineAccent: 'software serio',
     headline2: '.',
@@ -1103,7 +1103,7 @@ const copy = {
     writingAll: '→ Ver todos los artículos',
   },
   en: {
-    tagline: '// senior architect · 15y',
+    tagline: '// software architect · indie builder',
     headline1: 'I build',
     headlineAccent: 'serious software',
     headline2: '.',
@@ -2510,7 +2510,7 @@ updatedAt: 2026-04-13
 lang: es
 ---
 
-Soy Facundo Pascale. Llevo 15 años escribiendo código, diseñando arquitecturas, rompiendo cosas, y enseñándole a otros devs cómo no romperlas.
+Soy Facundo Pascale. Escribo código, diseño arquitecturas, rompo cosas, y le enseño a otros devs cómo no romperlas. Fundador de Capsule Codes, indie builder, mentor.
 
 ## Mi filosofía
 
