@@ -42,7 +42,10 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 
 - [x] T1.1 Propose and approve data model (in conversation) — route: inline (approved 2026-10-08)
 - [x] T1.2 Migration: `personal` schema, tables, RLS, versioned in `supabase/migrations/` — route: inline (single SQL file)
-- [ ] T1.3 Seed featured projects (3) and products (3) — route: inline
+- [x] T1.3 Showcase model (list + `highlighted`), seed products and showcase, add Horus Surgical and UR POV
+      to `public.projects` (unpublished until screenshots) — route: inline (2 SQL files)
+- [ ] T1.4 Screenshots: Horus from local run (controlled demo data, no patient data), UR POV from repo
+      assets; upload to `images/projects/<id>/`; then set `published=true` (shows on capsulecodes.com too)
 - [ ] T2.x (to be detailed when stage 2 starts)
 
 ## Progress / evidence
@@ -53,8 +56,13 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   anon sees only published log items (draft hidden); anon insert into content_items blocked;
   non-admin authenticated insert into products blocked. Security advisors: no findings on new objects
   (pre-existing: mutable search_path on 2 public functions, leaked-password protection off, MFA options).
+- T1.2 commit: `355fb85`. RDD assess (base main, committed-only): medium, review_due=false (under_budget, 218 lines) — pending in slice.
 - Manual step pending (user): add `personal` to Settings → API → Exposed schemas.
+- T1.3 RED: `personal.project_showcase` absent, 0 products, 0 showcase rows.
+- T1.3 GREEN: 8 showcase rows (highlighted: Investamind, Festival PRO, Horus Surgical); 3 products live
+  (stagionaly.com, byelevate.app — user said elev.app but it does not resolve, code uses byelevate.app —, getorbys.com).
+- Rule: the personal site only renders showcase rows whose `public.projects.published` is true.
 
 ## Next step
 
-T1.3 — seed featured projects and products (needs user confirmation of the 3 projects and product statuses).
+T1.4 — Horus local screenshots and UR POV assets, then publish both projects.
