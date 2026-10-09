@@ -150,7 +150,8 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   local `origin` updated; Vercel Git connected. Deploy hook `supabase-content` (ref `main`) created and
   stored only in Vault as `facundopascale_deploy_hook`. GREEN: no-op update on `personal.site_settings`
   → pg_net request → production deployment built and Ready. Deployments build `main` until the chain lands.
-- Still on user: enable Web Analytics in the dashboard; set RESEND_API_KEY / CONTACT_EMAIL_TO.
+- Env is Production-only (user: single environment); preview/dev builds fall back to fixtures. Web
+  Analytics enabled and RESEND_API_KEY / CONTACT_EMAIL_TO set by user (verified 2026-10-09).
 
 ## Next step
 
