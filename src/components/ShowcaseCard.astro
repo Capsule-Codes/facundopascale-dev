@@ -1,0 +1,90 @@
+---
+import type { ShowcaseProject } from '../lib/site-data';
+
+interface Props {
+  project: ShowcaseProject;
+  /** Plate label such as `A.01`. */
+  label: string;
+  linkLabels: { live: string; appStore: string; playStore: string };
+  caseStudy?: { href: string; label: string } | undefined;
+}
+
+const { project: p, label, linkLabels, caseStudy } = Astro.props;
+
+const cover = p.gallery[0];
+const links = [
+  p.links.live && { href: p.links.live, label: linkLabels.live },
+  p.links.appStore && { href: p.links.appStore, label: linkLabels.appStore },
+  p.links.playStore && { href: p.links.playStore, label: linkLabels.playStore },
+].filter((l): l is { href: string; label: string } => Boolean(l));
+
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
+---
+
+<article class="border-[1.5px] border-rule bg-bg-elevated flex min-w-0 flex-col">
+  <div
+    class="relative flex h-[180px] items-center justify-center overflow-hidden border-b-[1.5px] border-rule bg-blueprint"
+  >
+    {
+      p.image ? (
+        <img
+          src={cover?.src ?? p.image}
+          alt={cover?.alt || p.title}
+          width={cover?.width || 640}
+          height={cover?.height || 360}
+          loading="lazy"
+          decoding="async"
+          class="h-full w-full object-cover object-top"
+        />
+      ) : (
+        <span class={meta} aria-hidden="true">
+          [{p.title}]
+        </span>
+      )
+    }
+  </div>
+  <div class="flex flex-1 flex-col gap-2.5 p-5">
+    <p class={meta}>
+      {label}
+      {p.category ? ` · ${p.category}` : ''}
+    </p>
+    <h3 class="m-0 text-[28px] leading-tight font-normal">{p.title}</h3>
+    <p class="m-0 line-clamp-4 text-base leading-snug text-text-muted">
+      {p.summary}
+    </p>
+    {
+      p.technologies.length > 0 && (
+        <p class="m-0 font-mono text-[11px] leading-relaxed">{p.technologies.join(' · ')}</p>
+      )
+    }
+    {
+      (links.length > 0 || caseStudy) && (
+        <ul class="m-0 mt-auto flex list-none flex-wrap gap-x-4 gap-y-1 p-0 pt-2 font-mono text-xs">
+          {links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class={`underline underline-offset-4 hover:text-accent ${focus}`}
+              >
+                {l.label} ↗
+              </a>
+            </li>
+          ))}
+          {caseStudy && (
+            <li>
+              <a
+                href={caseStudy.href}
+                class={`underline underline-offset-4 hover:text-accent ${focus}`}
+              >
+                {caseStudy.label} →
+              </a>
+            </li>
+          )}
+        </ul>
+      )
+    }
+  </div>
+</article>
