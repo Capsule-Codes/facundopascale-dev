@@ -1,10 +1,22 @@
 ---
 import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
 import Layout from '../../components/Layout.astro';
-import PostCard from '../../components/PostCard.astro';
-import ProjectCard from '../../components/ProjectCard.astro';
+import ShowcaseCard from '../../components/ShowcaseCard.astro';
+import portrait from '../../assets/facundo-portrait.jpg';
 import { isLocale, type Locale, localizedPath } from '../../lib/i18n';
-import { filterPublished, byLocale, sortByDate } from '../../lib/content';
+import { filterPublished, byLocale } from '../../lib/content';
+import {
+  buildLog,
+  getContentLog,
+  getProducts,
+  getShowcase,
+  getSiteSettings,
+  getTestimonials,
+  pickFeaturedTestimonial,
+  type ContentChannel,
+  type ProductStatus,
+} from '../../lib/site-data';
 
 export function getStaticPaths() {
   return [{ params: { locale: 'es' } }, { params: { locale: 'en' } }];
@@ -14,130 +26,572 @@ const { locale } = Astro.params;
 if (!locale || !isLocale(locale)) return Astro.redirect('/');
 const loc: Locale = locale;
 
-const allBlog = await getCollection('blog');
-const allWork = await getCollection('work');
+const [showcase, products, contentLog, settings, testimonials, allBlog] = await Promise.all([
+  getShowcase(loc),
+  getProducts(loc),
+  getContentLog(loc),
+  getSiteSettings(loc),
+  getTestimonials(loc),
+  getCollection('blog'),
+]);
 
-const recentPosts = sortByDate(filterPublished(byLocale(allBlog, loc))).slice(0, 4);
-const featuredWork = byLocale(allWork, loc)
-  .filter((w) => w.data.featured)
-  .sort((a, b) => a.data.order - b.data.order)
-  .slice(0, 3);
+const projects = showcase.filter((p) => p.highlighted).slice(0, 3);
+const log = buildLog(contentLog, filterPublished(byLocale(allBlog, loc)), loc, 6);
+const testimonial = pickFeaturedTestimonial(testimonials, 'Ricardo Mejia');
+const youtubeUrl = settings.socials.youtube;
+const youtubeEntry = log.find((e) => e.kind === 'youtube');
+
+// Book-a-call goes straight to email when configured, otherwise to the contact page.
+const contactHref = settings.email ? `mailto:${settings.email}` : localizedPath('contact', loc);
+const workHref = localizedPath('work', loc);
 
 const copy = {
   es: {
-    tagline: '// software architect · indie builder',
-    headline1: 'Construyo',
-    headlineAccent: 'software serio',
-    headline2: '.',
-    sub: 'Frontend architect obsesionado con fundamentos. Mentoreo devs. Fundador de Capsule Codes.',
-    ctaWork: '→ Ver trabajo',
-    ctaBlog: '→ Leer el blog',
-    workTitle: 'Trabajo destacado',
-    workAll: '→ Ver todo el trabajo',
-    writingTitle: 'Últimos artículos',
-    writingAll: '→ Ver todos los artículos',
+    title: 'Facundo Pascale — Arquitecto de software',
+    description:
+      'Cofundador y tech lead de Capsule Codes. Diseño y construyo productos, los de mis clientes y los míos, y documento el proceso en público.',
+    plate: 'LÁMINA 00 · PORTADA',
+    h1Before: 'Software que se diseña ',
+    h1Accent: 'antes',
+    h1After: ' de construirse.',
+    sub: 'Soy Facundo Pascale, cofundador y tech lead de Capsule Codes. Diseño y construyo productos, los de mis clientes y los míos (Stagionaly, Elevate, Orbys), y documento el proceso en público.',
+    ctaPrimary: 'Agendar una call',
+    ctaWork: 'Ver trabajo',
+    portraitAlt: 'Retrato de Facundo Pascale',
+    portraitCaption: 'FIG. 00 · AUTOR',
+    planTitle: 'PLANTA GENERAL',
+    planScale: 'ESC 1:1',
+    planAgency: 'A · Capsule Codes',
+    planAgencyTag: 'agencia',
+    planContent: 'C · Contenido',
+    planContentTag: 'YT · IG · Blog',
+    planProducts: 'B · Productos',
+    logTail: '$ tail -f build.log',
+    agencyPlate: 'LÁMINA A · AGENCIA',
+    agencyBefore: 'Capsule Codes. ',
+    agencyAccent: 'Apps móviles y web para startups.',
+    agencyCta: 'Contratar a la agencia',
+    agencyAll: 'Ver todo el trabajo',
+    live: 'Sitio web',
+    appStore: 'App Store',
+    playStore: 'Google Play',
+    productsPlate: 'LÁMINA B · PRODUCTOS PROPIOS',
+    productsBefore: 'Lo que construyo ',
+    productsAccent: 'para mí.',
+    contentPlate: 'LÁMINA C · CONTENIDO',
+    contentBefore: 'El proceso, ',
+    contentAccent: 'en público.',
+    youtubeKicker: 'PLANO · YOUTUBE',
+    youtubeFallback: 'Sigue el proceso en video',
+    youtubeCta: 'Ver en YouTube',
+    logTitle: 'BUILD LOG · todo lo publicado',
+    logEmpty: 'Todavía no hay entradas publicadas.',
+    logAll: 'Ver todos los artículos',
+    contactPlate: 'LÁMINA D · CONTACTO',
+    contactBefore: '¿Tienes un proyecto? ',
+    contactAccent: 'Dibujémoslo.',
+    followLabel: 'Sígueme',
+    followNav: 'Redes sociales',
+    newsletterLabel: 'NEWSLETTER · el log en tu correo',
+    newsletterBody:
+      'Lo que construyo, lo que aprendo y lo que no funcionó. Muy pronto vas a poder suscribirte desde aquí.',
+    newsletterSoon: 'PRÓXIMAMENTE',
+    status: { idea: 'En idea', beta: 'Beta', live: 'En vivo', sunset: 'Discontinuado' },
+    kinds: {
+      youtube: 'video',
+      instagram: 'reel',
+      linkedin: 'post',
+      newsletter: 'news',
+      blog: 'blog',
+      ship: 'ship',
+    },
   },
   en: {
-    tagline: '// software architect · indie builder',
-    headline1: 'I build',
-    headlineAccent: 'serious software',
-    headline2: '.',
-    sub: 'Frontend architect obsessed with fundamentals. I mentor devs. Founder of Capsule Codes.',
-    ctaWork: '→ See the work',
-    ctaBlog: '→ Read the blog',
-    workTitle: 'Featured work',
-    workAll: '→ See all work',
-    writingTitle: 'Latest writing',
-    writingAll: '→ See all posts',
+    title: 'Facundo Pascale — Software architect',
+    description:
+      'Co-founder and tech lead at Capsule Codes. I design and build products, my clients’ and my own, and document the process in public.',
+    plate: 'SHEET 00 · COVER',
+    h1Before: "Software that's designed ",
+    h1Accent: 'before',
+    h1After: " it's built.",
+    sub: 'I’m Facundo Pascale, co-founder and tech lead at Capsule Codes. I design and build products, my clients’ and my own (Stagionaly, Elevate, Orbys), and document the process in public.',
+    ctaPrimary: 'Book a call',
+    ctaWork: 'See the work',
+    portraitAlt: 'Portrait of Facundo Pascale',
+    portraitCaption: 'FIG. 00 · AUTHOR',
+    planTitle: 'GENERAL PLAN',
+    planScale: 'SCALE 1:1',
+    planAgency: 'A · Capsule Codes',
+    planAgencyTag: 'agency',
+    planContent: 'C · Content',
+    planContentTag: 'YT · IG · Blog',
+    planProducts: 'B · Products',
+    logTail: '$ tail -f build.log',
+    agencyPlate: 'SHEET A · AGENCY',
+    agencyBefore: 'Capsule Codes. ',
+    agencyAccent: 'Mobile and web apps for startups.',
+    agencyCta: 'Hire the agency',
+    agencyAll: 'See all work',
+    live: 'Website',
+    appStore: 'App Store',
+    playStore: 'Google Play',
+    productsPlate: 'SHEET B · OWN PRODUCTS',
+    productsBefore: 'What I build ',
+    productsAccent: 'for myself.',
+    contentPlate: 'SHEET C · CONTENT',
+    contentBefore: 'The process, ',
+    contentAccent: 'in public.',
+    youtubeKicker: 'DRAWING · YOUTUBE',
+    youtubeFallback: 'Follow the process on video',
+    youtubeCta: 'Watch on YouTube',
+    logTitle: 'BUILD LOG · everything published',
+    logEmpty: 'Nothing published yet.',
+    logAll: 'See all posts',
+    contactPlate: 'SHEET D · CONTACT',
+    contactBefore: 'Got a project? ',
+    contactAccent: "Let's draw it.",
+    followLabel: 'Follow me',
+    followNav: 'Social links',
+    newsletterLabel: 'NEWSLETTER · the log in your inbox',
+    newsletterBody:
+      'What I build, what I learn and what did not work. You will be able to subscribe right here very soon.',
+    newsletterSoon: 'COMING SOON',
+    status: { idea: 'Idea', beta: 'Beta', live: 'Live', sunset: 'Sunset' },
+    kinds: {
+      youtube: 'video',
+      instagram: 'reel',
+      linkedin: 'post',
+      newsletter: 'news',
+      blog: 'blog',
+      ship: 'ship',
+    },
   },
 }[loc];
+
+const kindColor: Record<ContentChannel, string> = {
+  youtube: 'text-accent',
+  instagram: 'text-accent',
+  linkedin: 'text-cyan',
+  newsletter: 'text-cyan',
+  blog: 'text-cyan',
+  ship: 'text-text-muted',
+};
+const statusColor: Record<ProductStatus, string> = {
+  live: 'text-accent',
+  beta: 'text-accent',
+  idea: 'text-text-muted',
+  sunset: 'text-text-muted',
+};
+
+const socialLabels: Record<string, string> = {
+  youtube: 'YouTube',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  github: 'GitHub',
+  twitter: 'X',
+  x: 'X',
+  tiktok: 'TikTok',
+};
+const socials = Object.entries(settings.socials)
+  .filter(([, href]) => href)
+  .map(([key, href]) => ({
+    href,
+    label: socialLabels[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+  }));
+
+// Planta general: the three products plus the two freshest build-log lines
+// (or product statuses when the log is empty), so the tail never goes stale.
+const tail = (
+  log.length > 0
+    ? log.slice(0, 2).map((e) => `${e.kind}: ${e.title}`)
+    : products.slice(0, 2).map((p) => `${p.name.toLowerCase()}: ${copy.status[p.status]}`)
+).map((line, i) => ({ line, hot: i === 0 }));
+
+const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
+const ext = (href: string) => /^https?:\/\//.test(href);
+
+// Shared class recipes.
+const plateLabel = 'font-mono text-xs uppercase tracking-wide text-accent';
+const h2Class = 'font-display text-4xl leading-none font-normal md:text-5xl lg:text-6xl';
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const btnPrimary = `inline-block bg-accent px-5 py-3.5 font-mono text-sm text-paper transition-colors hover:bg-accent-hover ${focus}`;
+const btnGhost = `inline-block border-[1.5px] border-rule px-5 py-3 font-mono text-sm transition-colors hover:border-accent hover:text-accent ${focus}`;
+const linkAccent = `inline-block border-b-[1.5px] border-accent pb-1 font-mono text-sm transition-colors hover:text-accent ${focus}`;
+const surface = 'border-[1.5px] border-rule bg-bg-elevated';
+const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
 ---
 
-<Layout
-  title="Facundo Pascale — Senior Software Architect"
-  description={copy.sub}
-  locale={loc}
-  currentPageKey="home"
->
-  <div class="mx-auto max-w-5xl px-6">
-    <section class="py-24 md:py-32">
-      <p class="font-mono text-xs text-[var(--color-accent)] mb-4">{copy.tagline}</p>
-      <h1 class="text-5xl md:text-7xl leading-none mb-6">
-        {copy.headline1}<br />
-        <span class="text-[var(--color-accent)]">{copy.headlineAccent}</span>{copy.headline2}
-      </h1>
-      <p class="text-lg text-[var(--color-text-muted)] max-w-xl mb-8">{copy.sub}</p>
-      <div class="flex flex-wrap gap-4 font-mono text-sm">
-        <a
-          href={localizedPath('work', loc)}
-          class="bg-[var(--color-accent)] text-[var(--color-bg)] px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-        >
-          {copy.ctaWork}
-        </a>
-        <a
-          href={localizedPath('blog', loc)}
-          class="border border-[var(--color-border)] px-4 py-2 hover:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-        >
-          {copy.ctaBlog}
-        </a>
-      </div>
-    </section>
-
-    {
-      featuredWork.length > 0 && (
-        <section class="py-16 border-t border-[var(--color-border)]">
-          <h2 class="text-3xl font-display mb-8">{copy.workTitle}</h2>
-          <div class="grid gap-4 md:grid-cols-3">
-            {featuredWork.map((w) => (
-              <ProjectCard
-                locale={loc}
-                slug={w.id.replace(`${loc}/`, '').replace(/\.mdx$/, '')}
-                title={w.data.title}
-                tagline={w.data.tagline}
-                stack={w.data.stack}
-                year={w.data.year}
-              />
-            ))}
-          </div>
-          <a
-            href={localizedPath('work', loc)}
-            class="inline-block mt-8 font-mono text-sm text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+<Layout title={copy.title} description={copy.description} locale={loc} currentPageKey="home" wide>
+  <div class="bg-blueprint">
+    <div class="mx-auto max-w-[1240px] px-6">
+      <!-- Lámina 00 · hero -->
+      <section
+        id="top"
+        class="flex flex-wrap gap-12 border-b-[1.5px] border-rule pt-14 pb-14 md:pt-[72px]"
+      >
+        <div class="flex min-w-0 flex-[999_1_520px] flex-col gap-7">
+          <p class={plateLabel}>{copy.plate}</p>
+          <h1
+            class="m-0 text-[clamp(44px,7vw,92px)] leading-[0.96] font-normal tracking-[-0.025em]"
           >
-            {copy.workAll}
-          </a>
-        </section>
-      )
-    }
+            {copy.h1Before}<em>{copy.h1Accent}</em>{copy.h1After}
+          </h1>
+          <p class="m-0 max-w-[560px] text-xl leading-snug text-text-muted md:text-[21px]">
+            {copy.sub}
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <a href={contactHref} data-cta="book-call" class={btnPrimary}>
+              {copy.ctaPrimary} →
+            </a>
+            <a href={workHref} class={btnGhost}>{copy.ctaWork}</a>
+          </div>
+        </div>
 
-    {
-      recentPosts.length > 0 && (
-        <section class="py-16 border-t border-[var(--color-border)]">
-          <h2 class="text-3xl font-display mb-8">{copy.writingTitle}</h2>
-          {recentPosts.map((p) => {
-            const slug = p.id.replace(`${loc}/`, '').replace(/\.mdx$/, '');
-            // readingTime is attached by the remark plugin at build time but NOT in the Zod schema,
-            // so it lives on the frontmatter output. We read it defensively here.
-            const rt = (p.data as unknown as { readingTime?: number }).readingTime;
-            return (
-              <PostCard
-                locale={loc}
-                slug={slug}
-                title={p.data.title}
-                description={p.data.description}
-                publishedAt={p.data.publishedAt}
-                readingTime={rt}
-                tags={p.data.tags}
+        <div class="flex min-w-0 flex-[1_1_340px] flex-col gap-5">
+          <figure
+            class="relative isolate m-0 overflow-hidden border-[1.5px] border-rule bg-bg-elevated"
+          >
+            <div class="relative aspect-[4/3] overflow-hidden">
+              <Image
+                src={portrait}
+                alt={copy.portraitAlt}
+                width={720}
+                height={540}
+                widths={[360, 540, 720]}
+                sizes="(min-width: 1024px) 480px, 100vw"
+                loading="eager"
+                class="h-full w-full object-cover object-[50%_22%] contrast-110 grayscale"
               />
-            );
-          })}
+              <div
+                class="pointer-events-none absolute inset-0 bg-cyan opacity-70 mix-blend-color"
+                aria-hidden="true"
+              >
+              </div>
+              <div
+                class="pointer-events-none absolute inset-0 bg-blueprint opacity-60 mix-blend-soft-light"
+                aria-hidden="true"
+              >
+              </div>
+            </div>
+            <figcaption
+              class={`flex justify-between border-t-[1.5px] border-rule px-3 py-2 ${meta}`}
+            >
+              <span>{copy.portraitCaption}</span>
+              <span>Facundo Pascale</span>
+            </figcaption>
+          </figure>
+
+          <div class={`${surface} flex flex-col gap-3 p-5 font-mono text-xs`} aria-hidden="true">
+            <div class="flex justify-between text-text-muted">
+              <span>{copy.planTitle}</span><span>{copy.planScale}</span>
+            </div>
+            <svg
+              viewBox="0 0 320 150"
+              class="w-full text-ink"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              role="presentation"
+            >
+              <rect x="1" y="1" width="318" height="44"></rect>
+              <text
+                x="14"
+                y="28"
+                fill="currentColor"
+                stroke="none"
+                font-size="12"
+                font-family="var(--font-mono)">{copy.planAgency}</text
+              >
+              <text
+                x="306"
+                y="28"
+                fill="currentColor"
+                stroke="none"
+                font-size="11"
+                text-anchor="end"
+                font-family="var(--font-mono)"
+                opacity="0.65">{copy.planAgencyTag}</text
+              >
+              <line x1="160" y1="45" x2="160" y2="62" stroke-dasharray="3 3"></line>
+              <rect x="1" y="62" width="100" height="36"></rect>
+              <rect x="110" y="62" width="100" height="36"></rect>
+              <rect x="219" y="62" width="100" height="36"></rect>
+              {
+                products.slice(0, 3).map((p, i) => (
+                  <text
+                    x={51 + i * 109}
+                    y="84"
+                    fill="currentColor"
+                    stroke="none"
+                    font-size="11"
+                    text-anchor="middle"
+                    font-family="var(--font-mono)"
+                  >
+                    {p.name}
+                  </text>
+                ))
+              }
+              <line x1="160" y1="98" x2="160" y2="106" stroke-dasharray="3 3"></line>
+              <rect x="1" y="106" width="318" height="43" stroke-dasharray="5 4" class="text-accent"
+              ></rect>
+              <text
+                x="14"
+                y="132"
+                class="fill-accent"
+                stroke="none"
+                font-size="12"
+                font-family="var(--font-mono)">{copy.planContent}</text
+              >
+              <text
+                x="306"
+                y="132"
+                class="fill-accent"
+                stroke="none"
+                font-size="11"
+                text-anchor="end"
+                font-family="var(--font-mono)">{copy.planContentTag}</text
+              >
+            </svg>
+            <div class="mt-1 flex flex-col gap-2 border-t border-dashed border-rule pt-3">
+              <div class="text-text-muted">{copy.logTail}</div>
+              {
+                tail.map((t) => (
+                  <div class="flex gap-2.5">
+                    <span class={t.hot ? 'text-accent' : 'text-text-dim'}>●</span>
+                    <span class="min-w-0 break-words">{t.line}</span>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Lámina A · agency -->
+      <section
+        id="agency"
+        aria-labelledby="agency-title"
+        class="flex scroll-mt-4 flex-col gap-8 border-b-[1.5px] border-rule py-16"
+      >
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div class="flex flex-col gap-3">
+            <p class={plateLabel}>{copy.agencyPlate}</p>
+            <h2 id="agency-title" class={h2Class}>
+              {copy.agencyBefore}<em>{copy.agencyAccent}</em>
+            </h2>
+          </div>
+          <a href={contactHref} class={linkAccent}>{copy.agencyCta} →</a>
+        </div>
+
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
+          {
+            projects.map((p, i) => (
+              <ShowcaseCard
+                project={p}
+                label={`A.${String(i + 1).padStart(2, '0')}`}
+                linkLabels={{ live: copy.live, appStore: copy.appStore, playStore: copy.playStore }}
+              />
+            ))
+          }
+        </div>
+
+        <div>
+          <a href={workHref} class={linkAccent}>{copy.agencyAll} →</a>
+        </div>
+
+        {
+          testimonial && (
+            <figure class="m-0 flex flex-wrap items-baseline gap-6 border-t border-dashed border-rule pt-6">
+              <blockquote class="m-0 flex-[999_1_480px] text-2xl leading-snug italic md:text-[26px]">
+                “{testimonial.quote}”
+              </blockquote>
+              <figcaption class="flex-[1_1_220px] font-mono text-xs uppercase text-text-muted">
+                {testimonial.author}
+                {testimonial.position || testimonial.company
+                  ? ` — ${[testimonial.position, testimonial.company].filter(Boolean).join(', ')}`
+                  : ''}
+              </figcaption>
+            </figure>
+          )
+        }
+      </section>
+
+      <!-- Lámina B · products -->
+      <section
+        id="products"
+        aria-labelledby="products-title"
+        class="flex scroll-mt-4 flex-col gap-8 border-b-[1.5px] border-rule py-16"
+      >
+        <div class="flex flex-col gap-3">
+          <p class={plateLabel}>{copy.productsPlate}</p>
+          <h2 id="products-title" class={h2Class}>
+            {copy.productsBefore}<em>{copy.productsAccent}</em>
+          </h2>
+        </div>
+        <ul
+          class="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5 p-0"
+        >
+          {
+            products.map((p, i) => (
+              <li class="flex">
+                {p.url ? (
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class={`${surface} group flex w-full min-w-0 flex-col gap-3.5 p-6 transition-colors hover:border-accent ${focus}`}
+                  >
+                    <div class="flex justify-between font-mono text-[11px] uppercase">
+                      <span class="text-text-muted">B.{String(i + 1).padStart(2, '0')}</span>
+                      <span class={statusColor[p.status]}>● {copy.status[p.status]}</span>
+                    </div>
+                    <h3 class="m-0 text-[32px] leading-tight font-normal group-hover:text-accent">
+                      {p.name}
+                    </h3>
+                    <p class="m-0 text-base leading-snug text-text-muted">{p.tagline}</p>
+                    <span class="mt-auto font-mono text-xs break-all">
+                      {p.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
+                    </span>
+                  </a>
+                ) : (
+                  <div class={`${surface} flex w-full min-w-0 flex-col gap-3.5 p-6`}>
+                    <div class="flex justify-between font-mono text-[11px] uppercase">
+                      <span class="text-text-muted">B.{String(i + 1).padStart(2, '0')}</span>
+                      <span class={statusColor[p.status]}>● {copy.status[p.status]}</span>
+                    </div>
+                    <h3 class="m-0 text-[32px] leading-tight font-normal">{p.name}</h3>
+                    <p class="m-0 text-base leading-snug text-text-muted">{p.tagline}</p>
+                  </div>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <!-- Lámina C · content -->
+      <section
+        id="content"
+        aria-labelledby="content-title"
+        class="flex scroll-mt-4 flex-wrap gap-12 border-b-[1.5px] border-rule py-16"
+      >
+        <div class="flex min-w-0 flex-[999_1_520px] flex-col gap-6">
+          <p class={plateLabel}>{copy.contentPlate}</p>
+          <h2 id="content-title" class={h2Class}>
+            {copy.contentBefore}<em>{copy.contentAccent}</em>
+          </h2>
+          {
+            youtubeUrl && (
+              <a
+                href={youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class={`group flex flex-col gap-3 ${focus}`}
+              >
+                <div class="relative flex aspect-video items-end bg-ink p-6 text-paper">
+                  <span class="absolute top-5 left-6 font-mono text-xs text-accent-brand">
+                    {copy.youtubeKicker}
+                  </span>
+                  <span class="max-w-[420px] text-[clamp(26px,3.4vw,44px)] leading-none">
+                    {youtubeEntry?.title ?? copy.youtubeFallback}
+                  </span>
+                </div>
+                <span class="font-mono text-xs group-hover:text-accent">{copy.youtubeCta} ↗</span>
+              </a>
+            )
+          }
+        </div>
+
+        <div
+          id="log"
+          class="flex min-w-0 flex-[1_1_340px] scroll-mt-4 flex-col font-mono text-[13px]"
+        >
+          <h3 class="m-0 pb-3 font-mono text-[13px] font-normal tracking-normal text-text-muted">
+            {copy.logTitle}
+          </h3>
+          {
+            log.length === 0 ? (
+              <p class="m-0 border-t border-rule py-3.5 text-text-muted">{copy.logEmpty}</p>
+            ) : (
+              <ul class="m-0 list-none p-0">
+                {log.map((e) => (
+                  <li class="border-t border-rule">
+                    <a
+                      href={e.url}
+                      {...(ext(e.url) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      class={`flex gap-3 py-3.5 hover:text-accent ${focus}`}
+                    >
+                      <time datetime={fmtDate(e.date)} class="w-[84px] shrink-0 text-text-muted">
+                        {fmtDate(e.date)}
+                      </time>
+                      <span class={`w-11 shrink-0 ${kindColor[e.kind]}`}>{copy.kinds[e.kind]}</span>
+                      <span class="min-w-0">{e.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
           <a
             href={localizedPath('blog', loc)}
-            class="inline-block mt-8 font-mono text-sm text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            class={`border-t border-rule py-3.5 underline underline-offset-4 hover:text-accent ${focus}`}
           >
-            {copy.writingAll}
+            {copy.logAll} →
           </a>
-        </section>
-      )
-    }
+        </div>
+      </section>
+
+      <!-- Lámina D · contact -->
+      <section
+        id="contact"
+        aria-labelledby="contact-title"
+        class="flex scroll-mt-4 flex-wrap gap-12 py-[72px]"
+      >
+        <div class="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
+          <p class={plateLabel}>{copy.contactPlate}</p>
+          <h2
+            id="contact-title"
+            class="font-display text-[clamp(40px,5.5vw,72px)] leading-[0.98] font-normal"
+          >
+            {copy.contactBefore}<em>{copy.contactAccent}</em>
+          </h2>
+          <a
+            href={contactHref}
+            data-cta="book-call"
+            class={`${btnPrimary} self-start text-lg break-all`}
+          >
+            {settings.email ?? copy.ctaPrimary} →
+          </a>
+          {
+            socials.length > 0 && (
+              <nav aria-label={copy.followNav} class="flex flex-col gap-3">
+                <p class={meta}>{copy.followLabel}</p>
+                <ul class="m-0 flex list-none flex-wrap gap-3 p-0 font-mono text-[13px]">
+                  {socials.map((s) => (
+                    <li>
+                      <a
+                        href={s.href}
+                        target="_blank"
+                        rel="me noopener noreferrer"
+                        class={`inline-block border-[1.5px] border-rule px-4 py-3 transition-colors hover:border-accent hover:text-accent ${focus}`}
+                      >
+                        {s.label} ↗
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )
+          }
+        </div>
+        <div class={`${surface} flex min-w-0 flex-[1_1_340px] flex-col gap-3 p-6 self-start`}>
+          <div class="flex justify-between font-mono text-xs text-text-muted">
+            <span>{copy.newsletterLabel}</span>
+            <span class="text-accent">{copy.newsletterSoon}</span>
+          </div>
+          <p class="m-0 text-[17px] leading-snug">{copy.newsletterBody}</p>
+        </div>
+      </section>
+    </div>
   </div>
 </Layout>

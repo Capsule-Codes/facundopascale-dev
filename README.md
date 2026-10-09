@@ -58,12 +58,16 @@ src/
 
 Copy `.env.example` to `.env` and fill in the required values.
 
-| Variable                 | Used by                       | Required for       |
-| ------------------------ | ----------------------------- | ------------------ |
-| `RESEND_API_KEY`         | Contact form (Astro Action)   | Production deploy  |
-| `CONTACT_EMAIL_TO`       | Contact form recipient        | Production deploy  |
-| `VERCEL_DEPLOY_HOOK_URL` | `/api/revalidate` cron        | Scheduled rebuilds |
-| `CRON_SECRET`            | `/api/revalidate` bearer auth | Scheduled rebuilds |
+| Variable                   | Used by                                     | Required for                      |
+| -------------------------- | ------------------------------------------- | --------------------------------- |
+| `RESEND_API_KEY`           | Contact form (Astro Action)                 | Production deploy                 |
+| `CONTACT_EMAIL_TO`         | Contact form recipient                      | Production deploy                 |
+| `PUBLIC_SUPABASE_URL`      | Build-time content (`src/lib/site-data.ts`) | Real content (fixtures otherwise) |
+| `PUBLIC_SUPABASE_ANON_KEY` | Build-time content (public anon key)        | Real content (fixtures otherwise) |
+
+Rebuilds are event-driven: changes to the site's Supabase content call the Vercel deploy hook stored in
+Supabase Vault as `facundopascale_deploy_hook`, and `pg_cron` publishes scheduled content every 15 minutes
+(`supabase/migrations/20261009150000_event_driven_rebuild.sql`).
 
 ## Project docs
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 type Theme = 'dark' | 'light';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
     try {
@@ -12,10 +12,10 @@ export default function ThemeToggle() {
         setTheme(stored);
         return;
       }
-      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-      setTheme(prefersLight ? 'light' : 'dark');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
     } catch {
-      /* ignore: localStorage/matchMedia unavailable — keep SSR default 'dark' */
+      /* ignore: localStorage/matchMedia unavailable — keep SSR default 'light' */
     }
   }, []);
 
@@ -35,7 +35,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label="Toggle theme"
-      aria-pressed={theme === 'light'}
+      aria-pressed={theme === 'dark'}
       className="font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border border-[var(--color-border)] px-2 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
     >
       {theme === 'dark' ? '☀' : '☾'}

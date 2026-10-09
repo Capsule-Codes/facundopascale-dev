@@ -6,6 +6,7 @@ import {
   fixtureProducts,
   fixtureShowcase,
   fixtureSiteSettings,
+  fixtureTestimonials,
 } from './site-data.fixtures';
 
 /**
@@ -89,6 +90,18 @@ export type SiteSettingsRow = {
   translations: Translations<{ bio: string }>;
 };
 
+export type TestimonialRow = {
+  id: string;
+  text: string;
+  author: string;
+  company: string | null;
+  position: string | null;
+  translations: Translations<{ text: string; company: string; position: string }>;
+  rating: number | null;
+  avatar: string | null;
+  date: string | null;
+};
+
 // ---------------------------------------------------------------------------
 // Domain types
 // ---------------------------------------------------------------------------
@@ -136,6 +149,18 @@ export type SiteSettings = {
   email?: string;
   socials: Record<string, string>;
   bio: string;
+};
+
+export type Testimonial = {
+  id: string;
+  quote: string;
+  author: string;
+  company: string;
+  position: string;
+  rating: number;
+  avatar?: string;
+  /** `null` when the source date is missing or unparseable. */
+  date: Date | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -228,6 +253,49 @@ export function toSiteSettings(row: SiteSettingsRow, locale: Locale): SiteSettin
   return settings;
 }
 
+const collapseWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+function parseDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function toTestimonial(row: TestimonialRow, locale: Locale): Testimonial {
+  const testimonial: Testimonial = {
+    id: row.id,
+    quote: collapseWhitespace(pick(row.translations, locale, 'text') ?? row.text),
+    author: row.author,
+    company: pick(row.translations, locale, 'company') ?? row.company ?? '',
+    position: pick(row.translations, locale, 'position') ?? row.position ?? '',
+    rating: row.rating ?? 0,
+    date: parseDate(row.date),
+  };
+  const avatar = nonEmpty(row.avatar);
+  if (avatar) testimonial.avatar = avatar;
+  return testimonial;
+}
+
+/**
+ * Pick the testimonial to feature: the one whose author contains
+ * `preferredAuthor` (case-insensitive) if any, otherwise highest rating, then
+ * most recent.
+ */
+export function pickFeaturedTestimonial(
+  list: Testimonial[],
+  preferredAuthor?: string
+): Testimonial | undefined {
+  const needle = preferredAuthor?.trim().toLowerCase();
+  const preferred = needle ? list.find((t) => t.author.toLowerCase().includes(needle)) : undefined;
+  if (preferred) return preferred;
+  const time = (t: Testimonial): number => t.date?.getTime() ?? Number.NEGATIVE_INFINITY;
+  // Array#sort is stable, so full ties keep input order. Compare (not subtract)
+  // because -Infinity - -Infinity is NaN.
+  const byRecency = (a: Testimonial, b: Testimonial): number =>
+    time(a) === time(b) ? 0 : time(b) > time(a) ? 1 : -1;
+  return [...list].sort((a, b) => b.rating - a.rating || byRecency(a, b))[0];
+}
+
 /** Minimal shape of an Astro `blog` collection entry (already published and locale-filtered). */
 export type BlogPostInput = {
   id: string;
@@ -309,6 +377,12 @@ const SOURCES = {
     query: (q) =>
       q.select('*').eq('status', 'published').order('published_at', { ascending: false }),
   },
+  reviews: {
+    schema: 'public',
+    table: 'reviews',
+    fixture: fixtureTestimonials,
+    query: (q) => q.select('*').order('date', { ascending: false }),
+  },
   siteSettings: {
     schema: 'personal',
     table: 'site_settings',
@@ -323,6 +397,7 @@ type RowOf = {
   products: ProductRow;
   contentItems: ContentItemRow;
   siteSettings: SiteSettingsRow;
+  reviews: TestimonialRow;
 };
 
 const cache = new Map<SourceName, Promise<unknown[]>>();
@@ -395,4 +470,8 @@ export async function getSiteSettings(locale: Locale): Promise<SiteSettings> {
   // the live table is empty: fail the build rather than ship placeholder settings.
   if (!row) throw new Error('[site-data] No row found in personal.site_settings (id = 1)');
   return toSiteSettings(row, locale);
+}
+
+export async function getTestimonials(locale: Locale): Promise<Testimonial[]> {
+  return (await load('reviews')).map((row) => toTestimonial(row, locale));
 }

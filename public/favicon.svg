@@ -1,4 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#0c0a09"/>
-  <text x="50%" y="50%" font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="28" font-weight="700" fill="#f97316" text-anchor="middle" dominant-baseline="central" letter-spacing="-1">FP</text>
+  <style>
+    .paper { fill: #F1EEE6; }
+    .frame { stroke: #1E3A8A; }
+    .ink { fill: #14213D; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #0D1424; }
+      .frame { stroke: #FF7A4D; }
+      .ink { fill: #F1EEE6; }
+    }
+  </style>
+  <rect class="paper" width="64" height="64" rx="8"/>
+  <rect class="frame" x="5" y="5" width="54" height="54" rx="3" fill="none" stroke-width="2"/>
+  <path class="ink" d="M25.69 27.64V32.84V38.06H23.7L23.28 34.06H14V31.61H23.28L23.7 27.64ZM28.69 18H29.47L30.73 27.07L29.28 27.25L25.63 20.76L27.95 21.78H13.65V19.27H26.4ZM16.82 19.27V43.84L19.9 44.92V46H8.35V44.92L11.42 43.84V21.44L8.35 20.35V19.27ZM50.24 27.11Q50.24 25.41 49.58 24.24Q48.92 23.06 47.44 22.45Q45.97 21.83 43.47 21.83H37.27L37.17 19.27H45.34Q49.05 19.27 51.32 20.28Q53.58 21.3 54.62 23.03Q55.65 24.77 55.65 26.95Q55.65 29.17 54.59 30.99Q53.53 32.81 51.29 33.88Q49.05 34.95 45.47 34.95H37.12L37.27 32.41H44.83Q46.44 32.41 47.65 31.81Q48.86 31.21 49.55 30.04Q50.24 28.87 50.24 27.11ZM40.76 19.27V43.84L43.84 44.92V46H32.28V44.92L35.36 43.84V21.44L32.28 20.35V19.27Z"/>
 </svg>

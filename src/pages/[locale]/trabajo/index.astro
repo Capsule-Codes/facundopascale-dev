@@ -1,49 +1,9 @@
 ---
-import { getCollection } from 'astro:content';
-import Layout from '../../../components/Layout.astro';
-import ProjectCard from '../../../components/ProjectCard.astro';
-import { byLocale } from '../../../lib/content';
-import { type Locale } from '../../../lib/i18n';
+import WorkList from '../../../components/WorkList.astro';
 
 export function getStaticPaths() {
   return [{ params: { locale: 'es' } }];
 }
-
-const loc: Locale = 'es';
-const work = byLocale(await getCollection('work'), loc).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<Layout
-  title="Trabajo — Facundo Pascale"
-  description="Proyectos destacados de Facundo Pascale"
-  locale={loc}
-  currentPageKey="work"
->
-  <div class="mx-auto max-w-5xl px-6 py-24">
-    <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// trabajo</p>
-    <h1 class="text-5xl font-display mb-4">Trabajo</h1>
-    <p class="text-[var(--color-text-muted)] mb-12 max-w-2xl">
-      Una selección de proyectos que cuentan el rango técnico con el que laburo — mobile, web,
-      desktop, IA, arquitectura monorepo.
-    </p>
-
-    {
-      work.length > 0 ? (
-        <div class="grid gap-4 md:grid-cols-2">
-          {work.map((w) => (
-            <ProjectCard
-              locale={loc}
-              slug={w.id.replace(`${loc}/`, '').replace(/\.mdx$/, '')}
-              title={w.data.title}
-              tagline={w.data.tagline}
-              stack={w.data.stack}
-              year={w.data.year}
-            />
-          ))}
-        </div>
-      ) : (
-        <p class="text-[var(--color-text-muted)] font-mono text-sm">Proyectos próximamente.</p>
-      )
-    }
-  </div>
-</Layout>
+<WorkList locale="es" />

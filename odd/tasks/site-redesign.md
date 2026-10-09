@@ -50,14 +50,14 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T2.2 Build-time data layer `src/lib/site-data.ts`: typed fetchers for showcase, products, log
       (published content_items + blog posts), site settings; locale resolution of `translations`; fixture
       fallback when Supabase env is absent (CI). Unit tests — route: delegated writer
-- [ ] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
+- [x] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
       JetBrains Mono, Shiki bridge — route: delegated writer
-- [ ] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
+- [x] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
       log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
-- [ ] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
+- [x] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
       pages) — route: delegated writer
-- [ ] T2.6 Replace hourly cron with event-driven rebuild (Supabase DB webhook → Vercel deploy hook);
-      needs remote authorization — route: inline
+- [x] T2.6 Event-driven rebuild: DB triggers + pg_cron, Vercel project, deploy hook in Vault, verified end to end — route: inline
+- [x] T2.7 Favicon: Blueprint monogram ("FP" Newsreader outlines, paper + cyanotype frame, dark variant) and Apple touch icon — route: inline
 
 ## Progress / evidence
 
@@ -103,6 +103,64 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Open follow-ups (non-blocking): seed/publish migrations join by non-unique title; storage host
   hard-coded in publish migration; rejected promise stays cached (intended: fail build).
 
+- T2.3: light paper default + ink dark; Newsreader (display and body, as in the reference) + JetBrains
+  Mono; Fraunces/Inter removed (OG keeps committed TTFs). Brand orange #E8471C fails AA as text (3.39:1)
+  → `--color-accent` #C7380F for text (4.53:1), `--color-accent-brand` for fills/large text. No unit seam
+  (CSS only). Checks: test 60/60, check 0 errors, lint clean, build ok, e2e 24/24. Slice #2
+  `feat/site-redesign-03-tokens` (child of 02-data).
+
+- T2.4: home rebuilt (Láminas 00/A/B/C/D + title-block footer) on Supabase data; testimonials from
+  `public.reviews` (featured: Ricardo Mejia). RED: 11 unit + 12 e2e failing; GREEN: unit 68/68, e2e 32/32,
+  check/lint/build ok; real-data build verified visually. Slice #3 `feat/site-redesign-04-home`.
+- Open content items (user): `site_settings.email/socials` empty → CTA falls back to contact page;
+  showcase summaries empty → cards show long descriptions; footer "Argentina ↔ Italia" and hard-coded
+  socials (incl. Twitter) to confirm.
+- Security follow-up (pre-existing, capsulecodes.com): `public.reviews` lets any authenticated user
+  insert/update/delete. Not changed without user OK.
+
+- RDD slice d884ef7..7e26ada (lineage review-86dabe577176aba0): consent granted, reliability lens,
+  APPROVED and acknowledged; boundary → 7e26ada. Advisory follow-ups fixed next commit: theme e2e
+  (default/system/stored/toggle; fixed inverted `aria-pressed`), testimonial + log render e2e,
+  testimonial date `Date | null`. Unit 71/71, e2e 42/42.
+
+- T2.5: `WorkList` + shared `ShowcaseCard` (home uses it too); MDX case studies matched by normalized title
+  prefix (`src/lib/case-studies.ts`), unmatched ones (FitCoach) listed. RED unit + 8 e2e failing; GREEN unit
+  79/79, e2e 54/54, check/lint/build ok; real-data screenshot verified. Slice #4 `feat/site-redesign-05-work`.
+
+- RDD slice 7e26ada..d38d323 (lineage review-adacea672ea5b4be): granted, APPROVED, acknowledged; boundary → d38d323.
+  Open follow-ups: case-study matching loose for short titles; no e2e for empty showcase.
+- T2.6 RED: `personal.request_site_rebuild()` / `publish_due_content()` absent. GREEN (rolled-back txn):
+  publish_due_content published 1 due item (published_at set), second run 0, no pg_net request without the
+  Vault secret, cron job `personal-publish-due-content` (\*/15) present. Advisors: no findings on new
+  functions; revoked anon EXECUTE on `personal.is_admin()` (flagged after exposing `personal`); anon reads
+  still 200, anon RPC is_admin → 42501. Repo: removed `vercel.json` cron and `/api/revalidate`; README env
+  table updated. check 0 errors, build ok. Remote authorization granted by user (2026-10-09).
+- Blocker: no Vercel project for facundopascale.dev (checked personal hobby + CapsuleCodes teams) → no
+  deploy hook; Vault secret `facundopascale_deploy_hook` not set yet; PUBLIC*SUPABASE*\* not set in Vercel.
+
+- Vercel (user: CapsuleCodes Pro team, 2026-10-09): project `facundopascale-dev` created and linked
+  (prj_fR0WhdOcsKtioX6BZ8L5KwAzrXzX), framework astro, PUBLIC_SUPABASE_URL/ANON_KEY added to production,
+  preview and development (anon key as `config`, it is public). `vercel link` appended `.env*` to
+  .gitignore → reverted (`.env.local` already ignored; `.env*` would hide `.env.example`).
+- Blocked on user: (1) Git connect fails — Vercel GitHub app for CapsuleCodes lacks write access to
+  `facupascale/facundopascale-dev` (400); (2) Web Analytics has no documented enable API
+  (`features.webAnalytics: false`) → enable in dashboard; code already has `webAnalytics.enabled`.
+  Contact form env (RESEND_API_KEY, CONTACT_EMAIL_TO) not set in Vercel.
+
+- Repo transferred (user, 2026-10-09) from `facupascale` to `Capsule-Codes/facundopascale-dev` (public);
+  local `origin` updated; Vercel Git connected. Deploy hook `supabase-content` (ref `main`) created and
+  stored only in Vault as `facundopascale_deploy_hook`. GREEN: no-op update on `personal.site_settings`
+  → pg_net request → production deployment built and Ready. Deployments build `main` until the chain lands.
+- Env is Production-only (user: single environment); preview/dev builds fall back to fixtures. Web
+  Analytics enabled and RESEND_API_KEY / CONTACT_EMAIL_TO set by user (verified 2026-10-09).
+
+- Delivery (user, 2026-10-09): chain pushed. Tracker draft PR #1 (`feat/site-redesign` → `main`, stage 1);
+  slices #2 02-data (`size:exception`), #3 03-tokens, #4 04-home (`size:exception`), #5 05-work,
+  #6 06-rebuild, each targeting its parent branch.
+
+- T2.7 (user chose "monograma plano"): RED favicon e2e 2 failed; GREEN e2e 56/56, build/check/lint ok; rendered
+  light/dark/32px checked. Commit dff144a, RDD assess medium under_budget (pending in slice). PR #7 (07-favicon → 06-rebuild).
+
 ## Next step
 
-T2.3 — Blueprint design tokens.
+Stage 3 (`/admin` with Supabase Auth).
