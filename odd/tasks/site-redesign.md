@@ -54,7 +54,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
       JetBrains Mono, Shiki bridge — route: delegated writer
 - [x] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
       log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
-- [ ] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
+- [x] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
       pages) — route: delegated writer
 - [ ] T2.6 Replace hourly cron with event-driven rebuild (Supabase DB webhook → Vercel deploy hook);
       needs remote authorization — route: inline
@@ -123,6 +123,10 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   (default/system/stored/toggle; fixed inverted `aria-pressed`), testimonial + log render e2e,
   testimonial date `Date | null`. Unit 71/71, e2e 42/42.
 
+- T2.5: `WorkList` + shared `ShowcaseCard` (home uses it too); MDX case studies matched by normalized title
+  prefix (`src/lib/case-studies.ts`), unmatched ones (FitCoach) listed. RED unit + 8 e2e failing; GREEN unit
+  79/79, e2e 54/54, check/lint/build ok; real-data screenshot verified. Slice #4 `feat/site-redesign-05-work`.
+
 ## Next step
 
-T2.5 — /work and /trabajo from Supabase.
+T2.6 — event-driven rebuild (needs remote authorization: Vercel env vars + deploy hook, Supabase webhook).

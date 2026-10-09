@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 import Layout from '../../components/Layout.astro';
+import ShowcaseCard from '../../components/ShowcaseCard.astro';
 import portrait from '../../assets/facundo-portrait.jpg';
 import { isLocale, type Locale, localizedPath } from '../../lib/i18n';
 import { filterPublished, byLocale } from '../../lib/content';
@@ -384,66 +385,13 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
 
         <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
           {
-            projects.map((p, i) => {
-              const cover = p.gallery[0];
-              const links = [
-                p.links.live && { href: p.links.live, label: copy.live },
-                p.links.appStore && { href: p.links.appStore, label: copy.appStore },
-                p.links.playStore && { href: p.links.playStore, label: copy.playStore },
-              ].filter((l): l is { href: string; label: string } => Boolean(l));
-              return (
-                <article class={`${surface} flex min-w-0 flex-col`}>
-                  <div class="relative flex h-[180px] items-center justify-center overflow-hidden border-b-[1.5px] border-rule bg-blueprint">
-                    {p.image ? (
-                      <img
-                        src={cover?.src ?? p.image}
-                        alt={cover?.alt || p.title}
-                        width={cover?.width || 640}
-                        height={cover?.height || 360}
-                        loading="lazy"
-                        decoding="async"
-                        class="h-full w-full object-cover object-top"
-                      />
-                    ) : (
-                      <span class={meta} aria-hidden="true">
-                        [{p.title}]
-                      </span>
-                    )}
-                  </div>
-                  <div class="flex flex-1 flex-col gap-2.5 p-5">
-                    <p class={meta}>
-                      A.{String(i + 1).padStart(2, '0')}
-                      {p.category ? ` · ${p.category}` : ''}
-                    </p>
-                    <h3 class="m-0 text-[28px] leading-tight font-normal">{p.title}</h3>
-                    <p class="m-0 line-clamp-4 text-base leading-snug text-text-muted">
-                      {p.summary}
-                    </p>
-                    {p.technologies.length > 0 && (
-                      <p class="m-0 font-mono text-[11px] leading-relaxed">
-                        {p.technologies.join(' · ')}
-                      </p>
-                    )}
-                    {links.length > 0 && (
-                      <ul class="m-0 mt-auto flex list-none flex-wrap gap-x-4 gap-y-1 p-0 pt-2 font-mono text-xs">
-                        {links.map((l) => (
-                          <li>
-                            <a
-                              href={l.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              class={`underline underline-offset-4 hover:text-accent ${focus}`}
-                            >
-                              {l.label} ↗
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </article>
-              );
-            })
+            projects.map((p, i) => (
+              <ShowcaseCard
+                project={p}
+                label={`A.${String(i + 1).padStart(2, '0')}`}
+                linkLabels={{ live: copy.live, appStore: copy.appStore, playStore: copy.playStore }}
+              />
+            ))
           }
         </div>
 
