@@ -27,9 +27,19 @@ interface Props {
   currentPageKey?: PageKey;
   currentDocId?: string;
   currentCollection?: 'blog' | 'work';
+  /** Use the wide (1240px) page container in header and footer, as the home page does. */
+  wide?: boolean;
 }
 
-const { title, description, locale, currentPageKey, currentDocId, currentCollection } = Astro.props;
+const {
+  title,
+  description,
+  locale,
+  currentPageKey,
+  currentDocId,
+  currentCollection,
+  wide = false,
+} = Astro.props;
 
 // Resolve the OG image URL for this page. The slug MUST match the one the
 // `src/pages/og/[...slug].png.ts` endpoint emits — `buildOgSlug` is the
@@ -175,13 +185,14 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
   <body class="min-h-screen flex flex-col">
     <Header
       locale={locale}
+      wide={wide}
       {...currentDocId !== undefined ? { currentDocId } : {}}
       {...currentCollection !== undefined ? { currentCollection } : {}}
     />
     <main id="main" class="flex-1">
       <slot />
     </main>
-    <Footer locale={locale} />
+    <Footer locale={locale} wide={wide} />
     <script is:inline>
       (function () {
         try {

@@ -52,7 +52,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
       fallback when Supabase env is absent (CI). Unit tests — route: delegated writer
 - [x] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
       JetBrains Mono, Shiki bridge — route: delegated writer
-- [ ] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
+- [x] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
       log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
 - [ ] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
       pages) — route: delegated writer
@@ -109,6 +109,20 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   (CSS only). Checks: test 60/60, check 0 errors, lint clean, build ok, e2e 24/24. Slice #2
   `feat/site-redesign-03-tokens` (child of 02-data).
 
+- T2.4: home rebuilt (Láminas 00/A/B/C/D + title-block footer) on Supabase data; testimonials from
+  `public.reviews` (featured: Ricardo Mejia). RED: 11 unit + 12 e2e failing; GREEN: unit 68/68, e2e 32/32,
+  check/lint/build ok; real-data build verified visually. Slice #3 `feat/site-redesign-04-home`.
+- Open content items (user): `site_settings.email/socials` empty → CTA falls back to contact page;
+  showcase summaries empty → cards show long descriptions; footer "Argentina ↔ Italia" and hard-coded
+  socials (incl. Twitter) to confirm.
+- Security follow-up (pre-existing, capsulecodes.com): `public.reviews` lets any authenticated user
+  insert/update/delete. Not changed without user OK.
+
+- RDD slice d884ef7..7e26ada (lineage review-86dabe577176aba0): consent granted, reliability lens,
+  APPROVED and acknowledged; boundary → 7e26ada. Advisory follow-ups fixed next commit: theme e2e
+  (default/system/stored/toggle; fixed inverted `aria-pressed`), testimonial + log render e2e,
+  testimonial date `Date | null`. Unit 71/71, e2e 42/42.
+
 ## Next step
 
-T2.4 — home redesign.
+T2.5 — /work and /trabajo from Supabase.

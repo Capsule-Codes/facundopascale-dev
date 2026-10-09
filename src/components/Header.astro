@@ -9,8 +9,9 @@ interface Props {
   locale: Locale;
   currentDocId?: string;
   currentCollection?: 'blog' | 'work';
+  wide?: boolean;
 }
-const { locale, currentDocId, currentCollection } = Astro.props;
+const { locale, currentDocId, currentCollection, wide = false } = Astro.props;
 
 const other: Locale = locale === 'es' ? 'en' : 'es';
 
@@ -55,7 +56,12 @@ const nav = [
   >
     {locale === 'es' ? 'Saltar al contenido' : 'Skip to content'}
   </a>
-  <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+  <div
+    class:list={[
+      'mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-5',
+      wide ? 'max-w-[1240px]' : 'max-w-5xl',
+    ]}
+  >
     <a
       href={localizedPath('home', locale)}
       class="font-mono text-xs uppercase tracking-widest text-[var(--color-text)] focus-visible:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
@@ -64,7 +70,7 @@ const nav = [
     </a>
     <nav
       aria-label={locale === 'es' ? 'Principal' : 'Primary'}
-      class="flex items-center gap-6 text-sm"
+      class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"
     >
       {
         nav.map((item) => (
