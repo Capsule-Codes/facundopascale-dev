@@ -46,7 +46,18 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
       to `public.projects` (unpublished until screenshots) — route: inline (2 SQL files)
 - [x] T1.4 Screenshots: Horus from local run (controlled demo data, no patient data), UR POV from repo
       assets; upload to `images/projects/<id>/`; then set `published=true` (shows on capsulecodes.com too)
-- [ ] T2.x (to be detailed when stage 2 starts)
+- [x] T2.1 View `personal.showcase` (published projects joined with showcase order) — route: inline (1 SQL file)
+- [ ] T2.2 Build-time data layer `src/lib/site-data.ts`: typed fetchers for showcase, products, log
+      (published content_items + blog posts), site settings; locale resolution of `translations`; fixture
+      fallback when Supabase env is absent (CI). Unit tests — route: delegated writer
+- [ ] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
+      JetBrains Mono, Shiki bridge — route: delegated writer
+- [ ] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
+      log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
+- [ ] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
+      pages) — route: delegated writer
+- [ ] T2.6 Replace hourly cron with event-driven rebuild (Supabase DB webhook → Vercel deploy hook);
+      needs remote authorization — route: inline
 
 ## Progress / evidence
 
@@ -73,6 +84,12 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   migration `publish_horus_and_urpov` applied; anon reads both as published (Horus 3 images, UR POV 1).
   `show_on_home` left false on capsulecodes.com.
 
+- T2.1 RED: `personal.showcase` → PGRST205 (absent). GREEN: anon REST returns 8 published rows ordered
+  highlighted first. `personal` schema exposed in Data API (user, 2026-10-09).
+- Stage 2 decisions: PostgREST cannot embed across schemas → view. Build Log merges published
+  `content_items` with blog posts. Years-of-experience claims stay out (LinkedIn/CV disagree).
+- Delivery forecast stage 2: ~1100 authored lines → over budget, chain strategy pending (user).
+
 ## Next step
 
-T2.x — detail and start stage 2 (Astro home redesign reading Supabase).
+T2.2 — data layer.
