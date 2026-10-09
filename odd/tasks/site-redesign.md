@@ -137,6 +137,16 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - Blocker: no Vercel project for facundopascale.dev (checked personal hobby + CapsuleCodes teams) → no
   deploy hook; Vault secret `facundopascale_deploy_hook` not set yet; PUBLIC*SUPABASE*\* not set in Vercel.
 
+- Vercel (user: CapsuleCodes Pro team, 2026-10-09): project `facundopascale-dev` created and linked
+  (prj_fR0WhdOcsKtioX6BZ8L5KwAzrXzX), framework astro, PUBLIC_SUPABASE_URL/ANON_KEY added to production,
+  preview and development (anon key as `config`, it is public). `vercel link` appended `.env*` to
+  .gitignore → reverted (`.env.local` already ignored; `.env*` would hide `.env.example`).
+- Blocked on user: (1) Git connect fails — Vercel GitHub app for CapsuleCodes lacks write access to
+  `facupascale/facundopascale-dev` (400); (2) Web Analytics has no documented enable API
+  (`features.webAnalytics: false`) → enable in dashboard; code already has `webAnalytics.enabled`.
+  Contact form env (RESEND_API_KEY, CONTACT_EMAIL_TO) not set in Vercel.
+
 ## Next step
 
-Decide Vercel team for facundopascale.dev, create project + deploy hook, set env, store hook in Vault.
+After git connect: create deploy hook (`vercel deploy-hooks`), store it in Vault as
+`facundopascale_deploy_hook`, verify one trigger → deployment.
