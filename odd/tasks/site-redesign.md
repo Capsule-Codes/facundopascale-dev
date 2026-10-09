@@ -47,7 +47,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T1.4 Screenshots: Horus from local run (controlled demo data, no patient data), UR POV from repo
       assets; upload to `images/projects/<id>/`; then set `published=true` (shows on capsulecodes.com too)
 - [x] T2.1 View `personal.showcase` (published projects joined with showcase order) — route: inline (1 SQL file)
-- [ ] T2.2 Build-time data layer `src/lib/site-data.ts`: typed fetchers for showcase, products, log
+- [x] T2.2 Build-time data layer `src/lib/site-data.ts`: typed fetchers for showcase, products, log
       (published content_items + blog posts), site settings; locale resolution of `translations`; fixture
       fallback when Supabase env is absent (CI). Unit tests — route: delegated writer
 - [ ] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
@@ -88,8 +88,21 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   highlighted first. `personal` schema exposed in Data API (user, 2026-10-09).
 - Stage 2 decisions: PostgREST cannot embed across schemas → view. Build Log merges published
   `content_items` with blog posts. Years-of-experience claims stay out (LinkedIn/CV disagree).
-- Delivery forecast stage 2: ~1100 authored lines → over budget, chain strategy pending (user).
+- Delivery forecast stage 2: ~1100 authored lines → over budget. Strategy: ask-on-risk → user chose
+  `feature-branch-chain` (2026-10-09): slice PRs target `feat/site-redesign`, one final PR to `main`.
+
+- T2.2 RED: vitest 1 failed file (module absent). GREEN: 58/58 (17 new); check 0 errors; lint clean;
+  smoke with real anon key: showcase 8, products 3, content_items 0, settings 1. Env read via
+  `import.meta.env.PUBLIC_SUPABASE_URL/ANON_KEY`; fixtures when absent; throw on fetch error when present.
+- Slices (feature-branch-chain, tracker `feat/site-redesign` → `main`): #1 `feat/site-redesign-02-data`
+  (T2.2, ~806 authored lines, 307 of them tests — single cohesive unit, `size:exception` recommended).
+
+- RDD slice main..d884ef7 (lineage review-21035c8edf66e9f1): consent granted, 1 lens (reliability),
+  APPROVED and acknowledged; reviewed boundary → d884ef7. Advisory follow-ups fixed in next commit:
+  settings empty-row now throws with env present; fake builder asserts filters/order (60/60 tests).
+  Open follow-ups (non-blocking): seed/publish migrations join by non-unique title; storage host
+  hard-coded in publish migration; rejected promise stays cached (intended: fail build).
 
 ## Next step
 
-T2.2 — data layer.
+T2.3 — Blueprint design tokens.
