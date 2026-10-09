@@ -57,6 +57,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
       pages) — route: delegated writer
 - [x] T2.6 Event-driven rebuild: DB triggers + pg_cron, Vercel project, deploy hook in Vault, verified end to end — route: inline
+- [x] T2.7 Favicon: Blueprint monogram ("FP" Newsreader outlines, paper + cyanotype frame, dark variant) and Apple touch icon — route: inline
 
 ## Progress / evidence
 
@@ -157,6 +158,9 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   slices #2 02-data (`size:exception`), #3 03-tokens, #4 04-home (`size:exception`), #5 05-work,
   #6 06-rebuild, each targeting its parent branch.
 
+- T2.7 (user chose "monograma plano"): RED favicon e2e 2 failed; GREEN e2e 56/56, build/check/lint ok; rendered
+  light/dark/32px checked. Commit dff144a, RDD assess medium under_budget (pending in slice). PR #7 (07-favicon → 06-rebuild).
+
 ## Next step
 
-Favicon refresh for the Blueprint brand (user asked, design pending). Then stage 3 (`/admin`).
+Stage 3 (`/admin` with Supabase Auth).
