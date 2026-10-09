@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 type Theme = 'dark' | 'light';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
     try {
@@ -12,10 +12,10 @@ export default function ThemeToggle() {
         setTheme(stored);
         return;
       }
-      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-      setTheme(prefersLight ? 'light' : 'dark');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
     } catch {
-      /* ignore: localStorage/matchMedia unavailable — keep SSR default 'dark' */
+      /* ignore: localStorage/matchMedia unavailable — keep SSR default 'light' */
     }
   }, []);
 
