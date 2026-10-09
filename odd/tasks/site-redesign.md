@@ -56,8 +56,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
       log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
 - [x] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
       pages) — route: delegated writer
-- [ ] T2.6 Replace hourly cron with event-driven rebuild (Supabase DB webhook → Vercel deploy hook);
-      needs remote authorization — route: inline
+- [~] T2.6 Event-driven rebuild: DB side + repo done; Vercel project/deploy hook pending (no Vercel project exists yet) — route: inline
 
 ## Progress / evidence
 
@@ -127,6 +126,17 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   prefix (`src/lib/case-studies.ts`), unmatched ones (FitCoach) listed. RED unit + 8 e2e failing; GREEN unit
   79/79, e2e 54/54, check/lint/build ok; real-data screenshot verified. Slice #4 `feat/site-redesign-05-work`.
 
+- RDD slice 7e26ada..d38d323 (lineage review-adacea672ea5b4be): granted, APPROVED, acknowledged; boundary → d38d323.
+  Open follow-ups: case-study matching loose for short titles; no e2e for empty showcase.
+- T2.6 RED: `personal.request_site_rebuild()` / `publish_due_content()` absent. GREEN (rolled-back txn):
+  publish_due_content published 1 due item (published_at set), second run 0, no pg_net request without the
+  Vault secret, cron job `personal-publish-due-content` (\*/15) present. Advisors: no findings on new
+  functions; revoked anon EXECUTE on `personal.is_admin()` (flagged after exposing `personal`); anon reads
+  still 200, anon RPC is_admin → 42501. Repo: removed `vercel.json` cron and `/api/revalidate`; README env
+  table updated. check 0 errors, build ok. Remote authorization granted by user (2026-10-09).
+- Blocker: no Vercel project for facundopascale.dev (checked personal hobby + CapsuleCodes teams) → no
+  deploy hook; Vault secret `facundopascale_deploy_hook` not set yet; PUBLIC*SUPABASE*\* not set in Vercel.
+
 ## Next step
 
-T2.6 — event-driven rebuild (needs remote authorization: Vercel env vars + deploy hook, Supabase webhook).
+Decide Vercel team for facundopascale.dev, create project + deploy hook, set env, store hook in Vault.
