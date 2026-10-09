@@ -50,7 +50,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T2.2 Build-time data layer `src/lib/site-data.ts`: typed fetchers for showcase, products, log
       (published content_items + blog posts), site settings; locale resolution of `translations`; fixture
       fallback when Supabase env is absent (CI). Unit tests — route: delegated writer
-- [ ] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
+- [x] T2.3 Blueprint design tokens (paper/ink/cyanotype/accent, light default + ink dark), Newsreader +
       JetBrains Mono, Shiki bridge — route: delegated writer
 - [ ] T2.4 Home redesign (Lámina 00 hero + planta, A agency projects + testimonial, B products, C build
       log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
@@ -103,6 +103,12 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Open follow-ups (non-blocking): seed/publish migrations join by non-unique title; storage host
   hard-coded in publish migration; rejected promise stays cached (intended: fail build).
 
+- T2.3: light paper default + ink dark; Newsreader (display and body, as in the reference) + JetBrains
+  Mono; Fraunces/Inter removed (OG keeps committed TTFs). Brand orange #E8471C fails AA as text (3.39:1)
+  → `--color-accent` #C7380F for text (4.53:1), `--color-accent-brand` for fills/large text. No unit seam
+  (CSS only). Checks: test 60/60, check 0 errors, lint clean, build ok, e2e 24/24. Slice #2
+  `feat/site-redesign-03-tokens` (child of 02-data).
+
 ## Next step
 
-T2.3 — Blueprint design tokens.
+T2.4 — home redesign.
