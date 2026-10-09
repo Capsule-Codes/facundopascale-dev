@@ -97,6 +97,12 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - Slices (feature-branch-chain, tracker `feat/site-redesign` → `main`): #1 `feat/site-redesign-02-data`
   (T2.2, ~806 authored lines, 307 of them tests — single cohesive unit, `size:exception` recommended).
 
+- RDD slice main..d884ef7 (lineage review-21035c8edf66e9f1): consent granted, 1 lens (reliability),
+  APPROVED and acknowledged; reviewed boundary → d884ef7. Advisory follow-ups fixed in next commit:
+  settings empty-row now throws with env present; fake builder asserts filters/order (60/60 tests).
+  Open follow-ups (non-blocking): seed/publish migrations join by non-unique title; storage host
+  hard-coded in publish migration; rejected promise stays cached (intended: fail build).
+
 ## Next step
 
 T2.3 — Blueprint design tokens.

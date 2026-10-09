@@ -391,5 +391,8 @@ export async function getContentLog(locale: Locale): Promise<LogEntry[]> {
 
 export async function getSiteSettings(locale: Locale): Promise<SiteSettings> {
   const [row] = await load('siteSettings');
-  return toSiteSettings(row ?? fixtureSiteSettings, locale);
+  // Without env `load` already serves the fixture row, so a missing row here means
+  // the live table is empty: fail the build rather than ship placeholder settings.
+  if (!row) throw new Error('[site-data] No row found in personal.site_settings (id = 1)');
+  return toSiteSettings(row, locale);
 }

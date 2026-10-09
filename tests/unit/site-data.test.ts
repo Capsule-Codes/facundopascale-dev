@@ -212,19 +212,34 @@ describe('buildLog', () => {
   });
 });
 
-/** Chainable, awaitable stand-in for a postgrest query builder. */
-function fakeBuilder(result: { data: unknown; error: unknown }) {
+type RecordedQuery = { schema: string; calls: [method: string, ...args: unknown[]][] };
+
+/** Chainable, awaitable stand-in for a postgrest query builder that records every call. */
+function fakeBuilder(result: { data: unknown; error: unknown }, recorded: RecordedQuery) {
   const builder: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'order', 'limit']) builder[m] = () => builder;
+  for (const m of ['select', 'eq', 'order', 'limit']) {
+    builder[m] = (...args: unknown[]) => {
+      recorded.calls.push([m, ...args]);
+      return builder;
+    };
+  }
   builder.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
   return builder;
 }
 
 function mockClient(tables: Record<string, { data: unknown; error: unknown }>) {
-  const from = vi.fn((table: string) => fakeBuilder(tables[table] ?? { data: [], error: null }));
-  const schema = vi.fn(() => ({ from }));
+  const queries: Record<string, RecordedQuery> = {};
+  const from = vi.fn((table: string) =>
+    fakeBuilder(tables[table] ?? { data: [], error: null }, queries[table]!)
+  );
+  const schema = vi.fn((name: string) => ({
+    from: (table: string) => {
+      queries[table] = { schema: name, calls: [] };
+      return from(table);
+    },
+  }));
   createClient.mockReturnValue({ schema });
-  return { from, schema };
+  return { from, schema, queries };
 }
 
 describe('fetchers without Supabase env', () => {
@@ -298,6 +313,58 @@ describe('fetchers with Supabase env', () => {
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(schema).toHaveBeenCalledWith('personal');
     expect(schema).toHaveBeenCalledWith('public');
+  });
+
+  it('applies the visibility filters, ordering and limits per table', async () => {
+    const { queries } = mockClient({
+      showcase: { data: [showcaseRow], error: null },
+      products: { data: [productRow], error: null },
+      content_items: { data: [contentRow], error: null },
+      site_settings: { data: [{ id: 1, email: null, socials: {}, translations: {} }], error: null },
+    });
+
+    await getShowcase('en');
+    await getProducts('en');
+    await getContentLog('es');
+    await getSiteSettings('en');
+
+    expect(queries.showcase).toEqual({
+      schema: 'personal',
+      calls: [
+        ['select', '*'],
+        ['order', 'highlighted', { ascending: false }],
+        ['order', 'position', { ascending: true }],
+      ],
+    });
+    expect(queries.products).toEqual({
+      schema: 'public',
+      calls: [
+        ['select', '*'],
+        ['eq', 'show_on_personal', true],
+        ['order', 'position', { ascending: true }],
+      ],
+    });
+    expect(queries.content_items).toEqual({
+      schema: 'personal',
+      calls: [
+        ['select', '*'],
+        ['eq', 'status', 'published'],
+        ['order', 'published_at', { ascending: false }],
+      ],
+    });
+    expect(queries.site_settings).toEqual({
+      schema: 'personal',
+      calls: [
+        ['select', '*'],
+        ['eq', 'id', 1],
+        ['limit', 1],
+      ],
+    });
+  });
+
+  it('throws instead of using the fixture when site_settings has no row', async () => {
+    mockClient({ site_settings: { data: [], error: null } });
+    await expect(getSiteSettings('en')).rejects.toThrow(/personal\.site_settings/);
   });
 
   it('throws instead of falling back to fixtures when the request fails', async () => {
