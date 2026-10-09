@@ -39,6 +39,24 @@ test.describe('home', () => {
         await expect(cards.first().getByRole('heading', { level: 3 })).toBeVisible();
       });
 
+      test('renders the featured testimonial in the agency lámina', async ({ page }) => {
+        await page.goto(`/${locale}/`);
+        const figure = page.locator('section#agency figure');
+        await expect(figure).toHaveCount(1);
+        await expect(figure.locator('blockquote')).toBeVisible();
+        await expect(figure.locator('blockquote')).not.toBeEmpty();
+        await expect(figure.locator('figcaption')).toContainText('Ricardo Mejia');
+      });
+
+      test('lists build-log entries in the content lámina', async ({ page }) => {
+        await page.goto(`/${locale}/`);
+        const entries = page.locator('section#content #log ul > li');
+        // Fixtures include published blog posts for each locale.
+        expect(await entries.count()).toBeGreaterThanOrEqual(1);
+        await expect(entries.first().locator('time')).toBeVisible();
+        await expect(entries.first().locator('a')).toHaveAttribute('href', /.+/);
+      });
+
       test('products link out in a new tab', async ({ page }) => {
         await page.goto(`/${locale}/`);
         const links = page.locator('section#products a[target="_blank"]');

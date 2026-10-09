@@ -99,7 +99,7 @@ export type TestimonialRow = {
   translations: Translations<{ text: string; company: string; position: string }>;
   rating: number | null;
   avatar: string | null;
-  date: string;
+  date: string | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -159,7 +159,8 @@ export type Testimonial = {
   position: string;
   rating: number;
   avatar?: string;
-  date: Date;
+  /** `null` when the source date is missing or unparseable. */
+  date: Date | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -254,6 +255,12 @@ export function toSiteSettings(row: SiteSettingsRow, locale: Locale): SiteSettin
 
 const collapseWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
+function parseDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export function toTestimonial(row: TestimonialRow, locale: Locale): Testimonial {
   const testimonial: Testimonial = {
     id: row.id,
@@ -262,7 +269,7 @@ export function toTestimonial(row: TestimonialRow, locale: Locale): Testimonial 
     company: pick(row.translations, locale, 'company') ?? row.company ?? '',
     position: pick(row.translations, locale, 'position') ?? row.position ?? '',
     rating: row.rating ?? 0,
-    date: new Date(row.date),
+    date: parseDate(row.date),
   };
   const avatar = nonEmpty(row.avatar);
   if (avatar) testimonial.avatar = avatar;
@@ -281,7 +288,12 @@ export function pickFeaturedTestimonial(
   const needle = preferredAuthor?.trim().toLowerCase();
   const preferred = needle ? list.find((t) => t.author.toLowerCase().includes(needle)) : undefined;
   if (preferred) return preferred;
-  return [...list].sort((a, b) => b.rating - a.rating || b.date.getTime() - a.date.getTime())[0];
+  const time = (t: Testimonial): number => t.date?.getTime() ?? Number.NEGATIVE_INFINITY;
+  // Array#sort is stable, so full ties keep input order. Compare (not subtract)
+  // because -Infinity - -Infinity is NaN.
+  const byRecency = (a: Testimonial, b: Testimonial): number =>
+    time(a) === time(b) ? 0 : time(b) > time(a) ? 1 : -1;
+  return [...list].sort((a, b) => b.rating - a.rating || byRecency(a, b))[0];
 }
 
 /** Minimal shape of an Astro `blog` collection entry (already published and locale-filtered). */

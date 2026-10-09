@@ -118,6 +118,11 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - Security follow-up (pre-existing, capsulecodes.com): `public.reviews` lets any authenticated user
   insert/update/delete. Not changed without user OK.
 
+- RDD slice d884ef7..7e26ada (lineage review-86dabe577176aba0): consent granted, reliability lens,
+  APPROVED and acknowledged; boundary → 7e26ada. Advisory follow-ups fixed next commit: theme e2e
+  (default/system/stored/toggle; fixed inverted `aria-pressed`), testimonial + log render e2e,
+  testimonial date `Date | null`. Unit 71/71, e2e 42/42.
+
 ## Next step
 
 T2.5 — /work and /trabajo from Supabase.

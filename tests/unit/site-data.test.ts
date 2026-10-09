@@ -223,6 +223,12 @@ describe('toTestimonial', () => {
     expect(t.avatar).toBeUndefined();
   });
 
+  it('maps a null or malformed date to null instead of an Invalid Date', () => {
+    expect(toTestimonial({ ...reviewRow, date: null }, 'en').date).toBeNull();
+    expect(toTestimonial({ ...reviewRow, date: 'not-a-date' }, 'en').date).toBeNull();
+    expect(toTestimonial({ ...reviewRow, date: '' }, 'en').date).toBeNull();
+  });
+
   it('keeps a non-empty avatar and tolerates a null rating', () => {
     const t = toTestimonial({ ...reviewRow, avatar: 'https://img/a.webp', rating: null }, 'en');
     expect(t.avatar).toBe('https://img/a.webp');
@@ -231,14 +237,14 @@ describe('toTestimonial', () => {
 });
 
 describe('pickFeaturedTestimonial', () => {
-  const t = (author: string, rating: number, date: string): Testimonial => ({
+  const t = (author: string, rating: number, date: string | null): Testimonial => ({
     id: author,
     quote: 'q',
     author,
     company: '',
     position: '',
     rating,
-    date: new Date(date),
+    date: date === null ? null : new Date(date),
   });
 
   it('returns undefined for an empty list', () => {
@@ -254,6 +260,18 @@ describe('pickFeaturedTestimonial', () => {
     const list = [t('A', 4, '2026-07-01'), t('B', 5, '2026-01-01'), t('C', 5, '2026-03-01')];
     expect(pickFeaturedTestimonial(list)?.author).toBe('C');
     expect(pickFeaturedTestimonial(list, 'nobody')?.author).toBe('C');
+  });
+
+  it('treats a null date as oldest in the recency tie-break, regardless of order', () => {
+    const dated = t('Dated', 5, '2020-01-01');
+    const undated = t('Undated', 5, null);
+    expect(pickFeaturedTestimonial([undated, dated])?.author).toBe('Dated');
+    expect(pickFeaturedTestimonial([dated, undated])?.author).toBe('Dated');
+  });
+
+  it('keeps input order between two testimonials with equal rating and null dates', () => {
+    const list = [t('First', 5, null), t('Second', 5, null)];
+    expect(pickFeaturedTestimonial(list)?.author).toBe('First');
   });
 
   it('does not mutate the input', () => {
