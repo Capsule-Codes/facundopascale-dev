@@ -44,7 +44,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T1.2 Migration: `personal` schema, tables, RLS, versioned in `supabase/migrations/` — route: inline (single SQL file)
 - [x] T1.3 Showcase model (list + `highlighted`), seed products and showcase, add Horus Surgical and UR POV
       to `public.projects` (unpublished until screenshots) — route: inline (2 SQL files)
-- [ ] T1.4 Screenshots: Horus from local run (controlled demo data, no patient data), UR POV from repo
+- [x] T1.4 Screenshots: Horus from local run (controlled demo data, no patient data), UR POV from repo
       assets; upload to `images/projects/<id>/`; then set `published=true` (shows on capsulecodes.com too)
 - [ ] T2.x (to be detailed when stage 2 starts)
 
@@ -63,6 +63,16 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   (stagionaly.com, byelevate.app — user said elev.app but it does not resolve, code uses byelevate.app —, getorbys.com).
 - Rule: the personal site only renders showcase rows whose `public.projects.published` is true.
 
+- T1.4: Horus screenshots from a local stack (Postgres + API + Vite) with synthetic `aurora/demo/seed-demo.sql`
+  data, signed in as dev-pool Cognito user `portfolio-demo@example.com` (pool `us-west-2_DOTKk3ewU`,
+  tagged Environment=dev; credentials kept outside both repos). Seed membership added in the Horus repo
+  (uncommitted, client repo). HIPAA/SOC 2 banner hidden; no real PII in any capture (reviewed visually).
+  UR POV cover composed from the app's own logo and splash (onboarding images are low-res stock photos).
+- T1.4 RED: both projects had `image = ''`, `images = []`, `published = false`.
+- T1.4 GREEN: 4 webp uploaded via Supabase CLI to `images/projects/<id>/` (all 200 image/webp);
+  migration `publish_horus_and_urpov` applied; anon reads both as published (Horus 3 images, UR POV 1).
+  `show_on_home` left false on capsulecodes.com.
+
 ## Next step
 
-T1.4 — Horus local screenshots and UR POV assets, then publish both projects.
+T2.x — detail and start stage 2 (Astro home redesign reading Supabase).
