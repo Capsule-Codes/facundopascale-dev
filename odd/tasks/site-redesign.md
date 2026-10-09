@@ -153,7 +153,10 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - Env is Production-only (user: single environment); preview/dev builds fall back to fixtures. Web
   Analytics enabled and RESEND_API_KEY / CONTACT_EMAIL_TO set by user (verified 2026-10-09).
 
+- Delivery (user, 2026-10-09): chain pushed. Tracker draft PR #1 (`feat/site-redesign` → `main`, stage 1);
+  slices #2 02-data (`size:exception`), #3 03-tokens, #4 04-home (`size:exception`), #5 05-work,
+  #6 06-rebuild, each targeting its parent branch.
+
 ## Next step
 
-Delivery of stage 2: push the branch chain and open the draft tracker PR + child PRs (user decision).
-Then stage 3 (`/admin`).
+Favicon refresh for the Blueprint brand (user asked, design pending). Then stage 3 (`/admin`).
