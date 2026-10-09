@@ -56,7 +56,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
       log, D contact + newsletter placeholder, title-block footer), portrait asset; update home e2e — route: delegated writer
 - [x] T2.5 `/work` + `/trabajo` list all showcase projects from Supabase (MDX case studies kept as detail
       pages) — route: delegated writer
-- [~] T2.6 Event-driven rebuild: DB side + repo done; Vercel project/deploy hook pending (no Vercel project exists yet) — route: inline
+- [x] T2.6 Event-driven rebuild: DB triggers + pg_cron, Vercel project, deploy hook in Vault, verified end to end — route: inline
 
 ## Progress / evidence
 
@@ -146,7 +146,13 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   (`features.webAnalytics: false`) → enable in dashboard; code already has `webAnalytics.enabled`.
   Contact form env (RESEND_API_KEY, CONTACT_EMAIL_TO) not set in Vercel.
 
+- Repo transferred (user, 2026-10-09) from `facupascale` to `Capsule-Codes/facundopascale-dev` (public);
+  local `origin` updated; Vercel Git connected. Deploy hook `supabase-content` (ref `main`) created and
+  stored only in Vault as `facundopascale_deploy_hook`. GREEN: no-op update on `personal.site_settings`
+  → pg_net request → production deployment built and Ready. Deployments build `main` until the chain lands.
+- Still on user: enable Web Analytics in the dashboard; set RESEND_API_KEY / CONTACT_EMAIL_TO.
+
 ## Next step
 
-After git connect: create deploy hook (`vercel deploy-hooks`), store it in Vault as
-`facundopascale_deploy_hook`, verify one trigger → deployment.
+Delivery of stage 2: push the branch chain and open the draft tracker PR + child PRs (user decision).
+Then stage 3 (`/admin`).
