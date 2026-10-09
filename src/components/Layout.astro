@@ -27,9 +27,19 @@ interface Props {
   currentPageKey?: PageKey;
   currentDocId?: string;
   currentCollection?: 'blog' | 'work';
+  /** Use the wide (1240px) page container in header and footer, as the home page does. */
+  wide?: boolean;
 }
 
-const { title, description, locale, currentPageKey, currentDocId, currentCollection } = Astro.props;
+const {
+  title,
+  description,
+  locale,
+  currentPageKey,
+  currentDocId,
+  currentCollection,
+  wide = false,
+} = Astro.props;
 
 // Resolve the OG image URL for this page. The slug MUST match the one the
 // `src/pages/og/[...slug].png.ts` endpoint emits — `buildOgSlug` is the
@@ -100,13 +110,14 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
 ---
 
 <!doctype html>
-<html lang={locale} data-theme="dark">
+<html lang={locale} data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
     {
       hreflangEsHref && hreflangEnHref && hreflangXDefaultHref && (
@@ -163,8 +174,8 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
           const stored = localStorage.getItem('theme');
           if (stored === 'light' || stored === 'dark') {
             document.documentElement.dataset.theme = stored;
-          } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-            document.documentElement.dataset.theme = 'light';
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.dataset.theme = 'dark';
           }
         } catch {
           /* ignore: localStorage/matchMedia unavailable */
@@ -175,13 +186,14 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
   <body class="min-h-screen flex flex-col">
     <Header
       locale={locale}
+      wide={wide}
       {...currentDocId !== undefined ? { currentDocId } : {}}
       {...currentCollection !== undefined ? { currentCollection } : {}}
     />
     <main id="main" class="flex-1">
       <slot />
     </main>
-    <Footer locale={locale} />
+    <Footer locale={locale} wide={wide} />
     <script is:inline>
       (function () {
         try {
