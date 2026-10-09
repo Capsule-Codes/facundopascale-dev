@@ -9,15 +9,20 @@ import {
   getProducts,
   getShowcase,
   getSiteSettings,
+  getTestimonials,
+  pickFeaturedTestimonial,
   resetSiteDataCache,
   toLogEntry,
   toProduct,
   toShowcaseProject,
   toSiteSettings,
+  toTestimonial,
   type ContentItemRow,
   type ProductRow,
   type ShowcaseRow,
   type SiteSettingsRow,
+  type Testimonial,
+  type TestimonialRow,
 } from '../../src/lib/site-data';
 
 const showcaseRow: ShowcaseRow = {
@@ -72,6 +77,21 @@ const contentRow: ContentItemRow = {
   product_id: null,
   project_id: null,
   meta: {},
+};
+
+const reviewRow: TestimonialRow = {
+  id: 'r1',
+  text: 'Base   text\n  across lines',
+  author: 'Ricardo Mejia',
+  company: 'HFlow',
+  position: 'CEO & Founder',
+  translations: {
+    en: { text: 'EN   quote\n  wrapped', position: 'CEO & Founder' },
+    es: { text: 'Cita ES', company: '', position: 'CEO y Fundador' },
+  },
+  rating: 5,
+  avatar: '',
+  date: '2026-06-18',
 };
 
 describe('toShowcaseProject', () => {
@@ -180,6 +200,69 @@ describe('toSiteSettings', () => {
   });
 });
 
+describe('toTestimonial', () => {
+  it('resolves fields per locale with fallback and collapses whitespace', () => {
+    const en = toTestimonial(reviewRow, 'en');
+    expect(en.quote).toBe('EN quote wrapped');
+    expect(en.position).toBe('CEO & Founder');
+    // en has no company translation -> es is empty -> base column
+    expect(en.company).toBe('HFlow');
+
+    const es = toTestimonial(reviewRow, 'es');
+    expect(es.quote).toBe('Cita ES');
+    expect(es.position).toBe('CEO y Fundador');
+    expect(es.company).toBe('HFlow');
+  });
+
+  it('falls back to base columns without translations and maps scalar fields', () => {
+    const t = toTestimonial({ ...reviewRow, translations: null }, 'es');
+    expect(t.quote).toBe('Base text across lines');
+    expect(t.author).toBe('Ricardo Mejia');
+    expect(t.rating).toBe(5);
+    expect(t.date).toEqual(new Date('2026-06-18'));
+    expect(t.avatar).toBeUndefined();
+  });
+
+  it('keeps a non-empty avatar and tolerates a null rating', () => {
+    const t = toTestimonial({ ...reviewRow, avatar: 'https://img/a.webp', rating: null }, 'en');
+    expect(t.avatar).toBe('https://img/a.webp');
+    expect(t.rating).toBe(0);
+  });
+});
+
+describe('pickFeaturedTestimonial', () => {
+  const t = (author: string, rating: number, date: string): Testimonial => ({
+    id: author,
+    quote: 'q',
+    author,
+    company: '',
+    position: '',
+    rating,
+    date: new Date(date),
+  });
+
+  it('returns undefined for an empty list', () => {
+    expect(pickFeaturedTestimonial([])).toBeUndefined();
+  });
+
+  it('prefers the author containing the preferred name, case-insensitively', () => {
+    const list = [t('Alice', 5, '2026-07-01'), t('Ricardo Mejia', 3, '2025-01-01')];
+    expect(pickFeaturedTestimonial(list, 'ricardo mejia')?.author).toBe('Ricardo Mejia');
+  });
+
+  it('otherwise picks the highest rating, then the most recent', () => {
+    const list = [t('A', 4, '2026-07-01'), t('B', 5, '2026-01-01'), t('C', 5, '2026-03-01')];
+    expect(pickFeaturedTestimonial(list)?.author).toBe('C');
+    expect(pickFeaturedTestimonial(list, 'nobody')?.author).toBe('C');
+  });
+
+  it('does not mutate the input', () => {
+    const list = [t('A', 1, '2026-01-01'), t('B', 5, '2026-01-01')];
+    pickFeaturedTestimonial(list);
+    expect(list.map((x) => x.author)).toEqual(['A', 'B']);
+  });
+});
+
 describe('buildLog', () => {
   const post = (id: string, lang: 'es' | 'en', publishedAt: string) => ({
     id: `${lang}/${id}.mdx`,
@@ -271,6 +354,10 @@ describe('fetchers without Supabase env', () => {
     expect(await getContentLog('es')).toEqual([]);
     expect((await getSiteSettings('es')).email).toBeUndefined();
 
+    const testimonials = await getTestimonials('es');
+    expect(testimonials.length).toBeGreaterThanOrEqual(1);
+    expect(pickFeaturedTestimonial(testimonials, 'Ricardo Mejia')?.author).toBe('Ricardo Mejia');
+
     expect(createClient).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledTimes(1);
   });
@@ -297,6 +384,7 @@ describe('fetchers with Supabase env', () => {
         data: [{ id: 1, email: 'a@b.c', socials: {}, translations: {} }],
         error: null,
       },
+      reviews: { data: [reviewRow], error: null },
     });
 
     const [es, en] = await Promise.all([getShowcase('es'), getShowcase('en')]);
@@ -309,6 +397,9 @@ describe('fetchers with Supabase env', () => {
     expect((await getContentLog('es'))[0]!.id).toBe('c1');
     expect(await getContentLog('en')).toEqual([]);
     expect((await getSiteSettings('es')).email).toBe('a@b.c');
+    expect((await getTestimonials('es'))[0]!.quote).toBe('Cita ES');
+    await getTestimonials('en');
+    expect(from.mock.calls.filter(([t]) => t === 'reviews')).toHaveLength(1);
 
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(schema).toHaveBeenCalledWith('personal');
@@ -321,9 +412,11 @@ describe('fetchers with Supabase env', () => {
       products: { data: [productRow], error: null },
       content_items: { data: [contentRow], error: null },
       site_settings: { data: [{ id: 1, email: null, socials: {}, translations: {} }], error: null },
+      reviews: { data: [reviewRow], error: null },
     });
 
     await getShowcase('en');
+    await getTestimonials('en');
     await getProducts('en');
     await getContentLog('es');
     await getSiteSettings('en');
@@ -352,6 +445,13 @@ describe('fetchers with Supabase env', () => {
         ['order', 'published_at', { ascending: false }],
       ],
     });
+    expect(queries.reviews).toEqual({
+      schema: 'public',
+      calls: [
+        ['select', '*'],
+        ['order', 'date', { ascending: false }],
+      ],
+    });
     expect(queries.site_settings).toEqual({
       schema: 'personal',
       calls: [
@@ -365,6 +465,11 @@ describe('fetchers with Supabase env', () => {
   it('throws instead of using the fixture when site_settings has no row', async () => {
     mockClient({ site_settings: { data: [], error: null } });
     await expect(getSiteSettings('en')).rejects.toThrow(/personal\.site_settings/);
+  });
+
+  it('throws when the reviews request fails', async () => {
+    mockClient({ reviews: { data: null, error: { message: 'denied' } } });
+    await expect(getTestimonials('en')).rejects.toThrow(/public\.reviews.*denied/);
   });
 
   it('throws instead of falling back to fixtures when the request fails', async () => {

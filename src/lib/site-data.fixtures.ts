@@ -1,4 +1,10 @@
-import type { ContentItemRow, ProductRow, ShowcaseRow, SiteSettingsRow } from './site-data';
+import type {
+  ContentItemRow,
+  ProductRow,
+  ShowcaseRow,
+  SiteSettingsRow,
+  TestimonialRow,
+} from './site-data';
 
 /**
  * Deterministic stand-ins used when Supabase env vars are absent (CI,
@@ -102,3 +108,37 @@ export const fixtureSiteSettings: SiteSettingsRow = {
   socials: {},
   translations: { es: { bio: 'Arquitecto de software.' }, en: { bio: 'Software architect.' } },
 };
+
+export const fixtureTestimonials: TestimonialRow[] = [
+  {
+    id: 'fixture-review-1',
+    text: 'Very efficient in all tasks, always open to new changes.',
+    author: 'Ricardo Mejia',
+    company: 'HFlow',
+    position: 'CEO & Founder',
+    translations: {
+      en: {
+        text: 'Very efficient in all tasks, always open to new changes.',
+        position: 'CEO & Founder',
+      },
+      es: {
+        text: 'Muy eficientes en todas las tareas, siempre abiertos a nuevos cambios.',
+        position: 'CEO y Fundador',
+      },
+    },
+    rating: 5,
+    avatar: '',
+    date: '2026-06-18',
+  },
+  {
+    id: 'fixture-review-2',
+    text: 'Great communication and well-understood tasks.',
+    author: 'Fixture Client',
+    company: 'Example Co',
+    position: 'Founder',
+    translations: {},
+    rating: 4,
+    avatar: '',
+    date: '2026-05-01',
+  },
+];

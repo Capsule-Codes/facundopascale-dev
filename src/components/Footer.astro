@@ -3,48 +3,64 @@ import { type Locale } from '../lib/i18n';
 
 interface Props {
   locale: Locale;
+  /** Match the wide (1240px) container used by the home page. */
+  wide?: boolean;
 }
-const { locale } = Astro.props;
+const { locale, wide = false } = Astro.props;
 
 const year = new Date().getFullYear();
+const es = locale === 'es';
 const socials = [
   { href: 'https://github.com/facundopascale', label: 'GitHub' },
   { href: 'https://linkedin.com/in/facundopascale', label: 'LinkedIn' },
   { href: 'https://twitter.com/facundopascale', label: 'Twitter' },
   { href: 'https://youtube.com/@facundopascale', label: 'YouTube' },
 ];
+const cells = [
+  { label: es ? 'PROYECTO' : 'PROJECT', value: 'facundopascale.dev' },
+  { label: es ? 'AUTOR' : 'AUTHOR', value: `© ${year} Facundo Pascale` },
+  { label: es ? 'UBICACIÓN' : 'LOCATION', value: 'Argentina ↔ Italia' },
+];
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 ---
 
-<footer class="border-t border-[var(--color-border)] mt-24">
-  <div
-    class="mx-auto max-w-5xl px-6 py-10 flex flex-col gap-6 md:flex-row md:justify-between md:items-end"
-  >
-    <div class="space-y-2 font-mono text-xs text-[var(--color-text-dim)]">
-      <p>© {year} Facundo Pascale</p>
-      <p>{locale === 'es' ? 'Construido con' : 'Built with'} Astro</p>
-    </div>
-    <nav
-      aria-label={locale === 'es' ? 'Redes sociales' : 'Social'}
-      class="flex flex-wrap gap-4 text-sm"
+<footer class="mt-24 pb-10">
+  <div class:list={['mx-auto px-6', wide ? 'max-w-[1240px]' : 'max-w-5xl']}>
+    <div
+      class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] border-[1.5px] border-rule font-mono text-[11px]"
     >
       {
-        socials.map((s) => (
-          <a
-            href={s.href}
-            class="text-[var(--color-text-muted)] hover:text-[var(--color-accent)] focus-visible:text-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-            rel="me noopener noreferrer"
-            target="_blank"
-          >
-            {s.label}
-          </a>
+        cells.map((c) => (
+          <div class="border-b border-rule p-3.5 sm:border-r sm:border-b-0">
+            <div class="text-text-muted">{c.label}</div>
+            <div>{c.value}</div>
+          </div>
         ))
       }
-      <a
-        href="https://capsulecodes.com"
-        class="text-[var(--color-accent)] font-mono text-xs uppercase tracking-widest"
-      >
-        → Capsule Codes
-      </a>
-    </nav>
+      <nav aria-label={es ? 'Redes sociales' : 'Social'} class="p-3.5">
+        <div class="text-text-muted">{es ? 'ENLACES' : 'LINKS'}</div>
+        <ul class="m-0 flex list-none flex-wrap gap-x-3 gap-y-1 p-0">
+          {
+            socials.map((s) => (
+              <li>
+                <a
+                  href={s.href}
+                  class={`hover:text-accent ${focus}`}
+                  rel="me noopener noreferrer"
+                  target="_blank"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))
+          }
+          <li>
+            <a href="https://capsulecodes.com" class={`text-accent uppercase ${focus}`}>
+              → Capsule Codes
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
 </footer>
