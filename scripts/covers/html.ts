@@ -33,7 +33,7 @@ function gradientCss(stops: string[]): string {
 }
 
 function frameHtml(config: CoverConfig, sources: CoverSources): string {
-  const alt = escapeHtml(`${config.title} screenshot`);
+  const alt = escapeHtml(`${config.title.replace(/\n/g, ' ')} screenshot`);
   if (config.frame === 'browser') {
     return `<div class="browser"><div class="bar"><i></i><i></i><i></i></div><img src="${sources.screenshots[0]}" alt="${alt}"></div>`;
   }
@@ -50,6 +50,7 @@ export function buildCoverHtml(config: CoverConfig, sources: CoverSources): stri
     throw new Error(`Invalid cover config "${config.slug}": ${errors.join('; ')}`);
 
   const tagline = config.tagline.split('\n').map(escapeHtml).join('<br>');
+  const title = config.title.split('\n').map(escapeHtml).join('<br>');
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 *{margin:0;box-sizing:border-box}
 body{width:${COVER_WIDTH}px;height:${COVER_HEIGHT}px;font-family:-apple-system,"Inter",sans-serif;background:${gradientCss(config.gradient)};display:flex;align-items:center;justify-content:space-between;padding:0 140px;overflow:hidden;color:${config.textColor}}
@@ -68,7 +69,7 @@ p{font-size:34px;opacity:.92;margin-top:16px;line-height:1.3}
 .browser .bar i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.35)}
 .browser img{width:100%;aspect-ratio:16/10;display:block;object-fit:cover}
 </style></head><body>
-<div class="copy"><img class="logo" src="${sources.logo}" alt=""><h1>${escapeHtml(config.title)}</h1><p>${tagline}</p><span class="tag">${escapeHtml(config.pill)}</span></div>
+<div class="copy"><img class="logo" src="${sources.logo}" alt=""><h1>${title}</h1><p>${tagline}</p><span class="tag">${escapeHtml(config.pill)}</span></div>
 ${frameHtml(config, sources)}
 </body></html>
 `;

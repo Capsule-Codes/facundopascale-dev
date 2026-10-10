@@ -24,4 +24,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/elevate/screenshot-1.png', 'assets/elevate/screenshot-2.png'],
     frame: 'phone',
   },
+  {
+    slug: 'hflow',
+    title: 'HFlow',
+    tagline: 'Multi-tenant payroll.\nConfigurable per country.',
+    pill: 'PAYROLL SAAS',
+    gradient: ['#2C6F6A', '#17413F', '#0B1F20', '#060F10'],
+    textColor: '#ffffff',
+    logo: 'assets/hflow/logo.png',
+    screenshots: ['assets/hflow/screenshot.png'],
+    frame: 'browser',
+  },
 ];

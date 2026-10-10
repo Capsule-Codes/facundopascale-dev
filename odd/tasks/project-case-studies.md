@@ -44,6 +44,12 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
   - Review: assessed medium (`slice_budget_reached`, executable change in astro.config.ts); consent granted; reliability lens approved; acknowledged (lineage `review-cfb9f06df43d4c3e`). Reviewed boundary advances to `a961c19`.
   - Follow-ups: offline-first blog posts still describe FitCoach-era sync details under the Elevate name.
 - [ ] T5 Case studies + covers for remaining projects (one work unit per project)
+  - [x] HFlow — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "HFlow case study"`. `src/content/work/{es,en}/hflow.mdx`, 7 desktop WebP gallery images (1920x1200) in `public/images/work/hflow/`, cover via `pnpm covers hflow` (browser frame, dark teal gradient, dashboard crop). No public link (private product).
+    - Cover generator: title now accepts `\n` for a line break (unit RED observed, then GREEN); used by HTG.
+    - capsulecodes.com: row `79f2ba8b-f03c-4788-b7a9-cf314da242e3` ("HFlow - Enterprise Payroll Platform") now has the new cover first in `images` and as `image` (`projects/<id>/cover-1461808e.webp`, public URL 200); 10 existing images kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/hflow.json`.
+    - Title match: DB title prefix-matches case study "HFlow".
+  - [ ] Happiness To Go (see below)
 
 ## Delivery
 
