@@ -257,7 +257,16 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Open: no cancel/reschedule from admin (Resend dashboard); live Resend behavior untested until the owner provides ids.
 - RDD 47fb9aa..d0df3e1 (lineage review-38da7d7c758d29ed): medium, granted, reliability lens, APPROVED and
   acknowledged; boundary → d0df3e1. (A whole-stage candidate earlier failed to start while T4.2 files were untracked.)
+- RDD whole stage 4 (main..bb5fb3c, lineage review-53bdaab193725aca): granted, APPROVED and acknowledged.
+- Resend setup (user logged in `resend-cli` 2.23.0, official, default profile; authorized 2026-10-10): domain
+  `facundopascale.dev` already verified. Team is shared with Stagionaly/Elevate/Orbys (global contacts) → created
+  segments "Facundo Pascale · Newsletter ES/EN" and topic "Facundo Pascale — Newsletter" with default `opt_out`
+  (Resend's `opt_in` default means "receives unless opted out"). Ids set in Vercel Production as
+  RESEND_SEGMENT_ES/EN and RESEND_TOPIC_NEWSLETTER.
+- Fix: confirming an existing contact no longer sets the team-global `unsubscribed: false` (would re-subscribe people
+  who opted out of other products); it only adds this site's segment and topic. RED: 1 test failed; GREEN 246/246,
+  check 0 errors, lint ok.
 
 ## Next step
 
-Owner: verify domain + create ES/EN segments and Newsletter topic in Resend; then live-test T4.1, T4.2 admin sending.
+Live test in production: subscribe + confirm with the owner's address, test send from admin (needs push/merge, user decision).
