@@ -213,8 +213,11 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   position/url/email → 400 with field errors; unchanged saves → 303 + notice; unknown slug → 404; md5 of showcase,
   products and settings identical before/after (lossless round-trip).
   Open: a view row with no `project_showcase` row shows "no longer exists" on save (not reachable today).
+- RDD fdd2701..21e482c (lineage review-0722f58f5f0da9ab): medium, granted, reliability lens, APPROVED and
+  acknowledged; boundary → 21e482c. (Two earlier candidates could not start because a writer's untracked files
+  changed the workspace; review now always runs on committed work units.)
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
 ## Next step
 
-Stage 3 review of 00039c1..HEAD, then push the stage 3 chain (user decision) and stage 4 (newsletter).
+Push the stage 3 chain and open PRs (user decision), then stage 4 (newsletter).
