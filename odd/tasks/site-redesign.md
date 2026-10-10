@@ -62,8 +62,8 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T3.2 Auth plumbing: `@supabase/ssr` cookie client, middleware guarding `/admin/*` (on-demand, `prerender = false`),
       login/logout, admin layout, noindex + sitemap exclusion — route: delegated writer
 - [x] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
-- [ ] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
-- [ ] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
+- [x] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
+- [x] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
 
 ## Progress / evidence
 
@@ -205,8 +205,19 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Open: DB/RLS write failures return 500 instead of a form error; relation pickers throw if products/showcase fail.
 - RDD 0c58a39..fdd2701 (lineage review-0ed7bcb45e4e71c9): medium, slice_budget_reached, granted, reliability lens,
   APPROVED and acknowledged; boundary → fdd2701.
+- T3.4 + T3.5 (writer, one commit: shared form helpers + nav): `/admin/showcase` (per-row forms: highlighted,
+  position, ES/EN summary), `/admin/products` + `[slug]` (status, url, show_on_personal, position, translations only;
+  test asserts slug/name never sent), `/admin/settings` (email, 5 socials, ES/EN bio). Translation/socials merges keep
+  unknown keys. Write failures re-render with a generic notice. RED: 3 new suites failed (modules absent). GREEN: unit
+  168/168, check 0 errors 0 warnings, lint ok, build ok, e2e 56/56. Live smoke (real Supabase): nav ok; invalid
+  position/url/email → 400 with field errors; unchanged saves → 303 + notice; unknown slug → 404; md5 of showcase,
+  products and settings identical before/after (lossless round-trip).
+  Open: a view row with no `project_showcase` row shows "no longer exists" on save (not reachable today).
+- RDD fdd2701..21e482c (lineage review-0722f58f5f0da9ab): medium, granted, reliability lens, APPROVED and
+  acknowledged; boundary → 21e482c. (Two earlier candidates could not start because a writer's untracked files
+  changed the workspace; review now always runs on committed work units.)
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
 ## Next step
 
-T3.4 showcase + products editing.
+Push the stage 3 chain and open PRs (user decision), then stage 4 (newsletter).

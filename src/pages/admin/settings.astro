@@ -1,0 +1,169 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { SAVE_FAILED } from '../../lib/admin-form';
+import {
+  BIO_MAX,
+  SOCIAL_KEYS,
+  getSiteSettings,
+  parseSettingsForm,
+  toSettingsFormValues,
+  updateSiteSettings,
+  type SettingsFormValues,
+} from '../../lib/admin-settings';
+
+export const prerender = false;
+
+const supabase = Astro.locals.supabase!;
+
+let values: SettingsFormValues | null = null;
+let errors: Partial<Record<keyof SettingsFormValues, string>> = {};
+let notice: string | null = null;
+let current = null;
+
+try {
+  current = await getSiteSettings(supabase);
+  if (current) values = toSettingsFormValues(current);
+  else Astro.response.status = 404;
+} catch (cause) {
+  console.error('[admin/settings]', cause);
+  Astro.response.status = 500;
+  notice = 'Could not load the site settings.';
+}
+
+if (current && Astro.request.method === 'POST') {
+  const result = parseSettingsForm(await Astro.request.formData());
+  if (result.ok) {
+    try {
+      if (await updateSiteSettings(supabase, result.value)) {
+        return Astro.redirect('/admin/settings?saved=updated', 303);
+      }
+      Astro.response.status = 404;
+      notice = 'The site settings row no longer exists or you cannot edit it.';
+    } catch (cause) {
+      console.error('[admin/settings]', cause);
+      Astro.response.status = 500;
+      notice = SAVE_FAILED;
+    }
+    // Re-render what was submitted: a failed write must not look like a revert.
+    values = {
+      email: result.value.email ?? '',
+      social_youtube: result.value.socials.youtube ?? '',
+      social_linkedin: result.value.socials.linkedin ?? '',
+      social_instagram: result.value.socials.instagram ?? '',
+      social_github: result.value.socials.github ?? '',
+      social_x: result.value.socials.x ?? '',
+      bio_es: result.value.translations.es.bio,
+      bio_en: result.value.translations.en.bio,
+    };
+  } else {
+    Astro.response.status = 400;
+    ({ values, errors } = result);
+  }
+}
+
+const saved = { updated: 'Settings saved.' }[Astro.url.searchParams.get('saved') ?? ''];
+const label = (value: string) =>
+  value === 'x' ? 'X' : value.charAt(0).toUpperCase() + value.slice(1);
+const describedBy = (field: keyof SettingsFormValues) =>
+  errors[field] ? `${field}-error` : undefined;
+---
+
+<AdminLayout title="Settings">
+  <h1>Settings</h1>
+  {
+    saved && (
+      <p class="admin-notice" role="status">
+        {saved}
+      </p>
+    )
+  }
+  {
+    notice && (
+      <p class="admin-error" role="alert">
+        {notice}
+      </p>
+    )
+  }
+
+  {
+    values ? (
+      <form method="post" action="/admin/settings" novalidate>
+        <div class="admin-field">
+          <label for="email">Contact email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            inputmode="email"
+            value={values.email}
+            aria-invalid={errors.email ? 'true' : undefined}
+            aria-describedby={describedBy('email')}
+          />
+          {errors.email && (
+            <p class="admin-field-error" id="email-error">
+              {errors.email}
+            </p>
+          )}
+        </div>
+
+        <h2>Social links</h2>
+        <p class="admin-muted">Leave a field empty to remove that link.</p>
+        {SOCIAL_KEYS.map((key) => {
+          const field = `social_${key}` as const;
+          return (
+            <div class="admin-field">
+              <label for={field}>{label(key)}</label>
+              <input
+                id={field}
+                name={field}
+                type="url"
+                inputmode="url"
+                value={values[field]}
+                aria-invalid={errors[field] ? 'true' : undefined}
+                aria-describedby={describedBy(field)}
+              />
+              {errors[field] && (
+                <p class="admin-field-error" id={`${field}-error`}>
+                  {errors[field]}
+                </p>
+              )}
+            </div>
+          );
+        })}
+
+        <h2>Bio</h2>
+        {(
+          [
+            ['bio_es', 'Bio (ES)'],
+            ['bio_en', 'Bio (EN)'],
+          ] as const
+        ).map(([field, text]) => (
+          <div class="admin-field">
+            <label for={field}>{text}</label>
+            <textarea
+              id={field}
+              name={field}
+              rows="6"
+              maxlength={BIO_MAX}
+              aria-invalid={errors[field] ? 'true' : undefined}
+              aria-describedby={describedBy(field)}
+            >
+              {values[field]}
+            </textarea>
+            {errors[field] && (
+              <p class="admin-field-error" id={`${field}-error`}>
+                {errors[field]}
+              </p>
+            )}
+          </div>
+        ))}
+
+        <button class="admin-button" type="submit">
+          Save settings
+        </button>
+      </form>
+    ) : (
+      !notice && <p>The site settings row does not exist.</p>
+    )
+  }
+</AdminLayout>
