@@ -1,0 +1,132 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import {
+  CHANNELS,
+  STATUSES,
+  formatUtc,
+  listContentItems,
+  type Channel,
+  type ContentItem,
+  type Status,
+} from '../../../lib/admin-content';
+
+export const prerender = false;
+
+const params = Astro.url.searchParams;
+const statusParam = params.get('status') ?? '';
+const channelParam = params.get('channel') ?? '';
+const status = STATUSES.find((s) => s === statusParam) as Status | undefined;
+const channel = CHANNELS.find((c) => c === channelParam) as Channel | undefined;
+
+const saved = { created: 'Item created.', updated: 'Item updated.', deleted: 'Item deleted.' }[
+  params.get('saved') ?? ''
+];
+
+let items: ContentItem[] = [];
+let error: string | null = null;
+try {
+  items = await listContentItems(Astro.locals.supabase!, { status, channel });
+} catch (cause) {
+  error = cause instanceof Error ? cause.message : 'Could not load content items.';
+}
+
+const label = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const when = (item: ContentItem) =>
+  item.status === 'published' ? item.published_at : item.scheduled_for;
+---
+
+<AdminLayout title="Content" wide>
+  <h1>Content</h1>
+  {
+    saved && (
+      <p class="admin-notice" role="status">
+        {saved}
+      </p>
+    )
+  }
+  {
+    error && (
+      <p class="admin-error" role="alert">
+        {error}
+      </p>
+    )
+  }
+
+  <div class="admin-actions">
+    <a class="admin-button admin-link-button" href="/admin/content/new">New item</a>
+    <form method="get" action="/admin/content" class="admin-actions">
+      <label for="filter-status">Status</label>
+      <select id="filter-status" name="status">
+        <option value="">All</option>
+        {
+          STATUSES.map((s) => (
+            <option value={s} selected={s === status}>
+              {label(s)}
+            </option>
+          ))
+        }
+      </select>
+      <label for="filter-channel">Channel</label>
+      <select id="filter-channel" name="channel">
+        <option value="">All</option>
+        {
+          CHANNELS.map((c) => (
+            <option value={c} selected={c === channel}>
+              {label(c)}
+            </option>
+          ))
+        }
+      </select>
+      <button class="admin-button" type="submit">Filter</button>
+    </form>
+  </div>
+
+  {
+    items.length === 0 && !error ? (
+      <p class="admin-muted">No content items match.</p>
+    ) : (
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">Channel</th>
+              <th scope="col">Status</th>
+              <th scope="col">Language</th>
+              <th scope="col">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr>
+                <td>
+                  <a href={`/admin/content/${item.id}`}>{item.title}</a>
+                </td>
+                <td>{label(item.channel)}</td>
+                <td>{label(item.status)}</td>
+                <td>{item.locale.toUpperCase()}</td>
+                <td>
+                  {when(item) ? (
+                    <time datetime={when(item)!} data-local>
+                      {formatUtc(when(item))}
+                    </time>
+                  ) : (
+                    <span class="admin-muted">None</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</AdminLayout>
+
+<script is:inline>
+  document.querySelectorAll('time[data-local]').forEach(function (el) {
+    const d = new Date(el.getAttribute('datetime'));
+    if (!isNaN(d.getTime()))
+      el.textContent = d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  });
+</script>

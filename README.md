@@ -58,12 +58,15 @@ src/
 
 Copy `.env.example` to `.env` and fill in the required values.
 
-| Variable                   | Used by                                     | Required for                      |
-| -------------------------- | ------------------------------------------- | --------------------------------- |
-| `RESEND_API_KEY`           | Contact form (Astro Action)                 | Production deploy                 |
-| `CONTACT_EMAIL_TO`         | Contact form recipient                      | Production deploy                 |
-| `PUBLIC_SUPABASE_URL`      | Build-time content (`src/lib/site-data.ts`) | Real content (fixtures otherwise) |
-| `PUBLIC_SUPABASE_ANON_KEY` | Build-time content (public anon key)        | Real content (fixtures otherwise) |
+| Variable                   | Used by                                                          | Required for                                     |
+| -------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
+| `RESEND_API_KEY`           | Contact form (Astro Action)                                      | Production deploy                                |
+| `CONTACT_EMAIL_TO`         | Contact form recipient                                           | Production deploy                                |
+| `PUBLIC_SUPABASE_URL`      | Build-time content (`src/lib/site-data.ts`); `/admin` at runtime | Real content (fixtures otherwise); admin sign-in |
+| `PUBLIC_SUPABASE_ANON_KEY` | Build-time content (public anon key); `/admin` at runtime        | Real content (fixtures otherwise); admin sign-in |
+
+`/admin` renders on demand, so it needs the same `PUBLIC_SUPABASE_*` variables available at runtime (not only
+at build). Without them it answers 503. Access requires a Supabase Auth user listed in `personal.admins`.
 
 Rebuilds are event-driven: changes to the site's Supabase content call the Vercel deploy hook stored in
 Supabase Vault as `facundopascale_deploy_hook`, and `pg_cron` publishes scheduled content every 15 minutes

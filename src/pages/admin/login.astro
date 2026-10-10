@@ -1,0 +1,46 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { handleLogin } from '../../lib/admin-auth';
+
+export const prerender = false;
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  // The middleware guarantees `locals.supabase` on allowed admin routes.
+  const supabase = Astro.locals.supabase;
+  if (supabase) {
+    const result = await handleLogin(supabase, await Astro.request.formData());
+    if (result.ok) return Astro.redirect('/admin', 303);
+    error = result.error;
+  }
+}
+---
+
+<AdminLayout title="Sign in">
+  <h1>Sign in</h1>
+  {
+    error && (
+      <p class="admin-error" role="alert">
+        {error}
+      </p>
+    )
+  }
+  <form method="post" action="/admin/login">
+    <div class="admin-field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="username" required />
+    </div>
+    <div class="admin-field">
+      <label for="password">Password</label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+      />
+    </div>
+    <button class="admin-button" type="submit">Sign in</button>
+  </form>
+</AdminLayout>

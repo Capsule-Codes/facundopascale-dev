@@ -1,0 +1,186 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import { SAVE_FAILED } from '../../lib/admin-form';
+import {
+  SUMMARY_MAX,
+  listShowcase,
+  parseShowcaseForm,
+  updateShowcase,
+  type ShowcaseEntry,
+  type ShowcaseFormValues,
+} from '../../lib/admin-showcase';
+
+export const prerender = false;
+
+const supabase = Astro.locals.supabase!;
+
+type RowState = {
+  values: ShowcaseFormValues;
+  errors: Partial<Record<keyof ShowcaseFormValues, string>>;
+  notice: string | null;
+};
+
+// State of the row that was just submitted and failed; the others render stored data.
+let failed: RowState | null = null;
+let failedId = '';
+let pageError: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const data = await Astro.request.formData();
+  const result = parseShowcaseForm(data);
+  if (result.ok) {
+    try {
+      const updated = await updateShowcase(supabase, result.value);
+      if (updated) return Astro.redirect('/admin/showcase?saved=updated', 303);
+      Astro.response.status = 404;
+      pageError = 'That project no longer exists or you cannot edit it.';
+    } catch (cause) {
+      console.error('[admin/showcase]', cause);
+      Astro.response.status = 500;
+      failedId = result.value.project_id;
+      failed = {
+        values: {
+          project_id: result.value.project_id,
+          highlighted: result.value.highlighted,
+          position: String(result.value.position),
+          summary_es: result.value.summaries.es,
+          summary_en: result.value.summaries.en,
+        },
+        errors: {},
+        notice: SAVE_FAILED,
+      };
+    }
+  } else {
+    Astro.response.status = 400;
+    failedId = result.values.project_id;
+    failed = { values: result.values, errors: result.errors, notice: null };
+  }
+}
+
+const saved = { updated: 'Showcase entry saved.' }[Astro.url.searchParams.get('saved') ?? ''];
+
+let entries: ShowcaseEntry[] = [];
+let error: string | null = null;
+try {
+  entries = await listShowcase(supabase);
+} catch (cause) {
+  error = cause instanceof Error ? cause.message : 'Could not load the showcase.';
+}
+
+const stateFor = (entry: ShowcaseEntry): RowState =>
+  failed && failedId === entry.id
+    ? failed
+    : {
+        values: {
+          project_id: entry.id,
+          highlighted: entry.highlighted,
+          position: String(entry.position),
+          summary_es: entry.summaries.es,
+          summary_en: entry.summaries.en,
+        },
+        errors: {},
+        notice: null,
+      };
+---
+
+<AdminLayout title="Showcase" wide>
+  <h1>Showcase</h1>
+  {
+    saved && (
+      <p class="admin-notice" role="status">
+        {saved}
+      </p>
+    )
+  }
+  {
+    (error || pageError) && (
+      <p class="admin-error" role="alert">
+        {error ?? pageError}
+      </p>
+    )
+  }
+  <p class="admin-muted">
+    Published projects, highlighted first. An empty summary falls back to the project description.
+  </p>
+
+  {entries.length === 0 && !error && <p class="admin-muted">No published projects.</p>}
+
+  {
+    entries.map((entry) => {
+      const { values, errors, notice } = stateFor(entry);
+      const id = entry.id;
+      const describedBy = (field: keyof ShowcaseFormValues) =>
+        errors[field] ? `${field}-${id}-error` : undefined;
+      return (
+        <form method="post" action="/admin/showcase" class="admin-card" novalidate>
+          <input type="hidden" name="project_id" value={id} />
+          <h2>{entry.title}</h2>
+          {notice && (
+            <p class="admin-error" role="alert">
+              {notice}
+            </p>
+          )}
+          <div class="admin-field">
+            <label for={`highlighted-${id}`}>
+              <input
+                id={`highlighted-${id}`}
+                name="highlighted"
+                type="checkbox"
+                checked={values.highlighted}
+              />
+              Highlighted
+            </label>
+          </div>
+          <div class="admin-field">
+            <label for={`position-${id}`}>Position</label>
+            <input
+              id={`position-${id}`}
+              name="position"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="999"
+              step="1"
+              value={values.position}
+              aria-invalid={errors.position ? 'true' : undefined}
+              aria-describedby={describedBy('position')}
+            />
+            {errors.position && (
+              <p class="admin-field-error" id={`position-${id}-error`}>
+                {errors.position}
+              </p>
+            )}
+          </div>
+          {(
+            [
+              ['summary_es', 'Summary (ES)'],
+              ['summary_en', 'Summary (EN)'],
+            ] as const
+          ).map(([field, text]) => (
+            <div class="admin-field">
+              <label for={`${field}-${id}`}>{text}</label>
+              <textarea
+                id={`${field}-${id}`}
+                name={field}
+                rows="3"
+                maxlength={SUMMARY_MAX}
+                aria-invalid={errors[field] ? 'true' : undefined}
+                aria-describedby={describedBy(field)}
+              >
+                {values[field]}
+              </textarea>
+              {errors[field] && (
+                <p class="admin-field-error" id={`${field}-${id}-error`}>
+                  {errors[field]}
+                </p>
+              )}
+            </div>
+          ))}
+          <button class="admin-button" type="submit">
+            Save
+          </button>
+        </form>
+      );
+    })
+  }
+</AdminLayout>
