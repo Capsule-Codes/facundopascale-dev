@@ -203,6 +203,8 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   missing/invalid id → 404. Parent fix: tz offset now taken from the scheduled date at submit (DST), verified
   Europe/Rome −120 (Jul) / −60 (Jan).
   Open: DB/RLS write failures return 500 instead of a form error; relation pickers throw if products/showcase fail.
+- RDD 0c58a39..fdd2701 (lineage review-0ed7bcb45e4e71c9): medium, slice_budget_reached, granted, reliability lens,
+  APPROVED and acknowledged; boundary → fdd2701.
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
 ## Next step
