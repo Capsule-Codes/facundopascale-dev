@@ -218,6 +218,12 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   changed the workspace; review now always runs on committed work units.)
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
+- Stage 3 delivered (user, 2026-10-10): PRs #9 tracker, #10 auth, #11 content (`size:exception`), #12 showcase
+  (`size:exception`); merged top-down (#12→#11→#10→#9) so no retarget was needed; tracker verified identical to
+  chain head; #9 → `main` (dfb5036). Production Ready; smoke on www.facundopascale.dev: unauth redirect, login,
+  httpOnly cookie, cross-origin POST 403, all five admin pages 200, sign out; bad password shows the generic error
+  (checked via POST); `/admin` absent from sitemap, `Disallow: /admin` in robots.
+
 ## Next step
 
-Push the stage 3 chain and open PRs (user decision), then stage 4 (newsletter).
+Stage 4: Resend newsletter.
