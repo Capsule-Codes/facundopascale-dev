@@ -1,0 +1,13 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+
+export const prerender = false;
+
+const email = Astro.locals.user?.email;
+---
+
+<AdminLayout title="Dashboard">
+  <h1>Admin</h1>
+  <p>Signed in as <strong>{email}</strong>.</p>
+  <p class="admin-muted">Content, showcase and settings sections arrive next.</p>
+</AdminLayout>

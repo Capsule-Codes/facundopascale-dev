@@ -59,7 +59,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T2.6 Event-driven rebuild: DB triggers + pg_cron, Vercel project, deploy hook in Vault, verified end to end — route: inline
 - [x] T2.7 Favicon: Blueprint monogram ("FP" Newsreader outlines, paper + cyanotype frame, dark variant) and Apple touch icon — route: inline
 - [x] T3.1 Grant admin: dedicated Supabase Auth user (not the shared agency admin) in `personal.admins` — route: inline (1 SQL file)
-- [ ] T3.2 Auth plumbing: `@supabase/ssr` cookie client, middleware guarding `/admin/*` (on-demand, `prerender = false`),
+- [x] T3.2 Auth plumbing: `@supabase/ssr` cookie client, middleware guarding `/admin/*` (on-demand, `prerender = false`),
       login/logout, admin layout, noindex + sitemap exclusion — route: delegated writer
 - [ ] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
 - [ ] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
@@ -184,8 +184,15 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   verified against `astro dev` with real Supabase and the admin credentials.
 - T3.1 RED: `is_admin()` false for the new user. GREEN: migration `grant_site_admin` applied; new user true,
   agency admin false.
+- T3.2 (writer): `@supabase/ssr` 0.12.7; guard/login/cookie adapter as pure functions. RED: 3 new suites failed
+  (modules absent). GREEN: unit 102/102, check 0 errors, lint ok, build ok (only `/admin*` on `_render`), e2e 56/56.
+  Live smoke (`astro dev` + real Supabase): found Astro i18n returning 404 for unprefixed on-demand pages
+  (`/admin/login`) → i18n `routing: 'manual'` with the same options applied in middleware except `/admin`.
+  After fix: unauth → login; bad password → generic error; login → /admin; cookie httpOnly + Lax; cross-origin
+  POST 403; sign out → login. Static output identical to `main` (file list + root index).
+  Open: a signed-in non-admin gets 403 on `/admin/logout` (non-admins are signed out at login, so rare).
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
 ## Next step
 
-T3.1 grant admin, then T3.2 auth plumbing.
+T3.3 content calendar.
