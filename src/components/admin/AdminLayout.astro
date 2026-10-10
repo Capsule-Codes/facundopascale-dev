@@ -42,6 +42,9 @@ const email = Astro.locals.user?.email;
           <nav class="admin-nav" aria-label="Admin">
             <a href="/admin">Dashboard</a>
             <a href="/admin/content">Content</a>
+            <a href="/admin/showcase">Showcase</a>
+            <a href="/admin/products">Products</a>
+            <a href="/admin/settings">Settings</a>
             <form method="post" action="/admin/logout">
               <button type="submit">Sign out</button>
             </form>
@@ -135,6 +138,16 @@ const email = Astro.locals.user?.email;
     margin: 0 0 1rem;
     border: 1px solid var(--color-border);
     background: var(--color-bg-elevated);
+  }
+  .admin-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+  }
+  .admin-card h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.125rem;
   }
   .admin-table {
     width: 100%;
