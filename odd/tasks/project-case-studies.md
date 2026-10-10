@@ -53,6 +53,7 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
     - Commit: `git log --grep "Happiness To Go case study"`. `src/content/work/{es,en}/happiness-to-go.mdx`, 7 phone + 1 desktop (landing) WebP gallery images in `public/images/work/happiness-to-go/` (phones 780x1688, landing 1920x1200), cover via `pnpm covers happiness-to-go` (two phones, sage-to-green gradient, `Happiness\nTo Go` title). No links: the landing has no confirmed public URL in the client repo.
     - capsulecodes.com: row `ebf137d8-df0a-41f8-befb-25878643a952` ("Happiness To Go - Wellness & Habits App") now has the new cover first in `images` and as `image` (`projects/<id>/cover-a7432a81.webp`, public URL 200); 7 existing images kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/happiness-to-go.json`.
     - Title match: DB title prefix-matches case study "Happiness To Go".
+  - Review (HFlow + HTG slice): assessed medium (`slice_budget_reached`); consent granted; reliability lens approved; acknowledged (lineage `review-e57519f866c79cb9`). Reviewed boundary advances to `8d2b237`.
 
 ## Delivery
 
