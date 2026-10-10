@@ -195,7 +195,7 @@ describe('handleConfirm', () => {
     expect(create.mock.calls[0]![0].topics).toEqual([{ id: 'topic-1', subscription: 'opt_in' }]);
   });
 
-  it('updates and adds the segment when the contact already exists', async () => {
+  it('adds the segment and topic when the contact already exists', async () => {
     const resend = fakeResend();
     resend.contacts.create.mockResolvedValue(
       err('Contact already exists', 'validation_error', 409)
@@ -203,7 +203,8 @@ describe('handleConfirm', () => {
     const deps = confirmDeps({ resend, topicId: 'topic-1' });
     const result = await handleConfirm(deps, token('es'), 'es');
     expect(result.kind).toBe('confirmed');
-    expect(resend.contacts.update).toHaveBeenCalledWith({ email: EMAIL, unsubscribed: false });
+    // The team's contacts are shared with other products: never touch the global unsubscribe flag.
+    expect(resend.contacts.update).not.toHaveBeenCalled();
     expect(resend.contacts.segments.add).toHaveBeenCalledWith({
       email: EMAIL,
       segmentId: 'seg-es',
@@ -224,12 +225,12 @@ describe('handleConfirm', () => {
     expect(result.kind).toBe('confirmed');
   });
 
-  it('fails when the existing-contact update fails', async () => {
+  it('fails when adding an existing contact to the segment fails', async () => {
     const resend = fakeResend();
     resend.contacts.create.mockResolvedValue(
       err('Contact already exists', 'validation_error', 409)
     );
-    resend.contacts.update.mockResolvedValue(err('boom', 'internal_server_error', 500));
+    resend.contacts.segments.add.mockResolvedValue(err('boom', 'internal_server_error', 500));
     const result = await handleConfirm(confirmDeps({ resend }), token('es'), 'es');
     expect(result.kind).toBe('failed');
   });

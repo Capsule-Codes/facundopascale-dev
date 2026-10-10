@@ -3,6 +3,7 @@ import AdminLayout from '../../../components/admin/AdminLayout.astro';
 import ContentItemForm from '../../../components/admin/ContentItemForm.astro';
 import {
   deleteContentItem,
+  formatUtc,
   getContentItem,
   isUuid,
   listProductOptions,
@@ -12,10 +13,18 @@ import {
   type ContentFormValues,
   type ContentItem,
 } from '../../../lib/admin-content';
+import {
+  broadcastState,
+  newsletterAvailability,
+  sendBroadcast,
+  sendTest,
+} from '../../../lib/admin-newsletter';
+import { buildNewsletterDeps } from '../../../lib/newsletter-runtime';
 
 export const prerender = false;
 
 const supabase = Astro.locals.supabase!;
+const adminEmail = Astro.locals.user?.email ?? '';
 const { id = '' } = Astro.params;
 
 const item = isUuid(id) ? await getContentItem(supabase, id) : null;
@@ -38,6 +47,13 @@ const toValues = (row: ContentItem): ContentFormValues => ({
 let values = item ? toValues(item) : null;
 let errors: Partial<Record<keyof ContentFormValues, string>> = {};
 let deleteError: string | null = null;
+let newsletterError: string | null = null;
+const savedNotice =
+  {
+    'newsletter-test': 'Test email sent to your address.',
+    'newsletter-sent': 'Newsletter sent to subscribers.',
+    'newsletter-scheduled': 'Newsletter scheduled in Resend.',
+  }[Astro.url.searchParams.get('saved') ?? ''] ?? null;
 // Stored instants are only prefilled until the user submits something.
 let iso: { scheduled_for?: string | null; published_at?: string | null } | undefined = item
   ? { scheduled_for: item.scheduled_for, published_at: item.published_at }
@@ -45,7 +61,40 @@ let iso: { scheduled_for?: string | null; published_at?: string | null } | undef
 
 if (item && Astro.request.method === 'POST') {
   const data = await Astro.request.formData();
-  if (data.get('intent') === 'delete') {
+  const intent = data.get('intent');
+  if (intent === 'newsletter-test' || intent === 'newsletter-send') {
+    const deps = buildNewsletterDeps(supabase, (Astro.site ?? Astro.url).origin);
+    if (intent === 'newsletter-test') {
+      const result = await sendTest(deps, item, adminEmail);
+      if (result.kind === 'sent') {
+        return Astro.redirect(`/admin/content/${item.id}?saved=newsletter-test`, 303);
+      }
+      newsletterError = {
+        not_newsletter: 'Only newsletter items can be sent.',
+        empty: 'Add a body before sending.',
+        unavailable: `Sending is not configured: ${'reason' in result ? result.reason : ''}`,
+        failed: 'Resend could not send the test email. Please try again.',
+      }[result.kind];
+    } else if (data.get('confirm_send') === null) {
+      newsletterError = 'Tick the box to confirm sending to subscribers.';
+    } else {
+      const result = await sendBroadcast(deps, item);
+      if (result.kind === 'sent' || result.kind === 'scheduled') {
+        return Astro.redirect(
+          `/admin/content/${item.id}?saved=newsletter-${result.kind === 'sent' ? 'sent' : 'scheduled'}`,
+          303
+        );
+      }
+      newsletterError = {
+        not_newsletter: 'Only newsletter items can be sent.',
+        already_sent: 'This newsletter was already sent.',
+        empty: 'Add a body before sending.',
+        unavailable: `Sending is not configured: ${'reason' in result ? result.reason : ''}`,
+        resend_failed: 'Resend rejected the broadcast. Nothing was sent. Please try again.',
+        saved_failed: `The broadcast WAS sent (Resend id ${'broadcastId' in result ? result.broadcastId : ''}), but the calendar could not be updated. Do not send again; update the item status manually.`,
+      }[result.kind];
+    }
+  } else if (intent === 'delete') {
     if (data.get('confirm') === null) {
       deleteError = 'Tick the box to confirm deleting this item.';
     } else {
@@ -65,6 +114,17 @@ if (item && Astro.request.method === 'POST') {
   }
 }
 
+const newsletterDeps =
+  item?.channel === 'newsletter'
+    ? buildNewsletterDeps(supabase, (Astro.site ?? Astro.url).origin)
+    : null;
+const availability =
+  newsletterDeps && item ? newsletterAvailability(newsletterDeps, item.locale) : null;
+const broadcast = item ? broadcastState(item.meta) : null;
+const scheduledFuture = Boolean(
+  item?.scheduled_for && Date.parse(item.scheduled_for) > Date.now() && !broadcast
+);
+
 const [products, projects] =
   item && values
     ? await Promise.all([listProductOptions(supabase), listProjectOptions(supabase)])
@@ -79,6 +139,11 @@ const [products, projects] =
         <p>
           <a href="/admin/content">Back to content</a>
         </p>
+        {savedNotice && (
+          <p class="admin-notice" role="status">
+            {savedNotice}
+          </p>
+        )}
         <ContentItemForm
           action={`/admin/content/${item.id}`}
           submitLabel="Save changes"
@@ -88,6 +153,85 @@ const [products, projects] =
           products={products}
           projects={projects}
         />
+        {item.channel === 'newsletter' && availability && (
+          <section class="admin-card" aria-labelledby="newsletter-heading">
+            <h2 id="newsletter-heading">Newsletter</h2>
+            <p>
+              Audience: <strong>{item.locale === 'es' ? 'Spanish (ES)' : 'English (EN)'}</strong>{' '}
+              segment.
+            </p>
+            {!availability.ok && (
+              <p class="admin-error" role="alert">
+                Sending is disabled: {availability.reason}
+              </p>
+            )}
+            {newsletterError && (
+              <p class="admin-error" role="alert" id="newsletter-error">
+                {newsletterError}
+              </p>
+            )}
+            {broadcast ? (
+              <p>
+                {broadcast.scheduledFor ? 'Scheduled' : 'Sent'}{' '}
+                {broadcast.scheduledFor ? (
+                  <time datetime={broadcast.scheduledFor} data-local>
+                    {formatUtc(broadcast.scheduledFor)}
+                  </time>
+                ) : (
+                  broadcast.sentAt && (
+                    <time datetime={broadcast.sentAt} data-local>
+                      {formatUtc(broadcast.sentAt)}
+                    </time>
+                  )
+                )}
+                . Resend broadcast <code>{broadcast.id}</code>. It cannot be sent twice.
+              </p>
+            ) : (
+              <p class="admin-muted">
+                Not sent yet. Save your changes first: sending uses the saved item.
+              </p>
+            )}
+            <form method="post" action={`/admin/content/${item.id}`}>
+              <input type="hidden" name="intent" value="newsletter-test" />
+              <button class="admin-button" type="submit" disabled={!availability.ok}>
+                Send test to me
+              </button>
+              <span class="admin-muted"> ({adminEmail})</span>
+            </form>
+            <form method="post" action={`/admin/content/${item.id}`}>
+              <input type="hidden" name="intent" value="newsletter-send" />
+              <div class="admin-field">
+                <label for="confirm_send">
+                  <input
+                    id="confirm_send"
+                    name="confirm_send"
+                    type="checkbox"
+                    disabled={!availability.ok || Boolean(broadcast)}
+                    aria-describedby={newsletterError ? 'newsletter-error' : undefined}
+                  />
+                  Yes, {scheduledFuture ? 'schedule' : 'send'} this to every subscriber in the{' '}
+                  {item.locale.toUpperCase()} segment
+                </label>
+              </div>
+              <button
+                class="admin-button admin-button--danger"
+                type="submit"
+                disabled={!availability.ok || Boolean(broadcast)}
+              >
+                {scheduledFuture ? (
+                  <>
+                    Schedule for{' '}
+                    <time datetime={item.scheduled_for!} data-local>
+                      {formatUtc(item.scheduled_for)}
+                    </time>
+                  </>
+                ) : (
+                  'Send to subscribers'
+                )}
+              </button>
+            </form>
+          </section>
+        )}
         <h2>Delete</h2>
         {deleteError && (
           <p class="admin-error" role="alert" id="delete-error">
@@ -123,3 +267,12 @@ const [products, projects] =
     )
   }
 </AdminLayout>
+
+<script is:inline>
+  document.querySelectorAll('time[data-local]').forEach(function (el) {
+    const d = new Date(el.getAttribute('datetime'));
+    if (!isNaN(d.getTime())) {
+      el.textContent = d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    }
+  });
+</script>

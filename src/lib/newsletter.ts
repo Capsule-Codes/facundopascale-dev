@@ -161,9 +161,8 @@ export async function handleConfirm(
   if (!created.error) return { kind: 'confirmed' };
   if (!isAlreadyExists(created.error)) return fail(created.error);
 
-  const updated = await resend.contacts.update({ email: claims.email, unsubscribed: false });
-  if (updated.error) return fail(updated.error);
-
+  // Contacts are shared across the Resend team (other products' lists): leave the global
+  // `unsubscribed` flag alone and opt in through this site's segment and topic only.
   const added = await resend.contacts.segments.add({ email: claims.email, segmentId });
   if (added.error && !isAlreadyInSegment(added.error)) return fail(added.error);
 

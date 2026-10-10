@@ -66,7 +66,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
 - [x] T4.1 Subscribe with double opt-in: home form (es/en) → on-demand endpoint (honeypot + rate limit) → confirmation
       email with HMAC-signed token → confirm page creates the Resend contact in the locale segment — route: delegated writer
-- [ ] T4.2 Send from admin: newsletter items in the calendar → Resend broadcast to the item's locale segment (test send
+- [x] T4.2 Send from admin: newsletter items in the calendar → Resend broadcast to the item's locale segment (test send
       to admin, schedule or send now), broadcast id + status saved on the item — route: delegated writer
 
 ## Progress / evidence
@@ -247,7 +247,26 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Open: Resend duplicate-contact behavior (409/message match) unverified live; needs segment/topic ids from the owner.
 - RDD 51bf601..47fb9aa (lineage review-8c2f48c41a235092): medium, granted, reliability lens, APPROVED and acknowledged;
   boundary → 47fb9aa.
+- T4.2 (writer): newsletter panel on `/admin/content/[id]` for `newsletter` items: test send to the signed-in admin,
+  send/schedule broadcast to the locale segment (confirm checkbox; disabled once `meta.broadcast_id` exists or config
+  missing). Body Markdown → email HTML via `marked` 18.1.0 (raw HTML escaped, unsafe links dropped), footer with
+  `{{{RESEND_UNSUBSCRIBE_URL}}}`. Resend failure → no DB write; DB failure after send → error with broadcast id.
+  RED: 2 new suites failed (modules absent). GREEN: unit 246/246, check 0 errors 0 warnings, lint ok, build ok,
+  e2e 58/58. Dev smoke (real Supabase, no Resend key; temp `idea` item deleted): panel shows ES segment, missing
+  config, both buttons disabled; no page errors.
+  Open: no cancel/reschedule from admin (Resend dashboard); live Resend behavior untested until the owner provides ids.
+- RDD 47fb9aa..d0df3e1 (lineage review-38da7d7c758d29ed): medium, granted, reliability lens, APPROVED and
+  acknowledged; boundary → d0df3e1. (A whole-stage candidate earlier failed to start while T4.2 files were untracked.)
+- RDD whole stage 4 (main..bb5fb3c, lineage review-53bdaab193725aca): granted, APPROVED and acknowledged.
+- Resend setup (user logged in `resend-cli` 2.23.0, official, default profile; authorized 2026-10-10): domain
+  `facundopascale.dev` already verified. Team is shared with Stagionaly/Elevate/Orbys (global contacts) → created
+  segments "Facundo Pascale · Newsletter ES/EN" and topic "Facundo Pascale — Newsletter" with default `opt_out`
+  (Resend's `opt_in` default means "receives unless opted out"). Ids set in Vercel Production as
+  RESEND_SEGMENT_ES/EN and RESEND_TOPIC_NEWSLETTER.
+- Fix: confirming an existing contact no longer sets the team-global `unsubscribed: false` (would re-subscribe people
+  who opted out of other products); it only adds this site's segment and topic. RED: 1 test failed; GREEN 246/246,
+  check 0 errors, lint ok.
 
 ## Next step
 
-Owner: verify domain + create ES/EN segments and Newsletter topic in Resend; then live-test T4.1, T4.2 admin sending.
+Live test in production: subscribe + confirm with the owner's address, test send from admin (needs push/merge, user decision).
