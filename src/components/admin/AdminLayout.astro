@@ -3,9 +3,11 @@ import '../../styles/global.css';
 
 interface Props {
   title: string;
+  /** Wider main column for tables. */
+  wide?: boolean;
 }
 
-const { title } = Astro.props;
+const { title, wide = false } = Astro.props;
 const email = Astro.locals.user?.email;
 ---
 
@@ -39,6 +41,10 @@ const email = Astro.locals.user?.email;
         email && (
           <nav class="admin-nav" aria-label="Admin">
             <a href="/admin">Dashboard</a>
+            <a href="/admin/content">Content</a>
+            <a href="/admin/showcase">Showcase</a>
+            <a href="/admin/products">Products</a>
+            <a href="/admin/settings">Settings</a>
             <form method="post" action="/admin/logout">
               <button type="submit">Sign out</button>
             </form>
@@ -46,7 +52,7 @@ const email = Astro.locals.user?.email;
         )
       }
     </header>
-    <main class="admin-main">
+    <main class:list={['admin-main', { 'admin-main--wide': wide }]}>
       <slot />
     </main>
   </body>
@@ -93,6 +99,9 @@ const email = Astro.locals.user?.email;
     margin: 0 auto;
     padding: 2rem 1.25rem;
   }
+  .admin-main--wide {
+    max-width: 64rem;
+  }
   .admin-main h1 {
     font-family: var(--font-display);
     font-size: 1.75rem;
@@ -104,13 +113,70 @@ const email = Astro.locals.user?.email;
     gap: 0.25rem;
     margin-bottom: 1rem;
   }
-  .admin-field input {
+  .admin-field input,
+  .admin-field select,
+  .admin-field textarea {
     font: inherit;
     padding: 0.5rem 0.625rem;
     color: var(--color-text);
     background: var(--color-bg-elevated);
     border: 1px solid var(--color-border);
     border-radius: 0.25rem;
+  }
+  .admin-field input[type='checkbox'] {
+    align-self: flex-start;
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+  .admin-field-error {
+    color: var(--color-accent);
+    font-size: 0.875rem;
+    margin: 0;
+  }
+  .admin-notice {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 1rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+  }
+  .admin-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+  }
+  .admin-card h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.125rem;
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+  .admin-table th,
+  .admin-table td {
+    text-align: left;
+    padding: 0.5rem 0.625rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .admin-table-wrap {
+    overflow-x: auto;
+  }
+  .admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .admin-link-button {
+    display: inline-block;
+    text-decoration: none;
+  }
+  .admin-button--danger {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
   }
   .admin-button {
     font: inherit;
