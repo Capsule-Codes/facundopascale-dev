@@ -20,7 +20,11 @@ const isAdminPath = (pathname: string) => pathname === '/admin' || pathname.star
 
 // i18n routing is `manual` in astro.config.ts: the public site keeps the same options
 // (prefixed default locale, no redirect), while `/admin` stays unprefixed.
-const localeRouting = i18nMiddleware({ prefixDefaultLocale: true, redirectToDefaultLocale: false });
+const localeRouting = i18nMiddleware({
+  prefixDefaultLocale: true,
+  redirectToDefaultLocale: false,
+  fallbackType: 'redirect',
+});
 
 const routeLocales = defineMiddleware((context, next) =>
   isAdminPath(context.url.pathname) ? next() : localeRouting(context, next)
