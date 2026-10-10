@@ -41,6 +41,8 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
   - Redirects: `redirects` in `astro.config.ts` (301) for `/en/work/fitcoach`, `/es/trabajo/fitcoach`, `/es/work/fitcoach`; emitted into `.vercel/output/config.json` (checked). `serve` in e2e ignores Vercel routes, so covered by unit test `tests/unit/redirects.test.ts` (RED observed first, then GREEN).
   - Matching: product "Elevate" already prefix-matches the case study; unit tests added for "Elevate Coach"/"Elevate - ..." variants. Elevate is a product, not a showcase row, so it stays in the case-studies section.
   - Checks: `pnpm test` 288 passed; `pnpm check` 0 errors; `pnpm lint` clean; `pnpm build` ok; `pnpm test:e2e` 63 passed; `pnpm covers elevate` ok.
+  - Review: assessed medium (`slice_budget_reached`, executable change in astro.config.ts); consent granted; reliability lens approved; acknowledged (lineage `review-cfb9f06df43d4c3e`). Reviewed boundary advances to `a961c19`.
+  - Follow-ups: offline-first blog posts still describe FitCoach-era sync details under the Elevate name.
 - [ ] T5 Case studies + covers for remaining projects (one work unit per project)
 
 ## Delivery
