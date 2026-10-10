@@ -1,0 +1,125 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import ContentItemForm from '../../../components/admin/ContentItemForm.astro';
+import {
+  deleteContentItem,
+  getContentItem,
+  isUuid,
+  listProductOptions,
+  listProjectOptions,
+  parseContentItemForm,
+  updateContentItem,
+  type ContentFormValues,
+  type ContentItem,
+} from '../../../lib/admin-content';
+
+export const prerender = false;
+
+const supabase = Astro.locals.supabase!;
+const { id = '' } = Astro.params;
+
+const item = isUuid(id) ? await getContentItem(supabase, id) : null;
+if (!item) Astro.response.status = 404;
+
+const toValues = (row: ContentItem): ContentFormValues => ({
+  title: row.title,
+  channel: row.channel,
+  status: row.status,
+  locale: row.locale,
+  body: row.body ?? '',
+  url: row.url ?? '',
+  scheduled_for: '',
+  published_at: '',
+  product_id: row.product_id ?? '',
+  project_id: row.project_id ?? '',
+  show_in_log: row.show_in_log,
+});
+
+let values = item ? toValues(item) : null;
+let errors: Partial<Record<keyof ContentFormValues, string>> = {};
+let deleteError: string | null = null;
+// Stored instants are only prefilled until the user submits something.
+let iso: { scheduled_for?: string | null; published_at?: string | null } | undefined = item
+  ? { scheduled_for: item.scheduled_for, published_at: item.published_at }
+  : undefined;
+
+if (item && Astro.request.method === 'POST') {
+  const data = await Astro.request.formData();
+  if (data.get('intent') === 'delete') {
+    if (data.get('confirm') === null) {
+      deleteError = 'Tick the box to confirm deleting this item.';
+    } else {
+      await deleteContentItem(supabase, item.id);
+      return Astro.redirect('/admin/content?saved=deleted', 303);
+    }
+  } else {
+    const result = parseContentItemForm(data, new Date());
+    if (result.ok) {
+      const updated = await updateContentItem(supabase, item.id, result.value);
+      if (updated) return Astro.redirect('/admin/content?saved=updated', 303);
+      Astro.response.status = 404;
+    } else {
+      ({ values, errors } = result);
+      iso = undefined;
+    }
+  }
+}
+
+const [products, projects] =
+  item && values
+    ? await Promise.all([listProductOptions(supabase), listProjectOptions(supabase)])
+    : [[], []];
+---
+
+<AdminLayout title={item ? 'Edit content item' : 'Not found'}>
+  {
+    item && values ? (
+      <>
+        <h1>Edit content item</h1>
+        <p>
+          <a href="/admin/content">Back to content</a>
+        </p>
+        <ContentItemForm
+          action={`/admin/content/${item.id}`}
+          submitLabel="Save changes"
+          values={values}
+          errors={errors}
+          iso={iso}
+          products={products}
+          projects={projects}
+        />
+        <h2>Delete</h2>
+        {deleteError && (
+          <p class="admin-error" role="alert" id="delete-error">
+            {deleteError}
+          </p>
+        )}
+        <form method="post" action={`/admin/content/${item.id}`}>
+          <input type="hidden" name="intent" value="delete" />
+          <div class="admin-field">
+            <label for="confirm">
+              <input
+                id="confirm"
+                name="confirm"
+                type="checkbox"
+                aria-describedby={deleteError ? 'delete-error' : undefined}
+              />
+              Yes, permanently delete this item
+            </label>
+          </div>
+          <button class="admin-button admin-button--danger" type="submit">
+            Delete item
+          </button>
+        </form>
+      </>
+    ) : (
+      <>
+        <h1>Not found</h1>
+        <p>This content item does not exist.</p>
+        <p>
+          <a href="/admin/content">Back to content</a>
+        </p>
+      </>
+    )
+  }
+</AdminLayout>

@@ -1,0 +1,57 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import ContentItemForm from '../../../components/admin/ContentItemForm.astro';
+import {
+  createContentItem,
+  listProductOptions,
+  listProjectOptions,
+  parseContentItemForm,
+  type ContentFormValues,
+} from '../../../lib/admin-content';
+
+export const prerender = false;
+
+const supabase = Astro.locals.supabase!;
+
+let values: ContentFormValues = {
+  title: '',
+  channel: 'blog',
+  status: 'idea',
+  locale: 'es',
+  body: '',
+  url: '',
+  scheduled_for: '',
+  published_at: '',
+  product_id: '',
+  project_id: '',
+  show_in_log: true,
+};
+let errors: Partial<Record<keyof ContentFormValues, string>> = {};
+
+if (Astro.request.method === 'POST') {
+  const result = parseContentItemForm(await Astro.request.formData(), new Date());
+  if (result.ok) {
+    await createContentItem(supabase, result.value);
+    return Astro.redirect('/admin/content?saved=created', 303);
+  }
+  ({ values, errors } = result);
+}
+
+const [products, projects] = await Promise.all([
+  listProductOptions(supabase),
+  listProjectOptions(supabase),
+]);
+---
+
+<AdminLayout title="New content item">
+  <h1>New content item</h1>
+  <p><a href="/admin/content">Back to content</a></p>
+  <ContentItemForm
+    action="/admin/content/new"
+    submitLabel="Create item"
+    values={values}
+    errors={errors}
+    products={products}
+    projects={projects}
+  />
+</AdminLayout>

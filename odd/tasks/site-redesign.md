@@ -61,7 +61,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T3.1 Grant admin: dedicated Supabase Auth user (not the shared agency admin) in `personal.admins` — route: inline (1 SQL file)
 - [x] T3.2 Auth plumbing: `@supabase/ssr` cookie client, middleware guarding `/admin/*` (on-demand, `prerender = false`),
       login/logout, admin layout, noindex + sitemap exclusion — route: delegated writer
-- [ ] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
+- [x] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
 - [ ] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
 - [ ] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
 
@@ -194,8 +194,17 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - RDD stage 3 range main..0c58a39 (lineage review-f2585cc45d43ed53): high (auth), consent granted, 4 lenses
   (risk/resilience/readability/reliability), APPROVED and acknowledged; reviewed boundary → 0c58a39.
   (An earlier T3.1-only candidate was superseded when the writer's uncommitted files changed the workspace.)
+- Correction: T3.2 evidence said `check 0 errors`, but the filtered output hid one error (`fallbackType` missing in
+  the manual i18n middleware options). Fixed in 775619d with the previous default (`redirect`); check now 0 errors.
+- T3.3 (writer + parent fix): `/admin/content` list with status/channel filters, new/edit/delete (confirm checkbox,
+  no dialogs), dashboard counts + next 5 scheduled. RED: new suite failed (module absent). GREEN: unit 131/131,
+  check 0 errors, lint ok, build ok, e2e 56/56. Live smoke (real Supabase, `idea` item, deleted afterwards, 0 rows
+  left): validation error keeps values; create/update/delete redirects; scheduled date round-trips in local time;
+  missing/invalid id → 404. Parent fix: tz offset now taken from the scheduled date at submit (DST), verified
+  Europe/Rome −120 (Jul) / −60 (Jan).
+  Open: DB/RLS write failures return 500 instead of a form error; relation pickers throw if products/showcase fail.
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
 ## Next step
 
-T3.3 content calendar.
+T3.4 showcase + products editing.
