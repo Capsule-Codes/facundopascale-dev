@@ -1,0 +1,51 @@
+# Project case studies and covers
+
+## Objective
+
+Every client project and own product gets a UR POV-style cover and a full case study (es/en) with internal images, like Estudialo. FitCoach is retired in favor of Elevate.
+
+## Problem / why
+
+Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase projects have no case study. FitCoach no longer exists as a product; it became Elevate (Gym, Coach, Nutri).
+
+## Scope
+
+- Projects: Anchor, Estudialo, Festival PRO, Happiness To Go, HFlow, Horus, Investamind, UR POV, Stagionaly, Orbys, Elevate.
+- Reusable cover template (1600x1000, brand gradient, logo tile, title, tagline, pill, phone-framed screenshot).
+- Case study pages render an internal-image gallery.
+- FitCoach case study -> Elevate; `/work/fitcoach` redirects.
+
+## Constraints
+
+- Client screenshots never show real user data: apps are booted against local backends with invented seed data (HTG: local Supabase via `supabase start`; HFlow: local Postgres). Never point at client production.
+- Client repos are not committed to; local-only artifacts are cleaned up.
+- Covers of client projects live in `public.projects` (shared with capsulecodes.com): changing them changes the agency site too.
+- Figma: accessible files are Elevate Gym/Coach/Nutri, FestivalPro, Investamind, Stagionaly, Orbys. UR POV and Anchor files need edit access (pending from the user).
+- TDD: strict, Vitest `pnpm test`, Playwright `pnpm test:e2e` (source: project config + session).
+
+## Tasks
+
+- [x] T1 Capture assets: HFlow screens (local Postgres + fake data) — delegated
+  - Evidence: 11 PNGs in scratchpad `captures/hflow/` (1440x900@2x, incl. dark dashboard); local Postgres + neon-http-proxy + local Redis/SRH containers (`hflow-demo-*`, stopped, kept for retakes); fake workspace "Northwind Studio"; client repo untouched. UI is Spanish-only (hardcoded). No marketing page (`/` redirects to sign-in). Brand: monochrome, mark = black rounded square with three bars (`apps/frontend/src/public/logo.png`).
+- [x] T2 Capture assets: Happiness To Go screens (local Supabase + fake data) — delegated
+  - Evidence: 13 PNGs in scratchpad `captures/htg/` (phone 390x844@3x + landing 1440x900@2x); zero requests to `*.supabase.co`; client repo untouched (pre-existing deletions only). Local stack `htg_demo_local` (ports 56321/56322) stopped with volume kept for retakes.
+- [x] T3 Cover template in repo (UR POV recipe) + gallery support in case-study pages — delegated (writer trigger: 2+ non-trivial files)
+  - Commits: `ee5dbad` feat(work): add reusable project cover generator; gallery commit = the one that carries this doc update (`git log --grep "case-study galleries"`).
+  - Cover generator: `scripts/covers/` (config.ts, html.ts, projects.ts, render.ts, assets/ur-pov/), `pnpm covers [slug]` -> `public/images/work/<slug>/cover.webp` (1600x1000). Frames: `phone` (1 or 2 overlapping) and `browser` (16:10). ur-pov render visually matches the scratchpad cover. Add new projects in `scripts/covers/projects.ts`.
+  - Gallery: `gallery` is now `{ src, alt, caption?, kind?: phone|desktop, width?, height? }[]`; `src/lib/gallery.ts` + `src/components/Gallery.astro` rendered after the body in both locales. Estudialo (es/en) carries one gallery entry: its existing `estudialo-ai.svg` (no real screenshots exist yet) -- replace in T5.
+  - Checks: `pnpm test` 281 passed; `pnpm check` 0 errors; `pnpm lint` clean; `pnpm build` ok; `pnpm test:e2e` 63 passed (incl. tests/e2e/gallery.spec.ts); `pnpm covers ur-pov` ok. TDD: unit RED observed for covers and gallery; gallery e2e was written alongside the implementation (RED not separately observed).
+  - Review assessment: not run by the writer (parent owns RDD).
+- [ ] T4 Elevate case study replaces FitCoach (+ redirect, title matching)
+- [ ] T5 Case studies + covers for remaining projects (one work unit per project)
+
+## Delivery
+
+Strategy: ask-on-risk; chain strategy cached from stage 2–4: feature-branch-chain, merged top-down.
+
+## Progress / evidence
+
+- Branch `feat/project-case-studies` created from main 36826ed.
+
+## Next step
+
+T1/T2 asset capture.

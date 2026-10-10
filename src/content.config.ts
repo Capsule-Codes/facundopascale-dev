@@ -39,7 +39,18 @@ const work = defineCollection({
       })
       .default({}),
     coverImage: z.string(),
-    gallery: z.array(z.string()).default([]),
+    gallery: z
+      .array(
+        z.object({
+          src: z.string(),
+          alt: z.string().min(5),
+          caption: z.string().optional(),
+          kind: z.enum(['phone', 'desktop']).optional(),
+          width: z.number().int().positive().optional(),
+          height: z.number().int().positive().optional(),
+        })
+      )
+      .default([]),
     lang: localeEnum,
     translationId: z.string(),
     featured: z.boolean().default(false),

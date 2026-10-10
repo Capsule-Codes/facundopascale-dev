@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from 'astro:content';
+import Gallery from '../../../components/Gallery.astro';
 import Layout from '../../../components/Layout.astro';
 import { byLocale } from '../../../lib/content';
 import { type Locale } from '../../../lib/i18n';
@@ -44,6 +45,7 @@ const loc: Locale = 'es';
     <div class="prose dark:prose-invert max-w-none text-[var(--color-text-muted)] leading-relaxed">
       <Content />
     </div>
+    <Gallery items={d.gallery} locale={loc} />
     {
       (d.links.live || d.links.github) && (
         <div class="mt-12 flex gap-4 font-mono text-sm">
