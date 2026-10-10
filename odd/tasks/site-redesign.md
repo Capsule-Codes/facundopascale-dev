@@ -58,6 +58,12 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
       pages) — route: delegated writer
 - [x] T2.6 Event-driven rebuild: DB triggers + pg_cron, Vercel project, deploy hook in Vault, verified end to end — route: inline
 - [x] T2.7 Favicon: Blueprint monogram ("FP" Newsreader outlines, paper + cyanotype frame, dark variant) and Apple touch icon — route: inline
+- [x] T3.1 Grant admin: dedicated Supabase Auth user (not the shared agency admin) in `personal.admins` — route: inline (1 SQL file)
+- [ ] T3.2 Auth plumbing: `@supabase/ssr` cookie client, middleware guarding `/admin/*` (on-demand, `prerender = false`),
+      login/logout, admin layout, noindex + sitemap exclusion — route: delegated writer
+- [ ] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
+- [ ] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
+- [ ] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
 
 ## Progress / evidence
 
@@ -161,6 +167,25 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - T2.7 (user chose "monograma plano"): RED favicon e2e 2 failed; GREEN e2e 56/56, build/check/lint ok; rendered
   light/dark/32px checked. Commit dff144a, RDD assess medium under_budget (pending in slice). PR #7 (07-favicon → 06-rebuild).
 
+- Stage 2 landed (2026-10-09): chain merged; retarget via `gh pr edit --base` failed silently (Projects classic
+  GraphQL error), so #3–#7 merged into parent branches; fixed with #8 (chain head → tracker, verified identical),
+  then #1 → `main` (f7271b9). First prod build failed on stale Vercel build cache (`Cannot find module 'tslib'`;
+  clean frozen install resolves it) → `vercel deploy --prod --force` Ready; DB-triggered rebuild afterwards Ready.
+  facundopascale.dev serves the redesign.
+
+### Stage 3 — `/admin`
+
+- Decisions (user, 2026-10-09): email + password login; a new dedicated admin user (the only existing Auth user
+  is the shared capsulecodes.com admin, not reused). Admin user created via Auth Admin API, email confirmed;
+  credentials only in `~/.config/facundopascale-dev/admin.env` (600).
+- Design: admin routes are on-demand (`prerender = false`) under the static site; every write goes through the
+  signed-in user's Supabase client so RLS (`personal.is_admin()`) is the authority; DB triggers rebuild the site.
+- Testing: e2e serves static output only, so auth/guard/actions are unit-tested with fakes; end-to-end auth is
+  verified against `astro dev` with real Supabase and the admin credentials.
+- T3.1 RED: `is_admin()` false for the new user. GREEN: migration `grant_site_admin` applied; new user true,
+  agency admin false.
+- Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
+
 ## Next step
 
-Stage 3 (`/admin` with Supabase Auth).
+T3.1 grant admin, then T3.2 auth plumbing.
