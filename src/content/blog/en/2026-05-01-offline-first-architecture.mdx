@@ -12,7 +12,7 @@ import Callout from '@/components/mdx/Callout.astro';
 
 Most devs think of offline-first as a feature: "we'll add some caching and call it a day." No. Offline-first is an **architecture decision** that affects every layer of your system, from the database schema to how you resolve conflicts between devices. If you make it late, you'll rewrite half the app.
 
-I know this because I lived it. In [FitCoach](/en/work/fitcoach) — a fitness coaching app where users need to access their routines at the gym, often with no signal — we made this decision from day one. And it changed everything.
+I know this because I lived it. In [Elevate](/en/work/elevate) (formerly FitCoach) — a fitness coaching app where users need to access their routines at the gym, often with no signal — we made this decision from day one. And it changed everything.
 
 ## SQLite as source of truth, not as cache
 
@@ -46,7 +46,7 @@ The flow is straightforward:
 
 <Callout type="warning" title="Sync ordering matters">
   If you have relationships between tables, sync order matters. You can't sync exercises before the
-  routines that contain them. In FitCoach the order is: `profiles → trainer_clients → routines →
+  routines that contain them. In Elevate the order is: `profiles → trainer_clients → routines →
   routine_days → exercises → exercise_logs`. Parent before child, always.
 </Callout>
 
@@ -56,7 +56,7 @@ This pattern is deliberately simple. It's not a CRDT, not an event log, not a Me
 
 "But what happens if two devices edit the same thing?" This is the question that paralyzes teams. The honest answer: **it depends on the domain**.
 
-In FitCoach, each data type has a single writer. The trainer creates routines, the client logs exercises. There's no real conflict. So the strategy is the simplest possible: **last-write-wins** via upsert.
+In Elevate, each data type has a single writer. The trainer creates routines, the client logs exercises. There's no real conflict. So the strategy is the simplest possible: **last-write-wins** via upsert.
 
 ```typescript
 await db
@@ -109,6 +109,6 @@ If I were starting an offline-first project from scratch today, I'd change two t
 1. **Add a `version` field to every record** to detect conflicts before upsert, instead of blindly assuming last-write-wins.
 2. **Implement a local operation log** for granular retry instead of re-syncing entire tables.
 
-But here's the thing: these improvements add complexity. In FitCoach I didn't need them because the single-writer model allowed it. Know your domain before you over-engineer.
+But here's the thing: these improvements add complexity. In Elevate I didn't need them because the single-writer model allowed it. Know your domain before you over-engineer.
 
 Offline-first architecture isn't glamorous. There are no trendy frameworks that solve it with a single import. It's plumbing work: pipes, valves, and knowing where it might leak. But when your user opens the app on the subway and everything works as if they had 5G — that's the payoff.

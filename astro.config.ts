@@ -84,6 +84,12 @@ export default defineConfig({
   // Static-first: pages prerender by default. The Vercel adapter only
   // makes dynamic endpoints (e.g. Astro Actions) run as serverless functions.
   output: 'static',
+  // FitCoach became Elevate; keep the old case-study URLs alive.
+  redirects: {
+    '/en/work/fitcoach': { status: 301, destination: '/en/work/elevate' },
+    '/es/trabajo/fitcoach': { status: 301, destination: '/es/trabajo/elevate' },
+    '/es/work/fitcoach': { status: 301, destination: '/es/trabajo/elevate' },
+  },
   // Origin check on POSTs to on-demand pages (default is already true; explicit for /admin).
   security: { checkOrigin: true },
   adapter: vercel({

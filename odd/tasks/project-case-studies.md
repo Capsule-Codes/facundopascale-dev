@@ -34,8 +34,13 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
   - Cover generator: `scripts/covers/` (config.ts, html.ts, projects.ts, render.ts, assets/ur-pov/), `pnpm covers [slug]` -> `public/images/work/<slug>/cover.webp` (1600x1000). Frames: `phone` (1 or 2 overlapping) and `browser` (16:10). ur-pov render visually matches the scratchpad cover. Add new projects in `scripts/covers/projects.ts`.
   - Gallery: `gallery` is now `{ src, alt, caption?, kind?: phone|desktop, width?, height? }[]`; `src/lib/gallery.ts` + `src/components/Gallery.astro` rendered after the body in both locales. Estudialo (es/en) carries one gallery entry: its existing `estudialo-ai.svg` (no real screenshots exist yet) -- replace in T5.
   - Checks: `pnpm test` 281 passed; `pnpm check` 0 errors; `pnpm lint` clean; `pnpm build` ok; `pnpm test:e2e` 63 passed (incl. tests/e2e/gallery.spec.ts); `pnpm covers ur-pov` ok. TDD: unit RED observed for covers and gallery; gallery e2e was written alongside the implementation (RED not separately observed).
-  - Review assessment: not run by the writer (parent owns RDD).
-- [ ] T4 Elevate case study replaces FitCoach (+ redirect, title matching)
+  - Review: assessed medium (`slice_budget_reached`, package.json config change); consent granted; reliability lens approved; acknowledged (lineage `review-f55e78f25ebdc1b8`). Reviewed boundary advances to `2002d1c`.
+- [x] T4 Elevate case study replaces FitCoach (+ redirect, title matching) — delegated (writer trigger: 2+ non-trivial files)
+  - Commits: `feat(work): replace FitCoach with the Elevate case study` (`git log --grep "replace FitCoach"`).
+  - Case study: `src/content/work/{es,en}/elevate.mdx` (translationId `elevate`, live link byelevate.app, 7-image gallery: coach desktop + 2 mobile, gym desktop + mobile, nutri desktop + mobile, in `public/images/work/elevate/*.webp`); status stated as web live, apps pre-release. Cover `public/images/work/elevate/cover.webp` via `pnpm covers elevate` (navy gradient, 2 phones). Old fitcoach.mdx/svg removed; blog posts relinked to Elevate.
+  - Redirects: `redirects` in `astro.config.ts` (301) for `/en/work/fitcoach`, `/es/trabajo/fitcoach`, `/es/work/fitcoach`; emitted into `.vercel/output/config.json` (checked). `serve` in e2e ignores Vercel routes, so covered by unit test `tests/unit/redirects.test.ts` (RED observed first, then GREEN).
+  - Matching: product "Elevate" already prefix-matches the case study; unit tests added for "Elevate Coach"/"Elevate - ..." variants. Elevate is a product, not a showcase row, so it stays in the case-studies section.
+  - Checks: `pnpm test` 288 passed; `pnpm check` 0 errors; `pnpm lint` clean; `pnpm build` ok; `pnpm test:e2e` 63 passed; `pnpm covers elevate` ok.
 - [ ] T5 Case studies + covers for remaining projects (one work unit per project)
 
 ## Delivery

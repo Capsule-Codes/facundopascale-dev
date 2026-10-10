@@ -13,4 +13,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/ur-pov/screenshot.png'],
     frame: 'phone',
   },
+  {
+    slug: 'elevate',
+    title: 'Elevate',
+    tagline: 'One coaching suite.\nTrainers, nutritionists and gyms.',
+    pill: 'COACH · NUTRI · GYM',
+    gradient: ['#397FED', '#1D4DB0', '#0F235A', '#091640'],
+    textColor: '#ffffff',
+    logo: 'assets/elevate/logo.png',
+    screenshots: ['assets/elevate/screenshot-1.png', 'assets/elevate/screenshot-2.png'],
+    frame: 'phone',
+  },
 ];
