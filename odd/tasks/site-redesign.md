@@ -245,6 +245,8 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Dev smoke (no Resend key): GET → 303 home#contact; POST unconfigured 503; locale mismatch / bad locale 404;
   cross-origin 403; bad token 400 noindex; rate limit 429 after 5. `NEWSLETTER_SECRET` set in Vercel Production.
   Open: Resend duplicate-contact behavior (409/message match) unverified live; needs segment/topic ids from the owner.
+- RDD 51bf601..47fb9aa (lineage review-8c2f48c41a235092): medium, granted, reliability lens, APPROVED and acknowledged;
+  boundary → 47fb9aa.
 
 ## Next step
 
