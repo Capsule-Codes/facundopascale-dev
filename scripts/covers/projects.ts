@@ -49,4 +49,15 @@ export const covers: CoverConfig[] = [
     ],
     frame: 'phone',
   },
+  {
+    slug: 'investamind',
+    title: 'Investamind',
+    tagline: 'Learn to invest,\none lesson at a time.',
+    pill: 'EDUCATION APP · iOS',
+    gradient: ['#8F88FF', '#6C63FF', '#3A32B8', '#17134F'],
+    textColor: '#ffffff',
+    logo: 'assets/investamind/logo.png',
+    screenshots: ['assets/investamind/shot-home.png', 'assets/investamind/shot-learn.png'],
+    frame: 'phone',
+  },
 ];
