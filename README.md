@@ -58,12 +58,22 @@ src/
 
 Copy `.env.example` to `.env` and fill in the required values.
 
-| Variable                   | Used by                                                          | Required for                                     |
-| -------------------------- | ---------------------------------------------------------------- | ------------------------------------------------ |
-| `RESEND_API_KEY`           | Contact form (Astro Action)                                      | Production deploy                                |
-| `CONTACT_EMAIL_TO`         | Contact form recipient                                           | Production deploy                                |
-| `PUBLIC_SUPABASE_URL`      | Build-time content (`src/lib/site-data.ts`); `/admin` at runtime | Real content (fixtures otherwise); admin sign-in |
-| `PUBLIC_SUPABASE_ANON_KEY` | Build-time content (public anon key); `/admin` at runtime        | Real content (fixtures otherwise); admin sign-in |
+| Variable                   | Used by                                                                    | Required for                                     |
+| -------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------ |
+| `RESEND_API_KEY`           | Contact form (Astro Action)                                                | Production deploy                                |
+| `CONTACT_EMAIL_TO`         | Contact form recipient                                                     | Production deploy                                |
+| `NEWSLETTER_SECRET`        | Newsletter confirmation-link signing (HMAC)                                | Production deploy                                |
+| `RESEND_SEGMENT_ES`        | Resend segment id for Spanish subscribers                                  | Production deploy                                |
+| `RESEND_SEGMENT_EN`        | Resend segment id for English subscribers                                  | Production deploy                                |
+| `RESEND_TOPIC_NEWSLETTER`  | Optional Resend topic id; confirmed contacts are opted in                  | Optional                                         |
+| `NEWSLETTER_FROM`          | Optional sender, default `Facundo Pascale <newsletter@facundopascale.dev>` | Optional                                         |
+| `PUBLIC_SUPABASE_URL`      | Build-time content (`src/lib/site-data.ts`); `/admin` at runtime           | Real content (fixtures otherwise); admin sign-in |
+| `PUBLIC_SUPABASE_ANON_KEY` | Build-time content (public anon key); `/admin` at runtime                  | Real content (fixtures otherwise); admin sign-in |
+
+Newsletter (double opt-in): `/{locale}/newsletter/subscribe` sends a signed 48h confirmation link and
+`/{locale}/newsletter/confirm` creates the contact in Resend (segment per language). Subscribers live only in
+Resend; nothing is stored until the link is confirmed. Without `RESEND_API_KEY`, `NEWSLETTER_SECRET` and the
+language's segment id, both pages answer 503.
 
 `/admin` renders on demand, so it needs the same `PUBLIC_SUPABASE_*` variables available at runtime (not only
 at build). Without them it answers 503. Access requires a Supabase Auth user listed in `personal.admins`.

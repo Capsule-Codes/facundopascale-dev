@@ -1,0 +1,46 @@
+---
+import NewsletterNotice from '../../../components/NewsletterNotice.astro';
+import { isLocale, localizedPath } from '../../../lib/i18n';
+import { handleSubscribe } from '../../../lib/newsletter';
+import { pageCopy } from '../../../lib/newsletter-copy';
+import { buildSubscribeDeps, clientIp } from '../../../lib/newsletter-runtime';
+
+export const prerender = false;
+
+const { locale } = Astro.params;
+if (!locale || !isLocale(locale)) return new Response(null, { status: 404 });
+
+const home = `${localizedPath('home', locale)}#contact`;
+if (Astro.request.method !== 'POST') return Astro.redirect(home, 303);
+
+const data = await Astro.request.formData();
+const field = (name: string) => {
+  const value = data.get(name);
+  return typeof value === 'string' ? value : '';
+};
+
+// The path locale is authoritative; a mismatching hidden field is a bad request.
+if (field('locale') !== locale) return new Response(null, { status: 404 });
+
+const result = await handleSubscribe(
+  buildSubscribeDeps(Astro.site),
+  { email: field('email'), locale, honeypot: field('website') },
+  { ip: clientIp(Astro.request) }
+);
+
+const pages = pageCopy[locale];
+const view = {
+  sent: { copy: pages.sent, status: 200, href: home },
+  ignored: { copy: pages.sent, status: 200, href: home },
+  invalid: { copy: pages.invalidEmail, status: 400, href: home },
+  rate_limited: { copy: pages.rateLimited, status: 429, href: home },
+  unavailable: { copy: pages.unavailable, status: 503, href: home },
+  failed: { copy: pages.unavailable, status: 503, href: home },
+  not_found: { copy: pages.unavailable, status: 404, href: home },
+}[result.kind];
+
+Astro.response.status = view.status;
+Astro.response.headers.set('cache-control', 'no-store');
+---
+
+<NewsletterNotice locale={locale} copy={view.copy} href={view.href} />
