@@ -35,4 +35,18 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/hflow/screenshot.png'],
     frame: 'browser',
   },
+  {
+    slug: 'happiness-to-go',
+    title: 'Happiness\nTo Go',
+    tagline: 'Five small daily habits.\nCourses and a kind community.',
+    pill: 'WELLNESS APP',
+    gradient: ['#9DBBA6', '#6B8E76', '#4A6741', '#2D4A33'],
+    textColor: '#ffffff',
+    logo: 'assets/happiness-to-go/logo.png',
+    screenshots: [
+      'assets/happiness-to-go/screenshot-1.png',
+      'assets/happiness-to-go/screenshot-2.png',
+    ],
+    frame: 'phone',
+  },
 ];

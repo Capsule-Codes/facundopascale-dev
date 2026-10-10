@@ -49,7 +49,10 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
     - Cover generator: title now accepts `\n` for a line break (unit RED observed, then GREEN); used by HTG.
     - capsulecodes.com: row `79f2ba8b-f03c-4788-b7a9-cf314da242e3` ("HFlow - Enterprise Payroll Platform") now has the new cover first in `images` and as `image` (`projects/<id>/cover-1461808e.webp`, public URL 200); 10 existing images kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/hflow.json`.
     - Title match: DB title prefix-matches case study "HFlow".
-  - [ ] Happiness To Go (see below)
+  - [x] Happiness To Go — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "Happiness To Go case study"`. `src/content/work/{es,en}/happiness-to-go.mdx`, 7 phone + 1 desktop (landing) WebP gallery images in `public/images/work/happiness-to-go/` (phones 780x1688, landing 1920x1200), cover via `pnpm covers happiness-to-go` (two phones, sage-to-green gradient, `Happiness\nTo Go` title). No links: the landing has no confirmed public URL in the client repo.
+    - capsulecodes.com: row `ebf137d8-df0a-41f8-befb-25878643a952` ("Happiness To Go - Wellness & Habits App") now has the new cover first in `images` and as `image` (`projects/<id>/cover-a7432a81.webp`, public URL 200); 7 existing images kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/happiness-to-go.json`.
+    - Title match: DB title prefix-matches case study "Happiness To Go".
 
 ## Delivery
 
