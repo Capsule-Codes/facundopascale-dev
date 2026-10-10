@@ -191,6 +191,9 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   After fix: unauth → login; bad password → generic error; login → /admin; cookie httpOnly + Lax; cross-origin
   POST 403; sign out → login. Static output identical to `main` (file list + root index).
   Open: a signed-in non-admin gets 403 on `/admin/logout` (non-admins are signed out at login, so rare).
+- RDD stage 3 range main..0c58a39 (lineage review-f2585cc45d43ed53): high (auth), consent granted, 4 lenses
+  (risk/resilience/readability/reliability), APPROVED and acknowledged; reviewed boundary → 0c58a39.
+  (An earlier T3.1-only candidate was superseded when the writer's uncommitted files changed the workspace.)
 - Delivery: feature-branch-chain (cached). Tracker `feat/site-admin` → `main`; slices `feat/site-admin-0N-*`.
 
 ## Next step
