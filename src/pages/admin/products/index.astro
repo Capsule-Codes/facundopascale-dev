@@ -1,0 +1,67 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import { listProducts, type ProductSummary } from '../../../lib/admin-products';
+
+export const prerender = false;
+
+const saved = { updated: 'Product updated.' }[Astro.url.searchParams.get('saved') ?? ''];
+
+let products: ProductSummary[] = [];
+let error: string | null = null;
+try {
+  products = await listProducts(Astro.locals.supabase!);
+} catch (cause) {
+  error = cause instanceof Error ? cause.message : 'Could not load products.';
+}
+
+const label = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+---
+
+<AdminLayout title="Products" wide>
+  <h1>Products</h1>
+  {
+    saved && (
+      <p class="admin-notice" role="status">
+        {saved}
+      </p>
+    )
+  }
+  {
+    error && (
+      <p class="admin-error" role="alert">
+        {error}
+      </p>
+    )
+  }
+
+  {
+    products.length === 0 && !error ? (
+      <p class="admin-muted">No products.</p>
+    ) : (
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Status</th>
+              <th scope="col">On this site</th>
+              <th scope="col">Position</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((product) => (
+              <tr>
+                <td>
+                  <a href={`/admin/products/${encodeURIComponent(product.slug)}`}>{product.name}</a>
+                </td>
+                <td>{label(product.status)}</td>
+                <td>{product.show_on_personal ? 'Yes' : 'No'}</td>
+                <td>{product.position}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</AdminLayout>

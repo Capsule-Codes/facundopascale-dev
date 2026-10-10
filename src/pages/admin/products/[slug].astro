@@ -1,0 +1,219 @@
+---
+import AdminLayout from '../../../components/admin/AdminLayout.astro';
+import { SAVE_FAILED } from '../../../lib/admin-form';
+import {
+  DESCRIPTION_MAX,
+  PRODUCT_STATUSES,
+  TAGLINE_MAX,
+  getProduct,
+  parseProductForm,
+  toProductFormValues,
+  updateProduct,
+  type Product,
+  type ProductFormValues,
+} from '../../../lib/admin-products';
+
+export const prerender = false;
+
+const supabase = Astro.locals.supabase!;
+const { slug = '' } = Astro.params;
+
+let product: Product | null = null;
+let notice: string | null = null;
+try {
+  product = await getProduct(supabase, slug);
+} catch (cause) {
+  console.error('[admin/products]', cause);
+  Astro.response.status = 500;
+  notice = 'Could not load the product.';
+}
+if (!product && !notice) Astro.response.status = 404;
+
+let values: ProductFormValues | null = product ? toProductFormValues(product) : null;
+let errors: Partial<Record<keyof ProductFormValues, string>> = {};
+
+if (product && Astro.request.method === 'POST') {
+  const result = parseProductForm(await Astro.request.formData());
+  if (result.ok) {
+    try {
+      if (await updateProduct(supabase, product.slug, result.value)) {
+        return Astro.redirect('/admin/products?saved=updated', 303);
+      }
+      Astro.response.status = 404;
+      notice = 'This product no longer exists or you cannot edit it.';
+    } catch (cause) {
+      console.error('[admin/products]', cause);
+      Astro.response.status = 500;
+      notice = SAVE_FAILED;
+    }
+    values = {
+      status: result.value.status,
+      url: result.value.url ?? '',
+      show_on_personal: result.value.show_on_personal,
+      position: String(result.value.position),
+      tagline_es: result.value.translations.es.tagline,
+      tagline_en: result.value.translations.en.tagline,
+      description_es: result.value.translations.es.description,
+      description_en: result.value.translations.en.description,
+    };
+  } else {
+    Astro.response.status = 400;
+    ({ values, errors } = result);
+  }
+}
+
+const label = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const describedBy = (field: keyof ProductFormValues) =>
+  errors[field] ? `${field}-error` : undefined;
+---
+
+<AdminLayout title={product ? `Edit ${product.name}` : 'Not found'}>
+  {
+    product && values ? (
+      <>
+        <h1>Edit {product.name}</h1>
+        <p>
+          <a href="/admin/products">Back to products</a>
+        </p>
+        <p class="admin-muted">
+          Name, slug, logo, colour and agency visibility are managed elsewhere.
+        </p>
+        {notice && (
+          <p class="admin-error" role="alert">
+            {notice}
+          </p>
+        )}
+        <form
+          method="post"
+          action={`/admin/products/${encodeURIComponent(product.slug)}`}
+          novalidate
+        >
+          <div class="admin-field">
+            <label for="status">Status</label>
+            <select
+              id="status"
+              name="status"
+              required
+              aria-invalid={errors.status ? 'true' : undefined}
+              aria-describedby={describedBy('status')}
+            >
+              {PRODUCT_STATUSES.map((status) => (
+                <option value={status} selected={values.status === status}>
+                  {label(status)}
+                </option>
+              ))}
+            </select>
+            {errors.status && (
+              <p class="admin-field-error" id="status-error">
+                {errors.status}
+              </p>
+            )}
+          </div>
+
+          <div class="admin-field">
+            <label for="url">URL</label>
+            <input
+              id="url"
+              name="url"
+              type="url"
+              inputmode="url"
+              value={values.url}
+              aria-invalid={errors.url ? 'true' : undefined}
+              aria-describedby={describedBy('url')}
+            />
+            {errors.url && (
+              <p class="admin-field-error" id="url-error">
+                {errors.url}
+              </p>
+            )}
+          </div>
+
+          <div class="admin-field">
+            <label for="position">Position</label>
+            <input
+              id="position"
+              name="position"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="999"
+              step="1"
+              value={values.position}
+              aria-invalid={errors.position ? 'true' : undefined}
+              aria-describedby={describedBy('position')}
+            />
+            {errors.position && (
+              <p class="admin-field-error" id="position-error">
+                {errors.position}
+              </p>
+            )}
+          </div>
+
+          <div class="admin-field">
+            <label for="show_on_personal">
+              <input
+                id="show_on_personal"
+                name="show_on_personal"
+                type="checkbox"
+                checked={values.show_on_personal}
+              />
+              Show on this site
+            </label>
+          </div>
+
+          {(
+            [
+              ['tagline_es', 'Tagline (ES)', 'input', TAGLINE_MAX],
+              ['tagline_en', 'Tagline (EN)', 'input', TAGLINE_MAX],
+              ['description_es', 'Description (ES)', 'textarea', DESCRIPTION_MAX],
+              ['description_en', 'Description (EN)', 'textarea', DESCRIPTION_MAX],
+            ] as const
+          ).map(([field, text, kind, max]) => (
+            <div class="admin-field">
+              <label for={field}>{text}</label>
+              {kind === 'input' ? (
+                <input
+                  id={field}
+                  name={field}
+                  type="text"
+                  maxlength={max}
+                  value={values[field]}
+                  aria-invalid={errors[field] ? 'true' : undefined}
+                  aria-describedby={describedBy(field)}
+                />
+              ) : (
+                <textarea
+                  id={field}
+                  name={field}
+                  rows="5"
+                  maxlength={max}
+                  aria-invalid={errors[field] ? 'true' : undefined}
+                  aria-describedby={describedBy(field)}
+                >
+                  {values[field]}
+                </textarea>
+              )}
+              {errors[field] && (
+                <p class="admin-field-error" id={`${field}-error`}>
+                  {errors[field]}
+                </p>
+              )}
+            </div>
+          ))}
+
+          <button class="admin-button" type="submit">
+            Save changes
+          </button>
+        </form>
+      </>
+    ) : (
+      <>
+        <h1>{notice ? 'Product unavailable' : 'Not found'}</h1>
+        <p>{notice ?? 'This product does not exist.'}</p>
+        <p>
+          <a href="/admin/products">Back to products</a>
+        </p>
+      </>
+    )
+  }
+</AdminLayout>

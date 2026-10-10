@@ -1,0 +1,201 @@
+---
+import '../../styles/global.css';
+
+interface Props {
+  title: string;
+  /** Wider main column for tables. */
+  wide?: boolean;
+}
+
+const { title, wide = false } = Astro.props;
+const email = Astro.locals.user?.email;
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Admin</title>
+    <script is:inline>
+      (function () {
+        try {
+          const stored = localStorage.getItem('theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.dataset.theme = stored;
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.dataset.theme = 'dark';
+          }
+        } catch {
+          /* ignore: localStorage/matchMedia unavailable */
+        }
+      })();
+    </script>
+  </head>
+  <body class="admin-body">
+    <header class="admin-header">
+      <span class="admin-brand">Facundo Pascale · Admin</span>
+      {
+        email && (
+          <nav class="admin-nav" aria-label="Admin">
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/content">Content</a>
+            <a href="/admin/showcase">Showcase</a>
+            <a href="/admin/products">Products</a>
+            <a href="/admin/settings">Settings</a>
+            <form method="post" action="/admin/logout">
+              <button type="submit">Sign out</button>
+            </form>
+          </nav>
+        )
+      }
+    </header>
+    <main class:list={['admin-main', { 'admin-main--wide': wide }]}>
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  .admin-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+  }
+  .admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+  }
+  .admin-brand {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+  .admin-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .admin-nav a,
+  .admin-nav button {
+    color: var(--color-text);
+    font: inherit;
+    background: none;
+    border: 0;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .admin-main {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem;
+  }
+  .admin-main--wide {
+    max-width: 64rem;
+  }
+  .admin-main h1 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    margin: 0 0 1rem;
+  }
+  .admin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  .admin-field input,
+  .admin-field select,
+  .admin-field textarea {
+    font: inherit;
+    padding: 0.5rem 0.625rem;
+    color: var(--color-text);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+  }
+  .admin-field input[type='checkbox'] {
+    align-self: flex-start;
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+  .admin-field-error {
+    color: var(--color-accent);
+    font-size: 0.875rem;
+    margin: 0;
+  }
+  .admin-notice {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 1rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-elevated);
+  }
+  .admin-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+  }
+  .admin-card h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.125rem;
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+  .admin-table th,
+  .admin-table td {
+    text-align: left;
+    padding: 0.5rem 0.625rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .admin-table-wrap {
+    overflow-x: auto;
+  }
+  .admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .admin-link-button {
+    display: inline-block;
+    text-decoration: none;
+  }
+  .admin-button--danger {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  .admin-button {
+    font: inherit;
+    padding: 0.5rem 1rem;
+    color: var(--color-bg);
+    background: var(--color-text);
+    border: 1px solid var(--color-text);
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+  .admin-error {
+    color: var(--color-accent);
+    margin: 0 0 1rem;
+  }
+  .admin-muted {
+    color: var(--color-text-muted);
+  }
+  .admin-body :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+</style>

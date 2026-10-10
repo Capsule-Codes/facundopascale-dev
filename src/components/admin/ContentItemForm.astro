@@ -1,0 +1,218 @@
+---
+import {
+  CHANNELS,
+  LOCALES,
+  STATUSES,
+  type ContentFormValues,
+  type RelationOption,
+} from '../../lib/admin-content';
+
+interface Props {
+  action: string;
+  submitLabel: string;
+  values: ContentFormValues;
+  errors?: Partial<Record<keyof ContentFormValues, string>>;
+  /** Stored instants; a client script shows them in the browser's local time. */
+  iso?: { scheduled_for?: string | null; published_at?: string | null } | undefined;
+  products: RelationOption[];
+  projects: RelationOption[];
+}
+
+const { action, submitLabel, values, errors = {}, iso = {}, products, projects } = Astro.props;
+
+const label = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const describedBy = (field: keyof ContentFormValues, hint?: string) =>
+  [errors[field] ? `${field}-error` : null, hint].filter(Boolean).join(' ') || undefined;
+// Without JavaScript the stored instant is shown (and re-submitted) as UTC.
+const dateValue = (field: 'scheduled_for' | 'published_at') =>
+  values[field] || iso[field]?.slice(0, 16) || '';
+---
+
+<form method="post" action={action} data-content-form novalidate>
+  <input type="hidden" name="tz_offset" value="" />
+
+  <div class="admin-field">
+    <label for="title">Title</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      required
+      maxlength="200"
+      value={values.title}
+      aria-invalid={errors.title ? 'true' : undefined}
+      aria-describedby={describedBy('title')}
+    />
+    {
+      errors.title && (
+        <p class="admin-field-error" id="title-error">
+          {errors.title}
+        </p>
+      )
+    }
+  </div>
+
+  {
+    (
+      [
+        ['channel', 'Channel', CHANNELS],
+        ['status', 'Status', STATUSES],
+        ['locale', 'Language', LOCALES],
+      ] as const
+    ).map(([field, text, options]) => (
+      <div class="admin-field">
+        <label for={field}>{text}</label>
+        <select
+          id={field}
+          name={field}
+          required
+          aria-invalid={errors[field] ? 'true' : undefined}
+          aria-describedby={describedBy(field)}
+        >
+          {options.map((option) => (
+            <option value={option} selected={values[field] === option}>
+              {label(option)}
+            </option>
+          ))}
+        </select>
+        {errors[field] && (
+          <p class="admin-field-error" id={`${field}-error`}>
+            {errors[field]}
+          </p>
+        )}
+      </div>
+    ))
+  }
+
+  {
+    (
+      [
+        ['scheduled_for', 'Scheduled for'],
+        ['published_at', 'Published at'],
+      ] as const
+    ).map(([field, text]) => (
+      <div class="admin-field">
+        <label for={field}>{text}</label>
+        <input
+          id={field}
+          name={field}
+          type="datetime-local"
+          value={dateValue(field)}
+          data-iso={values[field] ? undefined : (iso[field] ?? undefined)}
+          aria-invalid={errors[field] ? 'true' : undefined}
+          aria-describedby={describedBy(field, `${field}-hint`)}
+        />
+        <span class="admin-muted" id={`${field}-hint`} data-tz-hint>
+          UTC
+        </span>
+        {errors[field] && (
+          <p class="admin-field-error" id={`${field}-error`}>
+            {errors[field]}
+          </p>
+        )}
+      </div>
+    ))
+  }
+
+  <div class="admin-field">
+    <label for="url">URL</label>
+    <input
+      id="url"
+      name="url"
+      type="url"
+      inputmode="url"
+      value={values.url}
+      aria-invalid={errors.url ? 'true' : undefined}
+      aria-describedby={describedBy('url')}
+    />
+    {
+      errors.url && (
+        <p class="admin-field-error" id="url-error">
+          {errors.url}
+        </p>
+      )
+    }
+  </div>
+
+  {
+    (
+      [
+        ['product_id', 'Product', products],
+        ['project_id', 'Project', projects],
+      ] as const
+    ).map(([field, text, options]) => (
+      <div class="admin-field">
+        <label for={field}>{text}</label>
+        <select
+          id={field}
+          name={field}
+          aria-invalid={errors[field] ? 'true' : undefined}
+          aria-describedby={describedBy(field)}
+        >
+          <option value="">None</option>
+          {options.map((option) => (
+            <option value={option.id} selected={values[field] === option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {errors[field] && (
+          <p class="admin-field-error" id={`${field}-error`}>
+            {errors[field]}
+          </p>
+        )}
+      </div>
+    ))
+  }
+
+  <div class="admin-field">
+    <label for="body">Notes</label>
+    <textarea id="body" name="body" rows="8">{values.body}</textarea>
+  </div>
+
+  <div class="admin-field">
+    <label for="show_in_log">
+      <input id="show_in_log" name="show_in_log" type="checkbox" checked={values.show_in_log} />
+      Show in the public log
+    </label>
+  </div>
+
+  <button class="admin-button" type="submit">{submitLabel}</button>
+</form>
+
+<script is:inline>
+  (function () {
+    const form = document.querySelector('[data-content-form]');
+    if (!form) return;
+    const pad = function (n) {
+      return String(n).padStart(2, '0');
+    };
+    // Use the offset in effect at the scheduled date (DST may differ from today); fall back to now.
+    const offsetFor = function () {
+      const scheduled = form.elements.scheduled_for && form.elements.scheduled_for.value;
+      const d = scheduled ? new Date(scheduled) : new Date();
+      return String((isNaN(d.getTime()) ? new Date() : d).getTimezoneOffset());
+    };
+    form.elements.tz_offset.value = offsetFor();
+    form.addEventListener('submit', function () {
+      form.elements.tz_offset.value = offsetFor();
+    });
+    form.querySelectorAll('input[data-iso]').forEach(function (input) {
+      const d = new Date(input.dataset.iso);
+      if (isNaN(d.getTime())) return;
+      input.value =
+        d.getFullYear() +
+        '-' +
+        pad(d.getMonth() + 1) +
+        '-' +
+        pad(d.getDate()) +
+        'T' +
+        pad(d.getHours()) +
+        ':' +
+        pad(d.getMinutes());
+    });
+    form.querySelectorAll('[data-tz-hint]').forEach(function (hint) {
+      hint.textContent = 'Your local time';
+    });
+  })();
+</script>

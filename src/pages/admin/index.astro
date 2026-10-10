@@ -1,0 +1,79 @@
+---
+import AdminLayout from '../../components/admin/AdminLayout.astro';
+import {
+  STATUSES,
+  countByStatus,
+  formatUtc,
+  listContentItems,
+  upcomingScheduled,
+  type ContentItem,
+} from '../../lib/admin-content';
+
+export const prerender = false;
+
+const email = Astro.locals.user?.email;
+
+let items: ContentItem[] = [];
+let error: string | null = null;
+try {
+  items = await listContentItems(Astro.locals.supabase!);
+} catch (cause) {
+  error = cause instanceof Error ? cause.message : 'Could not load content items.';
+}
+
+const counts = countByStatus(items);
+const upcoming = upcomingScheduled(items, 5);
+const label = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+---
+
+<AdminLayout title="Dashboard">
+  <h1>Admin</h1>
+  <p>Signed in as <strong>{email}</strong>.</p>
+
+  <h2>Content</h2>
+  {
+    error && (
+      <p class="admin-error" role="alert">
+        {error}
+      </p>
+    )
+  }
+  <ul>
+    {
+      STATUSES.map((status) => (
+        <li>
+          <a href={`/admin/content?status=${status}`}>
+            {label(status)}: {counts[status]}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <h3>Upcoming</h3>
+  {
+    upcoming.length === 0 ? (
+      <p class="admin-muted">Nothing scheduled.</p>
+    ) : (
+      <ol>
+        {upcoming.map((item) => (
+          <li>
+            <a href={`/admin/content/${item.id}`}>{item.title}</a> ({label(item.channel)}),{' '}
+            <time datetime={item.scheduled_for!} data-local>
+              {formatUtc(item.scheduled_for)}
+            </time>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+  <p><a href="/admin/content">All content</a></p>
+</AdminLayout>
+
+<script is:inline>
+  document.querySelectorAll('time[data-local]').forEach(function (el) {
+    const d = new Date(el.getAttribute('datetime'));
+    if (!isNaN(d.getTime()))
+      el.textContent = d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  });
+</script>

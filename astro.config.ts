@@ -62,7 +62,8 @@ export default defineConfig({
           en: 'en',
         },
       },
-      filter: (page) => !/^https?:\/\/[^/]+\/?$/.test(page),
+      filter: (page) =>
+        !/^https?:\/\/[^/]+\/?$/.test(page) && !/^https?:\/\/[^/]+\/admin(\/|$)/.test(page),
     }),
   ],
 
@@ -73,15 +74,16 @@ export default defineConfig({
   i18n: {
     locales: ['es', 'en'],
     defaultLocale: 'es',
-    routing: {
-      prefixDefaultLocale: true,
-      redirectToDefaultLocale: false,
-    },
+    // Manual so src/middleware.ts can keep locale routing off `/admin` (unprefixed on-demand
+    // pages would otherwise 404). The same options are applied there.
+    routing: 'manual',
   },
 
   // Static-first: pages prerender by default. The Vercel adapter only
   // makes dynamic endpoints (e.g. Astro Actions) run as serverless functions.
   output: 'static',
+  // Origin check on POSTs to on-demand pages (default is already true; explicit for /admin).
+  security: { checkOrigin: true },
   adapter: vercel({
     webAnalytics: { enabled: true },
     imageService: true,
