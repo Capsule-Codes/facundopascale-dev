@@ -60,4 +60,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/investamind/shot-home.png', 'assets/investamind/shot-learn.png'],
     frame: 'phone',
   },
+  {
+    slug: 'festivalpro',
+    title: 'Festival Pro',
+    tagline: 'Two festival apps\nfrom one codebase.',
+    pill: 'IOS · ANDROID · EAS',
+    gradient: ['#3CCBBA', '#00A695', '#00675D', '#00302C'],
+    textColor: '#ffffff',
+    logo: 'assets/festivalpro/logo.png',
+    screenshots: ['assets/festivalpro/screenshot-1.png', 'assets/festivalpro/screenshot-2.png'],
+    frame: 'phone',
+  },
 ];

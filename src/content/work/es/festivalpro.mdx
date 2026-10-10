@@ -1,21 +1,48 @@
 ---
 title: 'Festival Pro'
-tagline: 'Dos apps de un solo codebase con EAS Build'
-description: 'App mobile para festivales de música con arquitectura dual-variant, OTA updates y un solo codebase React Native + Expo que genera dos apps distintas para App Store y Google Play.'
+tagline: 'Dos apps de festivales desde un solo codebase, con el tema de cada festival'
+description: 'Festival Pro es una app multi-tenant de grillas de festivales. Un solo codebase de React Native publica dos apps con marca propia, deriva el tema de cada festival desde un color del CMS, arma la barra de pestañas desde el feed y sigue funcionando con conexión irregular.'
 publishedAt: 2025-01-15
 stack:
   - React Native
   - Expo SDK 54
   - TypeScript
   - EAS Build
+  - EAS Update
   - Zustand
-  - React Query
   - React Navigation
+  - React Native Paper
   - Zod
-role: 'Mobile lead · Arquitectura'
+role: 'Líder mobile · Arquitectura'
 year: 2024
 links: {}
-coverImage: /images/work/festivalpro.svg
+coverImage: /images/work/festivalpro/cover.webp
+gallery:
+  - src: /images/work/festivalpro/stages.webp
+    alt: 'Grilla de Festival Pro agrupada por escenario en el tema oscuro, con barra de búsqueda, filtro por día y tarjetas de artistas'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/hours.webp
+    alt: 'Grilla de Festival Pro agrupada por hora, con la cantidad de eventos por franja y corazones de favoritos'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/venue.webp
+    alt: 'Detalle de un recinto en Festival Pro con imagen de cabecera, dirección, botones para abrir el mapa y el sitio web, y un enlace a la grilla'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/map.webp
+    alt: 'Mapa del festival en Festival Pro con el tema claro, una indicación para hacer zoom con los dedos y una barra de pestañas distinta'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/more.webp
+    alt: 'Menú Más de Festival Pro con noticias, sponsors, recintos, sitio web, ajustes y la opción para cambiar de evento'
+    kind: phone
+    width: 780
+    height: 1736
 lang: es
 translationId: festivalpro
 featured: true
@@ -26,33 +53,37 @@ import Callout from '@/components/mdx/Callout.astro';
 
 ## El problema
 
-Los festivales de música necesitan apps dedicadas: grillas horarias, mapas, notificaciones de cambios de último momento. El quilombo era que cada festival quería su propia app con su branding, pero el 90% de la funcionalidad era idéntica. Mantener dos codebases paralelos es un delirio — bugs duplicados, features que llegan tarde a una versión, y deploy manual para cada plataforma.
+Un festival de música necesita su propia app: una grilla que cambia el día del evento, un mapa, una forma de guardar favoritos. Pero cada festival quiere su propia marca, y cerca del noventa por ciento de la funcionalidad es la misma. Mantener un codebase por festival significa bugs duplicados, funciones que llegan tarde a una app y un lanzamiento manual para cada tienda. El otro extremo, una única app genérica, pierde la identidad por la que pagan los organizadores.
 
 ## La solución
 
-Armé una arquitectura **dual-variant** donde un solo repositorio React Native + Expo genera dos apps completamente distintas: **Festival Pro Schedules** y **Folk Alliance 2026**. Cada variante tiene su propio bundle identifier, ícono, splash screen, esquema de colores y configuración de notificaciones, pero comparten el 100% de la lógica de negocio.
+Festival Pro es una app móvil construida por Capsule Codes para un cliente, como producto multi-tenant: un solo codebase de React Native y Expo que se publica como dos apps distintas, Festival Pro Schedules y Folk Alliance 2026. Un interruptor `EXPO_PUBLIC_APP_VARIANT` en la configuración de Expo carga la configuración de cada una, con su propio bundle id, ícono, splash, esquema de deep links y perfiles de EAS, y su propio canal de actualizaciones por aire.
 
-La clave está en `app.config.js`: un switch por `EXPO_PUBLIC_APP_VARIANT` que carga `festival.config.js` o `folk.config.js`. EAS Build maneja el resto — cada variante tiene sus propios profiles de development, staging y production con channels separados para OTA updates.
+Dentro de cada app el festival es un dato. El usuario elige un evento, y la grilla, el mapa, los recintos e incluso la barra de pestañas vienen de un feed del CMS. La app solo necesita saber cómo mostrarlos.
 
-Lo más piola es el sistema de OTA updates con `expo-updates`. Cuando hay un cambio en la grilla de un festival (algo que pasa TODO el tiempo), no necesito pasar por review de App Store. Pusheo un update al channel correspondiente y los usuarios lo reciben en la próxima apertura. Cada variante tiene su propio canal: `production-festival` y `production-folk`.
+Expo SDK 54 y React Native 0.81, React Navigation 7 y React Native Paper con Material 3 arman la interfaz. Zustand guarda el estado y Zod valida todo lo que viene de afuera. Las capturas muestran contenido público de los festivales dentro de las propias apps.
 
 ## Stack y decisiones clave
 
-- **Expo SDK 54 + React Native 0.81**: Managed workflow con prebuild para tener acceso a native modules cuando hace falta
-- **EAS Build con 10 profiles**: development, preview, staging, production y local builds para cada variante — el `eas.json` tiene la configuración más detallada que vas a ver
-- **Zustand para estado**: Liviano y TypeScript-first. Para una app de consulta con datos que cambian poco, Redux era matar moscas con un cañón
-- **React Query para data fetching**: Cache inteligente de grillas horarias — los usuarios consultan el schedule 50 veces por día
-- **Shopify FlashList**: Las listas de artistas y eventos necesitan performance real, no FlatList vanilla
-- **Zod 4 para validación**: Los datos vienen de un CMS externo y no me fío de nada que no pase por un schema
+- **Dos apps, un repositorio**: cada variante tiene su configuración, bundle id y esquema, y perfiles de EAS para desarrollo, preview, staging y producción, cada uno con un canal separado. Un arreglo de la grilla llega a los usuarios de una app por aire sin pasar por la revisión de la tienda, y no se puede filtrar a la otra
+- **Un tema derivado de un solo color**: cada festival envía un color semilla, y a partir de él se genera una paleta Material 3 para los modos claro y oscuro. Un valor inválido, como una URL donde se esperaba un color, vuelve al valor por defecto en lugar de romper la pantalla, y un conjunto de verificaciones de contraste mantiene el texto legible sobre lo que haya elegido el festival
+- **Una barra de pestañas que sale del feed**: las pestañas inferiores se arman con los ítems de menú que publica cada festival, por eso una app muestra mapa y proveedores y otra no
+- **Tolerante a la falta de conexión por construcción**: el pipeline del feed lee primero la caché y confirma lo que valida, y luego descarga en paralelo salvo que se sepa que el dispositivo está sin conexión. Un menú que falla no afecta a los demás, y una respuesta vacía recibe un único reintento tras una pausa corta
+- **Una guarda contra escrituras viejas**: si el usuario cambia de festival mientras hay una solicitud en curso, el resultado tardío se descarta, así que los artistas de un festival nunca aparecen dentro de la app de otro
+- **Zod en la frontera**: tanto los datos en caché como los recién descargados pasan por el mismo esquema antes de llegar al store
 
-<Callout type="info" title="El truco del prebuild">
-  El script de prebuild renombra las carpetas `ios` y `android` por variante (`ios-festival`,
-  `android-folk`) para que convivan en el mismo repo sin pisarse. Es feo pero funciona impecable — y
-  la alternativa era mantener dos repos.
+<Callout type="info" title="Por qué existe la guarda de resultados viejos">
+  Cada fetch escribe en los mismos stores compartidos. En una app multi-tenant, una respuesta lenta
+  del festival que acabas de dejar no es una carrera inofensiva: son datos equivocados con la marca
+  equivocada.
 </Callout>
 
 ## Aprendizajes
 
-La versión Android de Folk Alliance va por el **versionCode 45** y la de Festival Pro por el **61**. Cada build que subís a las stores necesita un versionCode único incremental, y cuando tenés dos variantes en paralelo, perder la cuenta es más fácil de lo que parece.
+El tenant se trata como dato y la variante como configuración. Cuando colores, pestañas y contenido vienen del feed, un festival nuevo es sobre todo trabajo de contenido y el código no cambia.
 
-Lo que haría diferente: desde el día uno hubiera configurado los versionCode como variables de entorno en EAS en vez de hardcodearlos en los configs. Y dedicaría más tiempo al sistema de notificaciones — `expo-notifications` + `expo-background-task` para sincronizar cambios de último momento es donde más tiempo invertí iterando.
+Los datos remotos son hostiles por defecto. Validar la caché y la red con el mismo esquema, y permitir fallas parciales, hizo que la app se comporte bien en recintos donde la señal es pésima.
+
+Las condiciones de carrera salen más caras cuando el estado es compartido. Una guarda mínima que compara quién pidió los datos con quién está seleccionado cuesta menos que cualquier depuración en pleno evento.
+
+Lo que cambiaría: sacar los números de build de los archivos de configuración y llevarlos a variables de entorno de EAS desde el primer día, y dedicar antes más tiempo a la sincronización en segundo plano de los cambios de último momento en la grilla.
