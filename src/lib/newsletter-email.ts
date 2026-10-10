@@ -44,6 +44,8 @@ const isSafeHref = (href: string) => /^(https?:\/\/|mailto:|\/|#)/i.test(href.tr
 
 const markdown = new Marked({
   gfm: true,
+  // Emails are written like messages: a single Enter is a line break (e.g. sign-offs).
+  breaks: true,
   renderer: {
     // Raw HTML in the body is shown as text, never injected into the email.
     html: ({ text }) => escapeHtml(text),
