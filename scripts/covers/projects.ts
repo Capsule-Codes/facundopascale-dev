@@ -93,4 +93,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/orbys/screenshot.png'],
     frame: 'browser',
   },
+  {
+    slug: 'horus',
+    title: 'Horus',
+    tagline: 'Cataract lens education,\nwith an AI counselor.',
+    pill: 'HEALTHCARE SAAS · AWS',
+    gradient: ['#2FA3A0', '#0F7C7C', '#0A4A4D', '#05262A'],
+    textColor: '#ffffff',
+    logo: 'assets/horus/logo.png',
+    screenshots: ['assets/horus/screenshot.png'],
+    frame: 'browser',
+  },
 ];

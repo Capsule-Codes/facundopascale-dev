@@ -1,0 +1,83 @@
+---
+title: 'Horus'
+tagline: 'Educación del paciente para cirugía de cataratas, con un consejero de IA'
+description: 'Horus es una plataforma de educación del paciente para cirujanos de cataratas. El paciente ve videos sobre lentes y conversa con un consejero de IA que arma un Perfil de Visión, y el cirujano lo revisa antes de la consulta. Multi-tenencia aplicada en la base de datos con Aurora, autenticación con Cognito y Claude vía Bedrock en AWS.'
+publishedAt: 2026-05-05
+stack:
+  - React
+  - Vite
+  - TypeScript
+  - TanStack Query
+  - Tailwind
+  - Deno
+  - Postgres
+  - Supabase
+  - AWS CDK
+  - Aurora
+  - Cognito
+  - Bedrock
+role: 'Fullstack · Cloud'
+year: 2026
+links: {}
+coverImage: /images/work/horus/cover.webp
+gallery:
+  - src: /images/work/horus/landing.webp
+    alt: 'Página de inicio de Horus con el titular, una tarjeta de perfil del paciente y el botón para solicitar una demo'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/horus/sessions.webp
+    alt: 'Lista de sesiones de una clínica en Horus con código de sesión, paciente, cirujano, ojo del lente y estado'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/horus/patient-detail.webp
+    alt: 'Detalle de un paciente en Horus con la transcripción de la consejería, el lente elegido, el Perfil de Visión y el avance de la educación'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: es
+translationId: horus
+featured: true
+order: 9
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Antes de una cirugía de cataratas, el cirujano dedica unos veinte minutos con cada paciente a explicar las opciones de lente: monofocal, tórico, multifocal y las ventajas y costos de cada uno. Es la misma conversación repetida todo el día, y el paciente igual tiene que decidir algo que afecta cómo ve el resto de su vida. La plataforma tenía que llevar esa conversación a antes de la cita sin reemplazar al cirujano, y tenía que manejar datos de salud desde el primer día.
+
+## La solución
+
+Horus se construye para un cliente, con Capsule Codes. El paciente sigue un enlace, ve videos educativos cortos y le hace preguntas a un consejero de IA. De esa conversación el consejero extrae un Perfil de Visión estructurado: estilo de vida, prioridades y preferencia de lente. El cirujano ve las sesiones de su clínica, lee la transcripción y el perfil, y registra el lente elegido. Las opciones de lente salen del informe de biometría: se sube el PDF y un modelo multimodal extrae de ahí las opciones.
+
+El frontend es React con Vite y TypeScript, Tailwind y Radix, y TanStack Query. El primer entorno de ejecución fue Supabase con edge functions. El repositorio documenta el paso de toda la plataforma a AWS: una API en Deno sobre Fargate, Aurora Postgres, Cognito para profesionales y pacientes, y Claude a través de Amazon Bedrock, todo definido con CDK.
+
+Las capturas usan datos de demostración inventados.
+
+## Stack y decisiones clave
+
+- **La multi-tenencia vive en la base de datos**: la API se conecta a Aurora con un único rol de mínimo privilegio. En cada request abre una transacción y fija el usuario, el rol y la sesión del kiosco como ajustes locales a la transacción, pasados como parámetros enlazados. Las políticas de seguridad por fila leen esos ajustes, así que ningún handler agrega un `WHERE organization_id = ...` y un filtro olvidado no puede exponer los datos de otra clínica
+- **Un kiosco no es un usuario**: la tablet de la clínica recibe un token acotado a una sola sesión, y las políticas la limitan a las filas de esa sesión
+- **Frontend en capas**: las páginas llaman a hooks, los hooks llaman a servicios, y solo los servicios llegan a la capa de datos y al único cliente del backend. Pasar de Supabase a una API propia significó cambiar la capa de datos, no las pantallas
+- **Un perfil estructurado, no un log de chat**: el consejero extrae el Perfil de Visión con tool calling, y las reglas de seguridad del prompt viven en un archivo aparte. Las preferencias se fusionan entre turnos en lugar de sobrescribirse, y el consejero recupera los turnos que vuelven sin texto
+- **Extracción de biometría con rastro de auditoría**: la edge function calcula el hash del PDF, ejecuta una extracción idempotente con timeout y un único reintento, y guarda la salida cruda cuando el modelo devuelve un JSON malformado
+- **Un rol aparte para la retención**: un job programado elimina los datos que superaron el período de retención de cada organización. Se conecta con su propio rol de base de datos, de modo que el proceso de purga no puede leer el registro de un paciente
+- **Backend de IA intercambiable**: el mismo código del consejero llama a Anthropic directamente o a Amazon Bedrock, según la configuración. En Bedrock se autentica con el rol IAM de la tarea, sin claves de API en el entorno
+
+<Callout type="info" title="Por qué decide la base de datos quién ve qué">
+  Con datos de salud, un filtro en la aplicación está a una línea olvidada de una filtración. Poner
+  la regla en la política por fila hace que lo seguro sea el comportamiento por defecto y que lo
+  inseguro sea imposible de escribir por accidente.
+</Callout>
+
+## Aprendizajes
+
+Las fallas silenciosas son las peligrosas. La API se conectaba a Aurora con un TLS que no pasaba la verificación y seguía sin cifrar, con todos los health checks en verde. Apareció como dos líneas de log junto a un error sin relación. La solución fue exigir TLS y llevar el bundle de la CA dentro de la imagen, para todos los clientes, incluido el job de retención que arma el suyo.
+
+Un bug puede esconder aquello para lo que existe el producto. El consejero reconstruía la transcripción en cada render, lo que perdía mensajes y dejaba vacío el Perfil de Visión. Una conversación completa y nada para el cirujano es peor que un error visible.
+
+Hay que probar el camino completo, no solo el handler. Usar el producto en un navegador real con una cuenta nueva creada por un administrador encontró un inicio de sesión que nunca podía completarse, algo que ninguna prueba unitaria montaba.
+
+Y una migración necesita un camino de vuelta. Mantener funcionando el entorno anterior mientras el nuevo se demuestra es más lento, y así se evita romper un piloto en uso durante el corte.

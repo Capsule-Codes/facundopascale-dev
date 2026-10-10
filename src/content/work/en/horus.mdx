@@ -1,0 +1,83 @@
+---
+title: 'Horus'
+tagline: 'Patient education for cataract surgery, with an AI counselor'
+description: 'Horus is a patient education platform for cataract surgeons. Patients watch lens videos and chat with an AI counselor that builds a Vision Profile, and the surgeon reviews it before the consult. Database-enforced tenancy on Aurora, Cognito auth and Claude through Bedrock on AWS.'
+publishedAt: 2026-05-05
+stack:
+  - React
+  - Vite
+  - TypeScript
+  - TanStack Query
+  - Tailwind
+  - Deno
+  - Postgres
+  - Supabase
+  - AWS CDK
+  - Aurora
+  - Cognito
+  - Bedrock
+role: 'Fullstack · Cloud'
+year: 2026
+links: {}
+coverImage: /images/work/horus/cover.webp
+gallery:
+  - src: /images/work/horus/landing.webp
+    alt: 'Horus landing page with the headline, a patient profile card and the request a demo call to action'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/horus/sessions.webp
+    alt: 'Horus sessions list for a practice with session code, patient, surgeon, IOL eye and status'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/horus/patient-detail.webp
+    alt: 'Horus patient detail with the counseling transcript, the selected IOL, the Vision Profile and education progress'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: en
+translationId: horus
+featured: true
+order: 9
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Before cataract surgery, the surgeon spends around twenty minutes with every patient explaining the lens options: monofocal, toric, multifocal and the trade-offs of each. It is the same conversation, repeated all day, and the patient still has to decide something that affects how they see for the rest of their life. The platform had to move that conversation before the appointment without replacing the surgeon, and it had to handle health data from day one.
+
+## The solution
+
+Horus is built for a client, with Capsule Codes. A patient follows a link, watches short education videos and asks questions to an AI counselor. From that conversation the counselor extracts a structured Vision Profile: lifestyle, priorities and lens preference. The surgeon sees the sessions of their practice, reads the transcript and the profile, and records the IOL selection. The IOL options come from the biometry report: the PDF is uploaded and a multimodal model extracts the lens options from it.
+
+The frontend is React with Vite and TypeScript, Tailwind and Radix, and TanStack Query. The first runtime was Supabase with edge functions. The repo documents the move of the whole platform to AWS: a Deno API on Fargate, Aurora Postgres, Cognito for providers and patients, and Claude through Amazon Bedrock, all defined with CDK.
+
+The screenshots use invented demo data.
+
+## Stack and key decisions
+
+- **Tenancy lives in the database**: the API connects to Aurora with a single least-privilege role. On each request it opens a transaction and sets the user, role and kiosk session as transaction-local settings, passed as bind parameters. The row-level security policies read those settings, so no handler adds a `WHERE organization_id = ...` and a forgotten filter cannot leak another practice's data
+- **A kiosk is not a user**: the in-clinic tablet gets a token narrowed to one session, and the policies restrict it to that session's rows
+- **Layered frontend**: pages call hooks, hooks call services, and only services reach the data layer and the single backend client. Moving from Supabase to a custom API meant swapping the data layer, not the screens
+- **A structured profile, not a chat log**: the counselor extracts the Vision Profile through tool calling, with prompt guardrails in a separate file. Preferences are merged between turns instead of overwritten, and the counselor recovers turns that come back without text
+- **Biometry extraction with an audit trail**: the edge function hashes the PDF, runs one idempotent extraction with a timeout and a single retry, and keeps the raw output when the model returns malformed JSON
+- **A separate role for retention**: a scheduled job purges data past each organization's retention period. It connects as its own database role, so the purge worker cannot read a patient record
+- **Provider-agnostic AI backend**: the same counselor code calls Anthropic directly or Amazon Bedrock, chosen by configuration. On Bedrock it authenticates with the task's IAM role, with no API keys in the environment
+
+<Callout type="info" title="Why the database decides who sees what">
+  With health data, an application-level filter is one missed line away from a breach. Putting the
+  rule in the row-level policy makes the safe behavior the default and the unsafe one impossible to
+  write by accident.
+</Callout>
+
+## What I learned
+
+Silent failures are the dangerous ones. The API was connecting to Aurora over TLS that failed verification and then carried on unencrypted, with every health check green. It showed up as two log lines next to an unrelated error. The fix was to enforce TLS and bake the CA bundle into the image, for every client, including the retention job that builds its own.
+
+A bug can hide the thing the product is for. The counselor was rebuilding the transcript on every render, which dropped messages and left the Vision Profile empty. A complete conversation with nothing for the surgeon is a worse outcome than a visible error.
+
+Check the whole path, not only the handler. Driving the product in a real browser as a brand-new administrator-created account found a sign-in that could never complete, something no unit test mounted.
+
+And a migration needs a way back. Keeping the previous runtime working while the new one proves itself is slower, and it is how you avoid breaking a live pilot during the cutover.
