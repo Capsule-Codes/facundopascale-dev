@@ -1,7 +1,7 @@
 ---
 title: 'Horus'
-tagline: 'Educación del paciente para cirugía de cataratas, con un consejero de IA'
-description: 'Horus es una plataforma de educación del paciente para cirujanos de cataratas. El paciente ve videos sobre lentes y conversa con un consejero de IA que arma un Perfil de Visión, y el cirujano lo revisa antes de la consulta. Multi-tenencia aplicada en la base de datos con Aurora, autenticación con Cognito y Claude vía Bedrock en AWS.'
+tagline: 'Educación del paciente para cirugía de cataratas, y el paso de Supabase a AWS'
+description: 'Horus es una plataforma de educación del paciente para cirujanos de cataratas, con un consejero de IA que arma un Perfil de Visión. Dimensioné y trabajé su migración de Supabase y Vercel a AWS: stacks de CDK, Aurora con seguridad por fila, Cognito, Fargate, Bedrock y un plan de corte en paralelo.'
 publishedAt: 2026-05-05
 stack:
   - React
@@ -52,11 +52,32 @@ Antes de una cirugía de cataratas, el cirujano dedica unos veinte minutos con c
 
 Horus se construye para un cliente, con Capsule Codes. El paciente sigue un enlace, ve videos educativos cortos y le hace preguntas a un consejero de IA. De esa conversación el consejero extrae un Perfil de Visión estructurado: estilo de vida, prioridades y preferencia de lente. El cirujano ve las sesiones de su clínica, lee la transcripción y el perfil, y registra el lente elegido. Las opciones de lente salen del informe de biometría: se sube el PDF y un modelo multimodal extrae de ahí las opciones.
 
-El frontend es React con Vite y TypeScript, Tailwind y Radix, y TanStack Query. El primer entorno de ejecución fue Supabase con edge functions. El repositorio documenta el paso de toda la plataforma a AWS: una API en Deno sobre Fargate, Aurora Postgres, Cognito para profesionales y pacientes, y Claude a través de Amazon Bedrock, todo definido con CDK.
+El frontend es React con Vite y TypeScript, Tailwind y Radix, y TanStack Query. El piloto arrancó en Supabase con edge functions y Vercel, y la parte más grande del trabajo fue pasar la plataforma a AWS, que se describe en su propia sección más abajo.
 
 Las capturas usan datos de demostración inventados.
 
-## Stack y decisiones clave
+## La migración a AWS
+
+La primera versión salió de Lovable y corría en Supabase y Vercel. El motivo para irse fue el cumplimiento: el chat del paciente es información de salud, y mantener la IA bajo un acuerdo de asociado comercial era lo difícil. El documento de evaluación de junio de 2026 compara Azure y AWS y recomienda AWS porque en Amazon Bedrock AWS es el único procesador de los prompts, así que un solo acuerdo cubre todo el stack, Claude incluido. También estima el costo de infraestructura como una fracción de los planes de Supabase y Vercel con sus complementos HIPAA. La decisión se aprobó en junio, y en septiembre el plan se extendió para mover también el piloto anónimo.
+
+El destino se define con AWS CDK en TypeScript, un stack por responsabilidad:
+
+- **`Horus-Network`**: una VPC con subredes públicas, privadas y aisladas en dos zonas de disponibilidad, un endpoint de gateway para S3 y flow logs de la VPC
+- **`Horus-Data`**: Aurora Serverless v2 sobre Postgres 16 en subredes aisladas, cifrado con una clave KMS administrada por el cliente, credenciales en Secrets Manager, autenticación IAM y backups de 7 días. Puede escalar a cero para el tráfico irregular del piloto
+- **`Horus-Auth`**: dos user pools de Cognito. El personal inicia sesión con MFA obligatorio y cuentas creadas por un administrador. Los pacientes usan códigos sin contraseña por correo o SMS, sin registro propio
+- **`Horus-Compute`**: servicios ECS Fargate detrás de un Application Load Balancer, uno para el chat del consejero con respuestas en streaming de larga duración y otro para la API en Deno, con acceso IAM acotado a Bedrock y secretos de ejecución desde Secrets Manager. Una tarea ECS programada ejecuta la purga de retención
+- **`Horus-Storage`**: un bucket de S3 privado, versionado y cifrado con KMS para los PDF de biometría, y un bucket privado para la SPA detrás de CloudFront con control de acceso al origen
+- **`Horus-Dns`**: un único certificado ACM para ambos extremos. El DNS queda con el proveedor del cliente, así que no hay zona de Route 53 y los registros de validación se agregan a mano
+
+Hay dos entornos desde el mismo código. Producción corre en us-east-1 y dev en us-west-2, de modo que no comparten nada ni compiten por nombres globalmente únicos. Dev además es el entorno con costos controlados: una sola tarea Spot por servicio, sin NAT gateway y un horario que lo apaga de noche y los fines de semana. GitHub Actions despliega la API y la SPA a cada entorno mediante roles OIDC, sin claves de AWS de larga duración.
+
+**Mover los datos.** Un `pg_dump` hacia Aurora no alcanzaba, por dos motivos. La identidad cambia: los usuarios eran ids de Supabase Auth y ahora son subjects de Cognito, así que cada columna de propiedad se reescribe con un mapa de identidades por correo, y los pares se escriben a mano porque un join podría asignar en silencio a un profesional los pacientes de otro. Y el modelo de datos cambia: el piloto es anónimo y no tiene organizaciones, mientras que Aurora se diseñó con multi-tenencia desde el inicio, así que las sesiones del piloto entran como anónimas y las tablas de tenencia empiezan vacías. El proceso es una única transacción atómica seguida de un archivo de verificación que comprueba los conteos y la propiedad de lo migrado. Su primera ejecución contra un volcado real encontró cosas que un fixture sintético nunca mostró, entre ellas una columna que habría dejado todas las sesiones sin dueño.
+
+**El corte.** El plan es una ejecución en paralelo, nunca un corte duro. Supabase y Vercel quedan activos después del paso, y el plan admite con honestidad que el rollback es gratis solo hasta que el primer paciente escribe en Aurora, porque no hay doble escritura y el log de auditoría es de solo agregado. Por eso el trabajo se centró en hacer esa ventana corta y observable: un script de verificación que inicia sesión con Cognito y MFA reales, llama a la API desplegada y comprueba la seguridad por fila, y que trata una verificación omitida como un fallo. El servicio de chat fue la primera pieza en pasar a Bedrock sobre Fargate y se verificó de punta a punta.
+
+**Endurecimiento de seguridad en el camino.** La API se conecta a Aurora con verificación TLS obligatoria y el bundle de la CA de RDS dentro de la imagen, el job de retención corre con un rol de base de datos aparte, y la CSP permite la región correcta de Cognito. Los detalles están en los aprendizajes.
+
+## Decisiones de la aplicación
 
 - **La multi-tenencia vive en la base de datos**: la API se conecta a Aurora con un único rol de mínimo privilegio. En cada request abre una transacción y fija el usuario, el rol y la sesión del kiosco como ajustes locales a la transacción, pasados como parámetros enlazados. Las políticas de seguridad por fila leen esos ajustes, así que ningún handler agrega un `WHERE organization_id = ...` y un filtro olvidado no puede exponer los datos de otra clínica
 - **Un kiosco no es un usuario**: la tablet de la clínica recibe un token acotado a una sola sesión, y las políticas la limitan a las filas de esa sesión
