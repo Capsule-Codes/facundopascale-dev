@@ -66,7 +66,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
 - [x] T4.1 Subscribe with double opt-in: home form (es/en) → on-demand endpoint (honeypot + rate limit) → confirmation
       email with HMAC-signed token → confirm page creates the Resend contact in the locale segment — route: delegated writer
-- [ ] T4.2 Send from admin: newsletter items in the calendar → Resend broadcast to the item's locale segment (test send
+- [x] T4.2 Send from admin: newsletter items in the calendar → Resend broadcast to the item's locale segment (test send
       to admin, schedule or send now), broadcast id + status saved on the item — route: delegated writer
 
 ## Progress / evidence
@@ -247,6 +247,14 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Open: Resend duplicate-contact behavior (409/message match) unverified live; needs segment/topic ids from the owner.
 - RDD 51bf601..47fb9aa (lineage review-8c2f48c41a235092): medium, granted, reliability lens, APPROVED and acknowledged;
   boundary → 47fb9aa.
+- T4.2 (writer): newsletter panel on `/admin/content/[id]` for `newsletter` items: test send to the signed-in admin,
+  send/schedule broadcast to the locale segment (confirm checkbox; disabled once `meta.broadcast_id` exists or config
+  missing). Body Markdown → email HTML via `marked` 18.1.0 (raw HTML escaped, unsafe links dropped), footer with
+  `{{{RESEND_UNSUBSCRIBE_URL}}}`. Resend failure → no DB write; DB failure after send → error with broadcast id.
+  RED: 2 new suites failed (modules absent). GREEN: unit 246/246, check 0 errors 0 warnings, lint ok, build ok,
+  e2e 58/58. Dev smoke (real Supabase, no Resend key; temp `idea` item deleted): panel shows ES segment, missing
+  config, both buttons disabled; no page errors.
+  Open: no cancel/reschedule from admin (Resend dashboard); live Resend behavior untested until the owner provides ids.
 
 ## Next step
 
