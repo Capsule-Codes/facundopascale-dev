@@ -71,4 +71,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/festivalpro/screenshot-1.png', 'assets/festivalpro/screenshot-2.png'],
     frame: 'phone',
   },
+  {
+    slug: 'stagionaly',
+    title: 'Stagionaly',
+    tagline: 'Seasonal work in Italian\nhospitality, in one app.',
+    pill: 'WEB · IOS · ANDROID',
+    gradient: ['#E5645A', '#C8362A', '#7A1F18', '#14110D'],
+    textColor: '#ffffff',
+    logo: 'assets/stagionaly/logo.png',
+    screenshots: ['assets/stagionaly/screenshot-1.png', 'assets/stagionaly/screenshot-2.png'],
+    frame: 'phone',
+  },
 ];
