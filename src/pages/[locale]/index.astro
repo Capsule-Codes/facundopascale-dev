@@ -93,9 +93,13 @@ const copy = {
     followLabel: 'Sígueme',
     followNav: 'Redes sociales',
     newsletterLabel: 'NEWSLETTER · el log en tu correo',
-    newsletterBody:
-      'Lo que construyo, lo que aprendo y lo que no funcionó. Muy pronto vas a poder suscribirte desde aquí.',
-    newsletterSoon: 'PRÓXIMAMENTE',
+    newsletterBody: 'Lo que construyo, lo que aprendo y lo que no funcionó, directo a tu correo.',
+    newsletterEmail: 'Correo electrónico',
+    newsletterPlaceholder: 'tu@correo.com',
+    newsletterSubmit: 'Suscribirme',
+    newsletterTrap: 'No completes este campo',
+    newsletterConsent:
+      'Te enviaré un correo para confirmar tu suscripción (doble confirmación). Recibirás el newsletter de Facundo Pascale y puedes darte de baja cuando quieras.',
     status: { idea: 'En idea', beta: 'Beta', live: 'En vivo', sunset: 'Discontinuado' },
     kinds: {
       youtube: 'video',
@@ -153,9 +157,13 @@ const copy = {
     followLabel: 'Follow me',
     followNav: 'Social links',
     newsletterLabel: 'NEWSLETTER · the log in your inbox',
-    newsletterBody:
-      'What I build, what I learn and what did not work. You will be able to subscribe right here very soon.',
-    newsletterSoon: 'COMING SOON',
+    newsletterBody: 'What I build, what I learn and what did not work, straight to your inbox.',
+    newsletterEmail: 'Email address',
+    newsletterPlaceholder: 'you@example.com',
+    newsletterSubmit: 'Subscribe',
+    newsletterTrap: 'Leave this field empty',
+    newsletterConsent:
+      "We'll email you a link to confirm your subscription (double opt-in). You'll get Facundo Pascale's newsletter and can unsubscribe anytime.",
     status: { idea: 'Idea', beta: 'Beta', live: 'Live', sunset: 'Sunset' },
     kinds: {
       youtube: 'video',
@@ -587,9 +595,41 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
         <div class={`${surface} flex min-w-0 flex-[1_1_340px] flex-col gap-3 p-6 self-start`}>
           <div class="flex justify-between font-mono text-xs text-text-muted">
             <span>{copy.newsletterLabel}</span>
-            <span class="text-accent">{copy.newsletterSoon}</span>
           </div>
           <p class="m-0 text-[17px] leading-snug">{copy.newsletterBody}</p>
+          <form
+            method="post"
+            action={`/${loc}/newsletter/subscribe`}
+            data-newsletter
+            class="flex flex-col gap-3"
+          >
+            <input type="hidden" name="locale" value={loc} />
+            <div class="absolute left-[-9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+              <label for="newsletter-website">{copy.newsletterTrap}</label>
+              <input
+                id="newsletter-website"
+                type="text"
+                name="website"
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </div>
+            <label for="newsletter-email" class={meta}>{copy.newsletterEmail}</label>
+            <input
+              id="newsletter-email"
+              type="email"
+              name="email"
+              required
+              maxlength="254"
+              autocomplete="email"
+              placeholder={copy.newsletterPlaceholder}
+              class={`w-full border-[1.5px] border-rule bg-bg px-4 py-3 font-mono text-sm ${focus}`}
+            />
+            <button type="submit" class={`${btnPrimary} cursor-pointer self-start`}>
+              {copy.newsletterSubmit}
+            </button>
+            <p class="m-0 text-xs leading-snug text-text-muted">{copy.newsletterConsent}</p>
+          </form>
         </div>
       </section>
     </div>

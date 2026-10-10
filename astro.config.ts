@@ -63,7 +63,9 @@ export default defineConfig({
         },
       },
       filter: (page) =>
-        !/^https?:\/\/[^/]+\/?$/.test(page) && !/^https?:\/\/[^/]+\/admin(\/|$)/.test(page),
+        !/^https?:\/\/[^/]+\/?$/.test(page) &&
+        !/^https?:\/\/[^/]+\/admin(\/|$)/.test(page) &&
+        !/^https?:\/\/[^/]+\/(es|en)\/newsletter(\/|$)/.test(page),
     }),
   ],
 

@@ -67,12 +67,33 @@ test.describe('home', () => {
         }
       });
 
-      test('contact section has a primary call to action and no newsletter input', async ({
+      test('contact section has a primary call to action', async ({ page }) => {
+        await page.goto(`/${locale}/`);
+        await expect(page.locator('section#contact a[data-cta="book-call"]')).toBeVisible();
+      });
+
+      test('newsletter form posts to the subscribe page with a labelled email and hidden honeypot', async ({
         page,
       }) => {
         await page.goto(`/${locale}/`);
-        await expect(page.locator('section#contact a[data-cta="book-call"]')).toBeVisible();
-        await expect(page.locator('section#contact input')).toHaveCount(0);
+        const form = page.locator('section#contact form[data-newsletter]');
+        await expect(form).toHaveAttribute('method', 'post');
+        await expect(form).toHaveAttribute('action', `/${locale}/newsletter/subscribe`);
+        await expect(form.locator('input[name="locale"]')).toHaveValue(locale);
+        const email = form.locator('input[type="email"]');
+        await expect(email).toHaveAccessibleName(/\S/);
+        await expect(email).toHaveAttribute('required', '');
+        await expect(email).toHaveAttribute('name', 'email');
+        const honeypot = form.locator('input[name="website"]');
+        await expect(honeypot).toHaveAttribute('tabindex', '-1');
+        await expect(honeypot).toHaveAttribute('autocomplete', 'off');
+        const box = await honeypot.boundingBox();
+        expect(box === null || box.x + box.width <= 0).toBe(true);
+        await expect(form.locator('[aria-hidden="true"]:has(input[name="website"])')).toHaveCount(
+          1
+        );
+        await expect(form.locator('button[type="submit"]')).toBeVisible();
+        await expect(page.locator('section#contact')).not.toContainText(/PRÓXIMAMENTE|COMING SOON/);
       });
 
       test('skip-to-content link exists', async ({ page }) => {

@@ -1,0 +1,28 @@
+---
+import Layout from './Layout.astro';
+import type { Locale } from '../lib/i18n';
+import type { PageCopy } from '../lib/newsletter-copy';
+
+interface Props {
+  locale: Locale;
+  copy: PageCopy;
+  /** Where the back link points. */
+  href: string;
+}
+
+const { locale, copy, href } = Astro.props;
+---
+
+<Layout title={`${copy.title} — Facundo Pascale`} description={copy.body} locale={locale} noindex>
+  <div class="mx-auto max-w-2xl px-6 py-24">
+    <p class="mb-2 font-mono text-xs text-[var(--color-accent)]">// newsletter</p>
+    <h1 class="mb-4 font-display text-5xl">{copy.heading}</h1>
+    <p class="mb-8 leading-relaxed text-[var(--color-text-muted)]">{copy.body}</p>
+    <a
+      href={href}
+      class="inline-block border-b-[1.5px] border-accent pb-1 font-mono text-sm transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    >
+      {copy.back}
+    </a>
+  </div>
+</Layout>

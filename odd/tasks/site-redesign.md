@@ -64,7 +64,7 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
 - [x] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
 - [x] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
-- [ ] T4.1 Subscribe with double opt-in: home form (es/en) → on-demand endpoint (honeypot + rate limit) → confirmation
+- [x] T4.1 Subscribe with double opt-in: home form (es/en) → on-demand endpoint (honeypot + rate limit) → confirmation
       email with HMAC-signed token → confirm page creates the Resend contact in the locale segment — route: delegated writer
 - [ ] T4.2 Send from admin: newsletter items in the calendar → Resend broadcast to the item's locale segment (test send
       to admin, schedule or send now), broadcast id + status saved on the item — route: delegated writer
@@ -238,7 +238,14 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   Broadcasts need a verified sending domain and `{{{RESEND_UNSUBSCRIBE_URL}}}`. Default rate limit 10 req/s per team.
 - Config: segment/topic ids and the token secret come from env (`RESEND_SEGMENT_ES`, `RESEND_SEGMENT_EN`,
   `RESEND_TOPIC_NEWSLETTER`, `NEWSLETTER_SECRET`), Production only.
+- T4.1 (writer): home form → `/{locale}/newsletter/subscribe` (on-demand, honeypot `website`, 5/h per IP, neutral
+  response) → confirmation email with HMAC token (48h, timingSafeEqual) → `/{locale}/newsletter/confirm` creates or
+  re-activates the Resend contact in the locale segment (+ optional topic). No addresses logged or stored by us.
+  RED: 2 unit files + 2 e2e failed. GREEN: unit 210/210, check 0 errors 0 warnings, lint ok, build ok, e2e 58/58.
+  Dev smoke (no Resend key): GET → 303 home#contact; POST unconfigured 503; locale mismatch / bad locale 404;
+  cross-origin 403; bad token 400 noindex; rate limit 429 after 5. `NEWSLETTER_SECRET` set in Vercel Production.
+  Open: Resend duplicate-contact behavior (409/message match) unverified live; needs segment/topic ids from the owner.
 
 ## Next step
 
-T4.1 subscribe flow.
+Owner: verify domain + create ES/EN segments and Newsletter topic in Resend; then live-test T4.1, T4.2 admin sending.

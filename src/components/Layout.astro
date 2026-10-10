@@ -29,6 +29,8 @@ interface Props {
   currentCollection?: 'blog' | 'work';
   /** Use the wide (1240px) page container in header and footer, as the home page does. */
   wide?: boolean;
+  /** Keep the page out of search indexes (transactional pages such as newsletter confirmation). */
+  noindex?: boolean;
 }
 
 const {
@@ -39,6 +41,7 @@ const {
   currentDocId,
   currentCollection,
   wide = false,
+  noindex = false,
 } = Astro.props;
 
 // Resolve the OG image URL for this page. The slug MUST match the one the
@@ -116,6 +119,7 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
