@@ -69,6 +69,9 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
     - Commit: `git log --grep "Orbys case study"`. `orbys.mdx` es/en, 6 desktop WebP images (1440 wide) in `public/images/work/orbys/` (landing + five live "as-is" screens), cover via `pnpm covers orbys` (browser frame, red gradient). Live link `https://www.getorbys.com`.
     - Shipped vs proposal: the "redesign" frames are NOT used. The platform redesign shipped in June 2026 (PR #29 `feat/platform-redesign`), but the frames include screens with no matching code found in the repo (client portal, integrations with QuickBooks/Zapier, roles matrix, onboarding checklist), so they are treated as proposals and omitted.
     - Database: same as Stagionaly, no product cover exists and no `public.projects` row, nothing changed.
+  - Executable bit removed from `scripts/covers/assets/festivalpro/logo.png` (`273a6e6`) before review.
+  - Review (Investamind + Festival Pro + Stagionaly + Orbys slice): assessed medium (`slice_budget_reached`); consent granted; reliability lens approved; acknowledged (lineage `review-e7f6162dc117be5e`). Reviewed boundary advances to `273a6e6`.
+  - Pending user confirmation: publishedAt dates (Investamind 2026-02-15, Stagionaly 2026-05-01, Orbys 2026-04-10) and Investamind role "Fullstack · Mobile". Orbys cover is the weakest (sparse live data); option: local demo seed + recapture.
 
 ## Delivery
 
