@@ -54,6 +54,21 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
     - capsulecodes.com: row `ebf137d8-df0a-41f8-befb-25878643a952` ("Happiness To Go - Wellness & Habits App") now has the new cover first in `images` and as `image` (`projects/<id>/cover-a7432a81.webp`, public URL 200); 7 existing images kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/happiness-to-go.json`.
     - Title match: DB title prefix-matches case study "Happiness To Go".
   - Review (HFlow + HTG slice): assessed medium (`slice_budget_reached`); consent granted; reliability lens approved; acknowledged (lineage `review-e57519f866c79cb9`). Reviewed boundary advances to `8d2b237`.
+  - [x] Investamind — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "Investamind case study"`. `src/content/work/{es,en}/investamind.mdx`, 5 phone WebP gallery images (780x1661, rounded-corner mask applied to remove the bezel's purple corner fill) in `public/images/work/investamind/`, cover via `pnpm covers investamind` (two phones, #6C63FF gradient). Public link: App Store `id6757620060` (id found in the client's `eas.json`). No docs/PDF or pricing material used; the premium screen shows the in-app demo plan only.
+    - capsulecodes.com: row `c8f18f1d-3509-44c7-b411-42e202fdfbac` ("Investamind") now has the new cover first in `images` and as `image` (`projects/<id>/cover-ee56177d.webp`, public URL 200); 8 existing images kept (sortOrder shifted +1). Backup: scratchpad `db-backup/investamind.json`.
+    - Title match: DB title "Investamind" = case study "Investamind".
+  - [x] Festival Pro (rewrite of the existing case study) — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "Festival Pro case study"`. `festivalpro.mdx` es/en rewritten to the 4-section depth (same slug and translationId, neutral Spanish instead of voseo), 5 phone WebP gallery images (780x1736) in `public/images/work/festivalpro/`, cover via `pnpm covers festivalpro` (dark and light variant side by side). Old `festivalpro.svg` removed. No artist names in alt text or body. `tests/e2e/gallery.spec.ts`: the "no gallery" check pointed at festivalpro, which now has one; it now checks `/en/work/` (every case study has a gallery).
+    - capsulecodes.com: row `9d8054fa-887d-4b17-a294-585dd32b59ff` ("Festival PRO") new cover first and as `image` (`projects/<id>/cover-d5918617.webp`, URL 200); 7 existing images kept (+1). Backup: scratchpad `db-backup/festivalpro.json`.
+    - Title match: "Festival PRO" prefix-matches "Festival Pro" (normalized).
+  - [x] Stagionaly — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "Stagionaly case study"`. `stagionaly.mdx` es/en, 5 real-device phone WebP images (780x1695: offers, offer detail, chat, applications, notifications) in `public/images/work/stagionaly/`, cover via `pnpm covers stagionaly` (rosso/ink gradient). Live link web only. The "delivery ledger" in the research summary does not exist in the repo; the case study describes the push webhook, preferences and the single-owner token fix instead.
+    - Database: there is no cover to replace. `public.products` (not `personal.products`) has no logo/image column in use and the site renders no product cover; `public.projects` has no Stagionaly row. Nothing changed in the database. Product title "Stagionaly" = case study title.
+  - [x] Orbys — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "Orbys case study"`. `orbys.mdx` es/en, 6 desktop WebP images (1440 wide) in `public/images/work/orbys/` (landing + five live "as-is" screens), cover via `pnpm covers orbys` (browser frame, red gradient). Live link `https://www.getorbys.com`.
+    - Shipped vs proposal: the "redesign" frames are NOT used. The platform redesign shipped in June 2026 (PR #29 `feat/platform-redesign`), but the frames include screens with no matching code found in the repo (client portal, integrations with QuickBooks/Zapier, roles matrix, onboarding checklist), so they are treated as proposals and omitted.
+    - Database: same as Stagionaly, no product cover exists and no `public.projects` row, nothing changed.
 
 ## Delivery
 

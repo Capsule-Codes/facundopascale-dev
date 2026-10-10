@@ -1,0 +1,96 @@
+---
+title: 'Orbys'
+tagline: 'Una suite de gestión para agencias que tu asistente de IA puede operar'
+description: 'Orbys es un SaaS multi-tenant para agencias: clientes, proyectos, control de horas con aprobaciones, facturación y reparto entre socios. Construido sobre Next.js y Supabase con row level security, y con un servidor MCP remoto dentro de la misma app.'
+publishedAt: 2026-04-10
+stack:
+  - Next.js 15
+  - React 19
+  - Supabase
+  - Postgres RLS
+  - Stripe
+  - next-intl
+  - Zod
+  - Tailwind 4
+  - Sentry
+  - MCP
+  - Vitest
+role: 'Fundador · Fullstack'
+year: 2026
+links:
+  live: https://www.getorbys.com
+coverImage: /images/work/orbys/cover.webp
+gallery:
+  - src: /images/work/orbys/landing.webp
+    alt: 'Página de presentación de Orbys con el titular para gestionar tu empresa sin límites y una tarjeta flotante de métricas'
+    kind: desktop
+    width: 1440
+    height: 1024
+  - src: /images/work/orbys/dashboard.webp
+    alt: 'Dashboard de Orbys con empleados activos, clientes, horas reportadas, facturación y un gráfico de línea de tiempo de proyectos'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/proyectos.webp
+    alt: 'Vista de proyectos de Orbys con contadores de salud del portafolio, filtros por estado y tarjetas de proyecto con su progreso'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/clientes.webp
+    alt: 'Lista de clientes de Orbys con clientes activos, facturación mensual, indicador de riesgo y una tabla con búsqueda'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/control-horas.webp
+    alt: 'Pantalla de control de horas de Orbys con las horas del equipo, una cola de aprobación y un botón para aprobar todo'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/agenda.webp
+    alt: 'Calendario mensual de Orbys con los eventos y vencimientos programados de la agencia'
+    kind: desktop
+    width: 1440
+    height: 1040
+lang: es
+translationId: orbys
+featured: true
+order: 8
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Una agencia chica funciona con cinco herramientas que no se hablan entre sí. Los clientes viven en una planilla, las horas en una app de cronómetro, las facturas en otra herramienta y el reparto entre socios en la cabeza de alguien. A fin de mes alguien lo concilia a mano, y aprobar horas o averiguar qué está listo para facturar lleva un día. Yo quería un solo lugar donde el trabajo, el tiempo y el dinero fueran los mismos datos.
+
+## La solución
+
+Orbys es un producto propio: una plataforma multi-tenant donde cada agencia tiene un workspace con clientes, proyectos y tareas, control de horas con un flujo de aprobación, facturación con Stripe, analítica y una sección de equipo y socios. Está en producción en getorbys.com, con la interfaz en español, inglés e italiano.
+
+Lo que más me gusta es que incluye un servidor MCP remoto. La misma app que sirve la interfaz web expone un endpoint de Model Context Protocol, así que un asistente de IA puede listar clientes, cargar horas, aprobar una planilla o preguntar qué está listo para facturar, con los mismos permisos que la persona dueña de la clave.
+
+El stack es Next.js 15 con App Router y React 19, Supabase para autenticación y Postgres, Stripe, next-intl, Zod, Tailwind 4 y Sentry. Las capturas usan datos de prueba falsos.
+
+## Stack y decisiones clave
+
+- **Aislamiento de tenants en la base de datos**: cada tabla de negocio lleva un `company_id`, y el row level security hace que una consulta no pueda salirse de su tenant, haga lo que haga el código de la aplicación. Hay 85 migraciones, y además el tenant se resuelve desde el subdominio en el middleware
+- **El servidor MCP vive dentro de la app**: es un route handler más una carpeta de herramientas agrupadas por dominio (workspace, operaciones, finanzas, entrega, control de horas), no un servicio aparte. Las solicitudes se autentican con una API key aprobada por un administrador como bearer token, y el transporte es sin estado, así que no hay un almacén de sesiones que operar
+- **Caché por tenant, invalidada por escrituras**: las consultas de analítica se cachean con una etiqueta por empresa, y las mutaciones que mueven los números (horas, facturas, gastos) revalidan esa etiqueta. La invalidación está envuelta para que un problema de caché nunca haga fallar una escritura que ya se confirmó
+- **Una política única de errores y origen para la API**: las solicitudes que modifican datos pasan por una verificación de origen y un límite de tasa en el middleware, con excepciones deliberadas para los webhooks de Stripe y Resend, que se autentican por firma, y para MCP, que se autentica por clave
+- **Validación en el borde**: los esquemas de Zod protegen cada ruta y cada entrada de las herramientas MCP, así que una fecha como `2026-02-31` se rechaza con un mensaje claro en lugar de convertirse en una factura incorrecta
+
+<Callout type="info" title="Por qué MCP en la misma app">
+  Duplicar las reglas del dominio en un segundo servicio habría significado dos lugares que mantener
+  correctos. Al reutilizar la misma capa de datos, el asistente y la interfaz web no pueden
+  discrepar sobre lo que un usuario tiene permitido hacer.
+</Callout>
+
+## Aprendizajes
+
+La multi-tenencia es primero un problema de base de datos. Cuando el aislamiento es una política, olvidarse un `where company_id` deja de ser una fuga de datos.
+
+Una API para máquinas es una superficie de producto. Diseñar las herramientas MCP me obligó a nombrar con claridad las operaciones del dominio, y eso ordenó también el código web.
+
+Las excepciones a una regla de seguridad tienen que ser explícitas y cortas. Una lista de tres rutas que saltean la verificación de origen es fácil de revisar; una implícita no.
+
+Y las partes aburridas se construyen temprano. Los días de calendario frente a los timestamps, los límites de tasa y la invalidación de caché no entusiasman, y de ahí sale la confianza en un producto de facturación.

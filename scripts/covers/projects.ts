@@ -82,4 +82,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/stagionaly/screenshot-1.png', 'assets/stagionaly/screenshot-2.png'],
     frame: 'phone',
   },
+  {
+    slug: 'orbys',
+    title: 'Orbys',
+    tagline: 'Run your agency\nin full orbit.',
+    pill: 'AGENCY SAAS · MCP',
+    gradient: ['#F08A82', '#C9423D', '#8B1B1A', '#3A0F12'],
+    textColor: '#ffffff',
+    logo: 'assets/orbys/logo.png',
+    screenshots: ['assets/orbys/screenshot.png'],
+    frame: 'browser',
+  },
 ];
