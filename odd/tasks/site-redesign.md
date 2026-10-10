@@ -64,6 +64,10 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
 - [x] T3.3 Content calendar: list by status/date, create/edit/delete `personal.content_items` — route: delegated writer
 - [x] T3.4 Showcase (highlight, order, summaries) and products (personal fields) editing — route: delegated writer
 - [x] T3.5 Site settings (email, socials, bio) editing — route: delegated writer
+- [ ] T4.1 Subscribe with double opt-in: home form (es/en) → on-demand endpoint (honeypot + rate limit) → confirmation
+      email with HMAC-signed token → confirm page creates the Resend contact in the locale segment — route: delegated writer
+- [ ] T4.2 Send from admin: newsletter items in the calendar → Resend broadcast to the item's locale segment (test send
+      to admin, schedule or send now), broadcast id + status saved on the item — route: delegated writer
 
 ## Progress / evidence
 
@@ -224,6 +228,17 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   httpOnly cookie, cross-origin POST 403, all five admin pages 200, sign out; bad password shows the generic error
   (checked via POST); `/admin` absent from sitemap, `Disallow: /admin` in robots.
 
+### Stage 4 — newsletter
+
+- Decisions (user, 2026-10-10): double opt-in; one list per language (ES and EN segments).
+- Research (Resend docs, 2026-10-10): Audiences deprecated (Nov 2025) → global Contacts + Segments (targeting) +
+  Topics (recipient preferences). Installed SDK 6.11.0 supports contacts with `segments`/`topics`/`properties` and
+  broadcasts with `segmentId`, `topicId`, `scheduledAt`. No built-in double opt-in → confirmation email with a signed
+  token; the contact is created in Resend only after confirmation (no unconfirmed addresses stored anywhere).
+  Broadcasts need a verified sending domain and `{{{RESEND_UNSUBSCRIBE_URL}}}`. Default rate limit 10 req/s per team.
+- Config: segment/topic ids and the token secret come from env (`RESEND_SEGMENT_ES`, `RESEND_SEGMENT_EN`,
+  `RESEND_TOPIC_NEWSLETTER`, `NEWSLETTER_SECRET`), Production only.
+
 ## Next step
 
-Stage 4: Resend newsletter.
+T4.1 subscribe flow.
