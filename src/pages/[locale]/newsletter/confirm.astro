@@ -1,0 +1,29 @@
+---
+import NewsletterNotice from '../../../components/NewsletterNotice.astro';
+import { isLocale, localizedPath } from '../../../lib/i18n';
+import { handleConfirm } from '../../../lib/newsletter';
+import { pageCopy } from '../../../lib/newsletter-copy';
+import { buildConfirmDeps } from '../../../lib/newsletter-runtime';
+
+export const prerender = false;
+
+const { locale } = Astro.params;
+if (!locale || !isLocale(locale)) return new Response(null, { status: 404 });
+
+const home = `${localizedPath('home', locale)}#contact`;
+const token = Astro.url.searchParams.get('token') ?? '';
+const result = await handleConfirm(buildConfirmDeps(), token, locale);
+
+const pages = pageCopy[locale];
+const view = {
+  confirmed: { copy: pages.confirmed, status: 200, href: localizedPath('home', locale) },
+  invalid: { copy: pages.invalidToken, status: 400, href: home },
+  unavailable: { copy: pages.unavailable, status: 503, href: localizedPath('home', locale) },
+  failed: { copy: pages.unavailable, status: 503, href: localizedPath('home', locale) },
+}[result.kind];
+
+Astro.response.status = view.status;
+Astro.response.headers.set('cache-control', 'no-store');
+---
+
+<NewsletterNotice locale={locale} copy={view.copy} href={view.href} />
