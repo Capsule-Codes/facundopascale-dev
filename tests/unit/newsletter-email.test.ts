@@ -25,6 +25,11 @@ describe('renderNewsletterEmail', () => {
     expect(html).not.toContain('<style');
   });
 
+  it('turns a single line break into <br> so sign-offs keep their lines', () => {
+    const { html } = renderNewsletterEmail({ ...base, body: 'Saludos,\nFacundo' });
+    expect(html).toMatch(/Saludos,<br\s*\/?>\s*Facundo/);
+  });
+
   it('wraps the content in a 600px Blueprint template', () => {
     const { html } = renderNewsletterEmail(base);
     expect(html).toContain('max-width:600px');
