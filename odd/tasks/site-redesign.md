@@ -255,6 +255,8 @@ and agency projects are duplicated knowledge living in the Capsule Codes databas
   e2e 58/58. Dev smoke (real Supabase, no Resend key; temp `idea` item deleted): panel shows ES segment, missing
   config, both buttons disabled; no page errors.
   Open: no cancel/reschedule from admin (Resend dashboard); live Resend behavior untested until the owner provides ids.
+- RDD 47fb9aa..d0df3e1 (lineage review-38da7d7c758d29ed): medium, granted, reliability lens, APPROVED and
+  acknowledged; boundary → d0df3e1. (A whole-stage candidate earlier failed to start while T4.2 files were untracked.)
 
 ## Next step
 
