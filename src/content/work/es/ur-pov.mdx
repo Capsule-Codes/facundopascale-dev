@@ -1,0 +1,103 @@
+---
+title: 'UR POV'
+tagline: 'Recomendaciones locales verificadas, de personas reales'
+description: 'UR POV es una app React Native para encontrar negocios locales de confianza en Sudáfrica: reseñas, eventos, chat y un panel para dueños de negocios. Me sumé después de la primera versión como responsable de mantenimiento y de releases: arreglos de listados cercanos, pipelines de EAS para iOS, Android y Huawei, y R8.'
+publishedAt: 2025-10-22
+stack:
+  - Expo 54
+  - React Native
+  - TypeScript
+  - Expo Router
+  - Supabase
+  - EAS Build
+  - GitHub Actions
+role: 'Mantenimiento · Mobile y releases'
+year: 2025
+links:
+  live: https://play.google.com/store/apps/details?id=com.creative.urpov
+coverImage: /images/work/ur-pov/cover.webp
+gallery:
+  - src: /images/work/ur-pov/onboarding-verified.webp
+    alt: 'Diapositiva del onboarding de UR POV sobre usuarios y negocios verificados, sobre una foto de una persona usando un teléfono'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/home.webp
+    alt: 'Inicio de UR POV con una barra de búsqueda, una grilla de categorías de negocios y una lista de nuevos negocios'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/business-detail.webp
+    alt: 'Detalle de un negocio en UR POV con la descripción, el álbum de fotos, la calificación, la dirección, el teléfono y el horario'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/reviews.webp
+    alt: 'Lista de reseñas de UR POV con nombres de usuario, estrellas, comentarios, miniaturas de fotos y fechas relativas'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/events.webp
+    alt: 'Lista de eventos de UR POV con una imagen, la fecha, el lugar y la ciudad de cada evento local'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/chat.webp
+    alt: 'Conversación de chat de UR POV entre un usuario y un negocio sobre un pedido personalizado'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/business-dashboard.webp
+    alt: 'Panel del dueño de un negocio en UR POV con analíticas de vistas, clics, reseñas y calificación, y la última reseña'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/edit-listing.webp
+    alt: 'Formulario de edición del listado en UR POV con teléfono, pin de dirección, descripción, etiquetas, fotos y horario por día'
+    kind: phone
+    width: 780
+    height: 1696
+lang: es
+translationId: ur-pov
+featured: true
+order: 10
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Encontrar un buen negocio local suele significar confiar en una calificación de estrellas que no se puede verificar. Para que un directorio de ciudad sea útil, la gente tiene que creer que las reseñas son reales y que los negocios son quienes dicen ser. El cliente quería esa confianza en una app móvil para Sudáfrica, para dos públicos con necesidades distintas: quienes buscan lugares cercanos y los dueños de negocios que quieren ser encontrados y saber qué opinan sus clientes.
+
+## La solución
+
+UR POV es una app móvil construida por Capsule Codes para un cliente. La primera versión la armó el equipo antes de que yo me sumara, y entré después como responsable de su mantenimiento y de sus releases. Los usuarios navegan por categorías, ven los listados más nuevos cerca de ellos, leen y escriben reseñas con fotos, consultan horarios, siguen eventos locales y escriben a los negocios. Los dueños tienen su propio lado de la app, con un panel de vistas, clics y reseñas y un formulario para editar el listado. También se puede navegar como invitado, sin cuenta.
+
+La app usa Expo 54 con React Native 0.81 y Expo Router, está escrita en TypeScript y tiene el React Compiler habilitado. El backend es Supabase: Auth, Postgres a través de PostgREST, Storage, Realtime y edge functions para el registro y para crear un negocio.
+
+Las capturas provienen de un entorno local con datos inventados. Los nombres de negocios, las personas, las reseñas y los eventos son ficticios, y los logos y fotos de los negocios son marcadores de posición.
+
+## Stack y decisiones clave
+
+La mayor parte de la app se construyó antes de que yo llegara, así que estas decisiones describen cómo está organizada y en qué trabajé desde entonces:
+
+- **El rol decide la app**: al iniciar sesión la app resuelve si la cuenta es dueña de un negocio, y los grupos de rutas de Expo Router llevan a cada persona al lugar correcto: onboarding, auth, invitado, usuario, negocio y suscripción
+- **Código organizado por features**: `features/` contiene auth, business, messaging, onboarding y más, cada uno con sus hooks, servicios, pantallas y tipos, de modo que un cambio en reseñas o en el chat queda en una sola carpeta
+- **Reseñas con salvaguardas**: un período de espera por autor y negocio, subida de fotos a un bucket de storage y un filtro de lenguaje ofensivo en el cliente alimentado desde una tabla de palabras bloqueadas, con una caché local como respaldo
+- **Un chat que vence**: las conversaciones y los mensajes viven en Postgres, llegan por una suscripción de Realtime con contadores de no leídos y se eliminan a los 30 días, algo que la bandeja de entrada aclara
+- **Listados cercanos, arreglados en la consulta**: la pantalla de inicio quedaba vacía cuando se agregaban negocios en otras ciudades, porque traía los 20 negocios más nuevos de todo el mundo y los filtraba por distancia en el dispositivo. Moví el filtro a la consulta con un recuadro delimitador de latitud y longitud, y luego refiné el resultado por distancia exacta dentro de 25 km
+- **Un camino de release repetible**: los workflows de GitHub Actions generan los releases de iOS, Android y Huawei con EAS Build, las variables de entorno viven en EAS y el repositorio se replica en dos remotos con el mismo flujo de pull requests. Los builds de release de Android usan minificación R8 y reducción de recursos, lo que eliminó una advertencia de Play Console sobre la ofuscación
+
+<Callout type="info" title="Filtrar antes de limitar">
+  Un límite aplicado antes de un filtro cambia en silencio lo que el filtro puede encontrar. Mover
+  la verificación de distancia a la consulta hizo que los 20 resultados sean los 20 más cercanos, y
+  no los 20 más nuevos que casualmente están cerca.
+</Callout>
+
+## Aprendizajes
+
+Sumarse a un proyecto después del lanzamiento es sobre todo leer con cuidado. El bug de los listados cercanos nació de una decisión razonable tomada cuando había pocos negocios, y solo apareció cuando hubo suficientes en otras ciudades.
+
+El trabajo de release también es trabajo de producto. Una clave de cuenta de servicio faltante y una cola de builds deciden cuándo un arreglo llega a la gente más que el arreglo mismo, así que dejamos el camino por escrito en lugar de guardarlo en la cabeza de alguien. La app no tiene actualizaciones por aire, de modo que cada arreglo de JavaScript necesita un nuevo build para las tiendas.
+
+Y el feedback del cliente es una buena fuente de cambios chicos de mucho valor. Íconos de categoría más grandes, íconos nuevos para eventos y bodas y un nuevo botón Más parecían detalles de pulido, pero salieron directamente del feedback del cliente sobre cómo se ve y se siente la pantalla de inicio en uso.
