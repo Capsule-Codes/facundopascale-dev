@@ -89,7 +89,8 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
   - Executable bit removed from `scripts/covers/assets/festivalpro/logo.png` (`273a6e6`) before review.
   - Review (Investamind + Festival Pro + Stagionaly + Orbys slice): assessed medium (`slice_budget_reached`); consent granted; reliability lens approved; acknowledged (lineage `review-e7f6162dc117be5e`). Reviewed boundary advances to `273a6e6`.
   - Review (Horus + Estudialo AI + UR POV slice, `42a98fc`..`c9c156f`): assessed medium (`slice_budget_reached`); consent granted; untracked Anchor files excluded from the candidate; reliability lens approved with one informational suggestion (gallery dimensions in horus.mdx not cross-checked against the files); acknowledged (lineage `review-5f54507d8d685a78`). Reviewed boundary advances to `c9c156f`.
-  - Anchor (`e282f69`): assessed medium, `under_budget` (211 lines); pending in the next slice.
+  - Review (Anchor + UR POV/Estudialo team-voice slice, `e282f69`..`4476726`): assessed medium (under budget, reviewed as the final slice before delivery); consent granted; reliability lens approved with informational findings (UR POV es first-person slip and en lowercase sentence, fixed in a follow-up docs commit; Anchor has no links because the repo has none); acknowledged (lineage `review-c0e85352b082929e`). Reviewed boundary advances to `4476726`.
+  - User confirmed: UR POV and Estudialo AI are client projects built from scratch by the Capsule Codes team (roles "Fullstack · Mobile" and "Fullstack · AI").
   - User confirmed Horus role "Fullstack · Cloud", publishedAt 2026-05-05, and asked to feature the AWS migration (`8766d69`).
   - User confirmed: publishedAt dates (Investamind 2026-02-15, Stagionaly 2026-05-01, Orbys 2026-04-10) and Investamind role "Fullstack · Mobile". Orbys cover is the weakest (sparse live data); option: local demo seed + recapture.
 
@@ -103,4 +104,4 @@ Strategy: ask-on-risk; chain strategy cached from stage 2–4: feature-branch-ch
 
 ## Next step
 
-All projects have a case study. Pending: user confirmation of the Estudialo AI and UR POV roles, the Anchor review slice, optional Orbys recapture, then push + PR when the user decides.
+All projects have a case study. Pending: optional Orbys recapture, then push + PR when the user decides.
