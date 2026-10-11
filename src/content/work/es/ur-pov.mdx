@@ -1,7 +1,7 @@
 ---
 title: 'UR POV'
 tagline: 'Recomendaciones locales verificadas, de personas reales'
-description: 'UR POV es una app React Native para encontrar negocios locales de confianza en Sudáfrica: reseñas, eventos, chat y un panel para dueños de negocios. Me sumé después de la primera versión como responsable de mantenimiento y de releases: arreglos de listados cercanos, pipelines de EAS para iOS, Android y Huawei, y R8.'
+description: 'UR POV es una app React Native para encontrar negocios locales de confianza en Sudáfrica: reseñas, eventos, chat y un panel para dueños de negocios. La construimos desde cero en Capsule Codes y seguimos manteniéndola: backend en Supabase, pipelines de EAS para iOS, Android y Huawei, arreglos de listados cercanos y R8.'
 publishedAt: 2025-10-22
 stack:
   - Expo 54
@@ -11,7 +11,7 @@ stack:
   - Supabase
   - EAS Build
   - GitHub Actions
-role: 'Mantenimiento · Mobile y releases'
+role: 'Fullstack · Mobile'
 year: 2025
 links:
   live: https://play.google.com/store/apps/details?id=com.creative.urpov
@@ -71,7 +71,7 @@ Encontrar un buen negocio local suele significar confiar en una calificación de
 
 ## La solución
 
-UR POV es una app móvil construida por Capsule Codes para un cliente. La primera versión la armó el equipo antes de que yo me sumara, y entré después como responsable de su mantenimiento y de sus releases. Los usuarios navegan por categorías, ven los listados más nuevos cerca de ellos, leen y escriben reseñas con fotos, consultan horarios, siguen eventos locales y escriben a los negocios. Los dueños tienen su propio lado de la app, con un panel de vistas, clics y reseñas y un formulario para editar el listado. También se puede navegar como invitado, sin cuenta.
+UR POV es una app móvil que construimos desde cero en Capsule Codes para un cliente, y seguimos manteniéndola. Después de la primera versión, el trabajo continuo (arreglos, cambios pedidos por el cliente y releases) siguió pasando por nuestro equipo. Los usuarios navegan por categorías, ven los listados más nuevos cerca de ellos, leen y escriben reseñas con fotos, consultan horarios, siguen eventos locales y escriben a los negocios. Los dueños tienen su propio lado de la app, con un panel de vistas, clics y reseñas y un formulario para editar el listado. También se puede navegar como invitado, sin cuenta.
 
 La app usa Expo 54 con React Native 0.81 y Expo Router, está escrita en TypeScript y tiene el React Compiler habilitado. El backend es Supabase: Auth, Postgres a través de PostgREST, Storage, Realtime y edge functions para el registro y para crear un negocio.
 
@@ -79,13 +79,13 @@ Las capturas provienen de un entorno local con datos inventados. Los nombres de 
 
 ## Stack y decisiones clave
 
-La mayor parte de la app se construyó antes de que yo llegara, así que estas decisiones describen cómo está organizada y en qué trabajé desde entonces:
+Estas son las decisiones que dieron forma a la app, tanto de la construcción original como del mantenimiento posterior:
 
 - **El rol decide la app**: al iniciar sesión la app resuelve si la cuenta es dueña de un negocio, y los grupos de rutas de Expo Router llevan a cada persona al lugar correcto: onboarding, auth, invitado, usuario, negocio y suscripción
 - **Código organizado por features**: `features/` contiene auth, business, messaging, onboarding y más, cada uno con sus hooks, servicios, pantallas y tipos, de modo que un cambio en reseñas o en el chat queda en una sola carpeta
 - **Reseñas con salvaguardas**: un período de espera por autor y negocio, subida de fotos a un bucket de storage y un filtro de lenguaje ofensivo en el cliente alimentado desde una tabla de palabras bloqueadas, con una caché local como respaldo
 - **Un chat que vence**: las conversaciones y los mensajes viven en Postgres, llegan por una suscripción de Realtime con contadores de no leídos y se eliminan a los 30 días, algo que la bandeja de entrada aclara
-- **Listados cercanos, arreglados en la consulta**: la pantalla de inicio quedaba vacía cuando se agregaban negocios en otras ciudades, porque traía los 20 negocios más nuevos de todo el mundo y los filtraba por distancia en el dispositivo. Moví el filtro a la consulta con un recuadro delimitador de latitud y longitud, y luego refiné el resultado por distancia exacta dentro de 25 km
+- **Listados cercanos, arreglados en la consulta**: la pantalla de inicio quedaba vacía cuando se agregaban negocios en otras ciudades, porque traía los 20 negocios más nuevos de todo el mundo y los filtraba por distancia en el dispositivo. Movimos el filtro a la consulta con un recuadro delimitador de latitud y longitud, y luego refiné el resultado por distancia exacta dentro de 25 km
 - **Un camino de release repetible**: los workflows de GitHub Actions generan los releases de iOS, Android y Huawei con EAS Build, las variables de entorno viven en EAS y el repositorio se replica en dos remotos con el mismo flujo de pull requests. Los builds de release de Android usan minificación R8 y reducción de recursos, lo que eliminó una advertencia de Play Console sobre la ofuscación
 
 <Callout type="info" title="Filtrar antes de limitar">
@@ -96,7 +96,7 @@ La mayor parte de la app se construyó antes de que yo llegara, así que estas d
 
 ## Aprendizajes
 
-Sumarse a un proyecto después del lanzamiento es sobre todo leer con cuidado. El bug de los listados cercanos nació de una decisión razonable tomada cuando había pocos negocios, y solo apareció cuando hubo suficientes en otras ciudades.
+Mantener un proyecto después del lanzamiento es sobre todo leer con cuidado. El bug de los listados cercanos nació de una decisión razonable tomada cuando había pocos negocios, y solo apareció cuando hubo suficientes en otras ciudades.
 
 El trabajo de release también es trabajo de producto. Una clave de cuenta de servicio faltante y una cola de builds deciden cuándo un arreglo llega a la gente más que el arreglo mismo, así que dejamos el camino por escrito en lugar de guardarlo en la cabeza de alguien. La app no tiene actualizaciones por aire, de modo que cada arreglo de JavaScript necesita un nuevo build para las tiendas.
 
