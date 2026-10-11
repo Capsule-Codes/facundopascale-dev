@@ -104,4 +104,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/horus/screenshot.png'],
     frame: 'browser',
   },
+  {
+    slug: 'estudialo-ai',
+    title: 'Estudialo AI',
+    tagline: 'An AI tutor that explains,\nnot just answers.',
+    pill: 'EDUCATION APP · WEB',
+    gradient: ['#A07CE6', '#6E44C8', '#43257F', '#1E0F45'],
+    textColor: '#ffffff',
+    logo: 'assets/estudialo-ai/logo.png',
+    screenshots: ['assets/estudialo-ai/shot-home.png', 'assets/estudialo-ai/shot-tutor.png'],
+    frame: 'phone',
+  },
 ];
