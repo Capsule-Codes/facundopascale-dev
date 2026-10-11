@@ -115,4 +115,15 @@ export const covers: CoverConfig[] = [
     screenshots: ['assets/estudialo-ai/shot-home.png', 'assets/estudialo-ai/shot-tutor.png'],
     frame: 'phone',
   },
+  {
+    slug: 'anchor',
+    title: 'Anchor',
+    tagline: 'Your priorities, top-of-mind.\nOffline-first task planning.',
+    pill: 'TASKS APP · IOS · ANDROID',
+    gradient: ['#34DFE8', '#12AEBF', '#0A7285', '#06404F'],
+    textColor: '#ffffff',
+    logo: 'assets/anchor/logo.png',
+    screenshots: ['assets/anchor/shot-home.png', 'assets/anchor/shot-matrix.png'],
+    frame: 'phone',
+  },
 ];
