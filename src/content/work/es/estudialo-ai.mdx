@@ -1,7 +1,7 @@
 ---
 title: 'Estudialo AI'
 tagline: 'Un tutor con IA que explica, no solo responde'
-description: 'Estudialo AI es un asistente de estudio mobile-first construido por un equipo pequeño de Capsule Codes: un tutor con Gemini y 14 acciones de estudio, niveles educativos, planes gratuito y premium en Stripe, y prompts en español e inglés. Lideré el producto y la entrega.'
+description: 'Estudialo AI es un asistente de estudio mobile-first que construimos desde cero en Capsule Codes para un cliente: un tutor con Gemini y 14 acciones de estudio, niveles educativos, planes gratuito y premium en Stripe, y prompts en español e inglés.'
 publishedAt: 2025-09-01
 stack:
   - Next.js 16
@@ -13,7 +13,7 @@ stack:
   - Tailwind CSS 4
   - TanStack Query
   - next-intl
-role: 'Tech lead · Producto y entrega'
+role: 'Fullstack · AI'
 year: 2025
 links: {}
 coverImage: /images/work/estudialo-ai/cover.webp
@@ -62,7 +62,7 @@ Muchas apps de "IA para estudiantes" son un chatbot general con el logo de una e
 
 ## La solución
 
-Estudialo AI lo construye un equipo pequeño de Capsule Codes para un cliente, y yo lideré el producto y la entrega. El estudiante abre la app, elige "Estudiar con IA" y conversa. Cada mensaje se enruta a una de 14 acciones de estudio: resumir un texto, generar un cuestionario, practicar ejercicios, explicar de forma simple, armar una sesión de estudio, corregir un texto, ayudar con la tarea, crear un esquema visual o un mapa mental, escribir un ensayo y algunas más. La acción viene de un botón que el estudiante toca o, cuando simplemente escribe, de una primera llamada a Gemini que clasifica la intención.
+Estudialo AI es un proyecto para un cliente que construimos desde cero en Capsule Codes. El estudiante abre la app, elige "Estudiar con IA" y conversa. Cada mensaje se enruta a una de 14 acciones de estudio: resumir un texto, generar un cuestionario, practicar ejercicios, explicar de forma simple, armar una sesión de estudio, corregir un texto, ayudar con la tarea, crear un esquema visual o un mapa mental, escribir un ensayo y algunas más. La acción viene de un botón que el estudiante toca o, cuando simplemente escribe, de una primera llamada a Gemini que clasifica la intención.
 
 Cada acción tiene su propio prompt, que se combina con el nivel educativo del estudiante (primaria, secundaria o universidad), el idioma de la interfaz y el plan. Se pueden adjuntar fotos y PDF, que se envían como contexto. Las conversaciones anteriores quedan en un historial, y hay una pantalla de notificaciones y un perfil.
 
@@ -72,7 +72,7 @@ Las capturas usan datos de demostración inventados y respuestas de ejemplo escr
 
 ## Stack y decisiones clave
 
-El equipo repartió el trabajo por áreas: Stripe y Gemini por un lado, Supabase por otro, y yo revisé e integré los pull requests y sostuve la dirección del producto. Estas son las decisiones que dieron forma a la app:
+Repartimos el trabajo por áreas, con Stripe y Gemini por un lado y Supabase por otro, y lo integramos mediante pull requests. Estas son las decisiones que dieron forma a la app:
 
 - **Next.js 16 con App Router**: una interfaz mobile-first con Tailwind 4 y TanStack Query, y `next-intl` para tres locales (en-US, es-ES y es-LA)
 - **Vercel AI SDK con Gemini**: `generateText` para todo, sin streaming. `gemini-2.5-flash` atiende el chat, los títulos y el enrutamiento de intención, y se usa un modelo multimodal cuando se adjunta una imagen
@@ -96,4 +96,4 @@ Hasta dos llamadas al modelo por mensaje es un buen intercambio. La llamada de e
 
 Leer la suscripción en vivo desde Stripe mantuvo el sistema simple, sin webhooks ni estado replicado que se desincronice. El costo es una consulta en cada mensaje y una dependencia fuerte de que Stripe esté disponible, así que una copia local sincronizada por webhooks es lo primero que revisaríamos.
 
-Y trabajar como equipo pequeño hizo que el trabajo del líder fuera sobre todo de interfaces: acordar qué tocaba cada pull request, revisar pensando en el producto y no solo en el código, y mantener coherentes los prompts, los límites y los textos de los planes en tres locales.
+Y trabajar como equipo pequeño hizo que el trabajo fuera sobre todo de interfaces: acordar qué tocaba cada pull request, revisar pensando en el producto y no solo en el código, y mantener coherentes los prompts, los límites y los textos de los planes en tres locales.
