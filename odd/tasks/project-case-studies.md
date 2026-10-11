@@ -43,7 +43,7 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
   - Checks: `pnpm test` 288 passed; `pnpm check` 0 errors; `pnpm lint` clean; `pnpm build` ok; `pnpm test:e2e` 63 passed; `pnpm covers elevate` ok.
   - Review: assessed medium (`slice_budget_reached`, executable change in astro.config.ts); consent granted; reliability lens approved; acknowledged (lineage `review-cfb9f06df43d4c3e`). Reviewed boundary advances to `a961c19`.
   - Follow-ups: offline-first blog posts still describe FitCoach-era sync details under the Elevate name.
-- [ ] T5 Case studies + covers for remaining projects (one work unit per project)
+- [x] T5 Case studies + covers for remaining projects (one work unit per project)
   - [x] HFlow — delegated (writer trigger: 2+ non-trivial files)
     - Commit: `git log --grep "HFlow case study"`. `src/content/work/{es,en}/hflow.mdx`, 7 desktop WebP gallery images (1920x1200) in `public/images/work/hflow/`, cover via `pnpm covers hflow` (browser frame, dark teal gradient, dashboard crop). No public link (private product).
     - Cover generator: title now accepts `\n` for a line break (unit RED observed, then GREEN); used by HTG.
@@ -88,6 +88,9 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
     - capsulecodes.com: row `af94fb7b-ae72-4356-942d-2088123f02a4` ("Anchor") now has the new cover first in `images` and as `image` (`projects/<id>/cover-fd47533e.webp`, public URL 200), `cover_media_id` set to the new media id; 6 existing images kept (sortOrder shifted +1). Backup: scratchpad `db-backup/anchor.json`. Title "Anchor" = case study "Anchor".
   - Executable bit removed from `scripts/covers/assets/festivalpro/logo.png` (`273a6e6`) before review.
   - Review (Investamind + Festival Pro + Stagionaly + Orbys slice): assessed medium (`slice_budget_reached`); consent granted; reliability lens approved; acknowledged (lineage `review-e7f6162dc117be5e`). Reviewed boundary advances to `273a6e6`.
+  - Review (Horus + Estudialo AI + UR POV slice, `42a98fc`..`c9c156f`): assessed medium (`slice_budget_reached`); consent granted; untracked Anchor files excluded from the candidate; reliability lens approved with one informational suggestion (gallery dimensions in horus.mdx not cross-checked against the files); acknowledged (lineage `review-5f54507d8d685a78`). Reviewed boundary advances to `c9c156f`.
+  - Anchor (`e282f69`): assessed medium, `under_budget` (211 lines); pending in the next slice.
+  - User confirmed Horus role "Fullstack · Cloud", publishedAt 2026-05-05, and asked to feature the AWS migration (`8766d69`).
   - User confirmed: publishedAt dates (Investamind 2026-02-15, Stagionaly 2026-05-01, Orbys 2026-04-10) and Investamind role "Fullstack · Mobile". Orbys cover is the weakest (sparse live data); option: local demo seed + recapture.
 
 ## Delivery
@@ -100,4 +103,4 @@ Strategy: ask-on-risk; chain strategy cached from stage 2–4: feature-branch-ch
 
 ## Next step
 
-T1/T2 asset capture.
+All projects have a case study. Pending: user confirmation of the Estudialo AI and UR POV roles, the Anchor review slice, optional Orbys recapture, then push + PR when the user decides.
