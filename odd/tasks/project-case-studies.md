@@ -43,7 +43,7 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
   - Checks: `pnpm test` 288 passed; `pnpm check` 0 errors; `pnpm lint` clean; `pnpm build` ok; `pnpm test:e2e` 63 passed; `pnpm covers elevate` ok.
   - Review: assessed medium (`slice_budget_reached`, executable change in astro.config.ts); consent granted; reliability lens approved; acknowledged (lineage `review-cfb9f06df43d4c3e`). Reviewed boundary advances to `a961c19`.
   - Follow-ups: offline-first blog posts still describe FitCoach-era sync details under the Elevate name.
-- [ ] T5 Case studies + covers for remaining projects (one work unit per project)
+- [x] T5 Case studies + covers for remaining projects (one work unit per project)
   - [x] HFlow — delegated (writer trigger: 2+ non-trivial files)
     - Commit: `git log --grep "HFlow case study"`. `src/content/work/{es,en}/hflow.mdx`, 7 desktop WebP gallery images (1920x1200) in `public/images/work/hflow/`, cover via `pnpm covers hflow` (browser frame, dark teal gradient, dashboard crop). No public link (private product).
     - Cover generator: title now accepts `\n` for a line break (unit RED observed, then GREEN); used by HTG.
@@ -75,20 +75,37 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
     - Title match: DB title "Horus Surgical" prefix-matches case study "Horus".
   - [x] Estudialo AI (rewrite of the existing case study) — delegated (writer trigger: 2+ non-trivial files)
     - Commit: `git log --grep "Estudialo AI case study"`. `estudialo-ai.mdx` es/en rewritten to the 4-section depth (same slug and translationId, neutral Spanish instead of voseo), 6 phone WebP gallery images (780x1688: home, homework help, quiz feedback, chat history, premium plans, notifications) in `public/images/work/estudialo-ai/`, cover via `pnpm covers estudialo-ai` (two phones, purple #6E44C8 gradient). Old `estudialo-ai.svg` removed (no other references). No public link.
-    - Honesty: git shows Facundo's commits are all merges of team PRs (Marco Galvan: Stripe/Gemini; Ignacio Pedrosa: Supabase), so role is "Tech lead · Product & delivery" and the build is told in team voice. publishedAt 2025-09-01 (first commit; last 2025-11-26), year 2025 (was 2025-03-10, inconsistent with git). "Teaches, not cheats" reframed: chat refuses non-educational topics and caps length, quizzes/exercises withhold answers, but homework help gives the final answer with steps. Sample AI replies in the screenshots are mocked demo text and the copy says so; the old "streaming" and "Stripe webhooks" claims were wrong (code uses `generateText` only and reads subscriptions live from Stripe) and were removed. Not described as in production.
+    - Honesty: user-confirmed that this is a client project built entirely from scratch by the Capsule Codes team (Marco Galvan, Ignacio Pedrosa, Facundo and the team), so the build is told in team voice and the Stripe/Gemini/Supabase work is the team's. Role is "Fullstack · AI" (earlier "Tech lead · Product & delivery" was wrong). publishedAt 2025-09-01 (first commit; last 2025-11-26), year 2025 (was 2025-03-10, inconsistent with git). "Teaches, not cheats" reframed: chat refuses non-educational topics and caps length, quizzes/exercises withhold answers, but homework help gives the final answer with steps. Sample AI replies in the screenshots are mocked demo text and the copy says so; the old "streaming" and "Stripe webhooks" claims were wrong (code uses `generateText` only and reads subscriptions live from Stripe) and were removed. Not described as in production.
     - capsulecodes.com: row `6e7bf1cb-bcdf-42ef-967d-aca1a2902287` ("EstudialoAI - AI-Powered Learning Platform") now has the new cover first in `images` and as `image` (`projects/<id>/cover-540d1169.webp`, public URL 200); 9 existing images kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/estudialo.json`.
     - Title match: DB title prefix-matches case study "Estudialo AI" after normalization.
   - [x] UR POV — delegated (writer trigger: 2+ non-trivial files)
     - Commit: `git log --grep "UR POV case study"`. `src/content/work/{es,en}/ur-pov.mdx` (translationId `ur-pov`, order 10), 8 phone WebP gallery images (780x1696 from 1206x2622 simulator captures with invented Durban data: verified onboarding, home, business detail, reviews, events, chat, business dashboard, edit listing) in `public/images/work/ur-pov/`; the existing cover (`cover.webp`, `projects.ts`) was kept, not regenerated.
-    - Honesty: git (all branches) shows Marco Galvan 97 commits (2025-10-22 to 2026-04-29, original build) and Facundo 16 (10 own + 6 PR merges, 2025-11-23 to 2026-10-08: build fixes, auth fixes, EAS env migration and iOS submit config, welcome screen, nearby-listing radius fix, category icons, Android R8, release PRs). Role is "Maintainer · Mobile & releases"; the original build is told as the team's and the features Facundo did are limited to those commits. publishedAt 2025-10-22 (first commit), year 2025. Link: the Google Play listing `com.creative.urpov` (found in `app.json`, listing verified HTTP 200 with title "UR POV - Apps on Google Play" on 2026-10-11); the App Store id in `eas.json` returns no result in the iTunes lookup, so no iOS link and iOS is not described as released.
+    - Honesty: user-confirmed that the Capsule Codes team (Facundo and Marco Galvan) built UR POV from scratch and still maintains it, so the case study is told in team voice covering the original build and the ongoing maintenance/releases. Role is "Fullstack · Mobile" (earlier "Maintainer · Mobile & releases" was wrong). Git (all branches): Marco Galvan 97 commits (2025-10-22 to 2026-04-29), Facundo 16 (2025-11-23 to 2026-10-08). publishedAt 2025-10-22 (first commit), year 2025. Link: the Google Play listing `com.creative.urpov` (found in `app.json`, listing verified HTTP 200 with title "UR POV - Apps on Google Play" on 2026-10-11); the App Store id in `eas.json` returns no result in the iTunes lookup, so no iOS link and iOS is not described as released.
     - capsulecodes.com: row `d00a66a9-0ed9-4505-831b-9481297b6704` ("UR POV") had a different (earlier scratchpad) cover than the repo one (hashes differ), so it now has the repo cover first in `images` and as `image` (`projects/<id>/cover-1cf0c27f.webp`, public URL 200); the 1 existing image was kept (sortOrder shifted +1). Backup of the previous row: scratchpad `db-backup/ur-pov.json`. Title "UR POV" = case study "UR POV".
+  - [x] Anchor — delegated (writer trigger: 2+ non-trivial files)
+    - Commit: `git log --grep "Anchor case study"`. `src/content/work/{es,en}/anchor.mdx` (translationId `anchor`, order 11), 6 phone WebP (780x1696: home, task matrix, timeline, priorities, create task, account) + 1 desktop admin users table (1920x1200) in `public/images/work/anchor/`, cover via `pnpm covers anchor` (two phones, cyan-to-deep-teal gradient from the logo). Excluded: the welcome screen (names the client's founder) and the login-options screen (simulator status bar shows another app's back link). No store links (none in the repo); not described as in production.
+    - Honesty: git shows Facundo with ~531 of 957 mobile commits (2025-01-13 to 2026-07-12, incl. the initial commit, local DB setup, offline-first, sync fixes, calendar, RevenueCat/Superwall, 12-step tutorial, reset-password deep links, Android build fixes), ~76 of 200 backend commits and 3 of 4 admin commits. Role "Fullstack · Mobile lead", publishedAt 2025-01-13 (first commit), year 2025. Screenshots come from a local backend with invented data; the copy says so.
+    - capsulecodes.com: row `af94fb7b-ae72-4356-942d-2088123f02a4` ("Anchor") now has the new cover first in `images` and as `image` (`projects/<id>/cover-fd47533e.webp`, public URL 200), `cover_media_id` set to the new media id; 6 existing images kept (sortOrder shifted +1). Backup: scratchpad `db-backup/anchor.json`. Title "Anchor" = case study "Anchor".
   - Executable bit removed from `scripts/covers/assets/festivalpro/logo.png` (`273a6e6`) before review.
   - Review (Investamind + Festival Pro + Stagionaly + Orbys slice): assessed medium (`slice_budget_reached`); consent granted; reliability lens approved; acknowledged (lineage `review-e7f6162dc117be5e`). Reviewed boundary advances to `273a6e6`.
+  - Review (Horus + Estudialo AI + UR POV slice, `42a98fc`..`c9c156f`): assessed medium (`slice_budget_reached`); consent granted; untracked Anchor files excluded from the candidate; reliability lens approved with one informational suggestion (gallery dimensions in horus.mdx not cross-checked against the files); acknowledged (lineage `review-5f54507d8d685a78`). Reviewed boundary advances to `c9c156f`.
+  - Review (Anchor + UR POV/Estudialo team-voice slice, `e282f69`..`4476726`): assessed medium (under budget, reviewed as the final slice before delivery); consent granted; reliability lens approved with informational findings (UR POV es first-person slip and en lowercase sentence, fixed in a follow-up docs commit; Anchor has no links because the repo has none); acknowledged (lineage `review-c0e85352b082929e`). Reviewed boundary advances to `4476726`.
+  - User confirmed: UR POV and Estudialo AI are client projects built from scratch by the Capsule Codes team (roles "Fullstack · Mobile" and "Fullstack · AI").
+  - User confirmed Horus role "Fullstack · Cloud", publishedAt 2026-05-05, and asked to feature the AWS migration (`8766d69`).
   - User confirmed: publishedAt dates (Investamind 2026-02-15, Stagionaly 2026-05-01, Orbys 2026-04-10) and Investamind role "Fullstack · Mobile". Orbys cover is the weakest (sparse live data); option: local demo seed + recapture.
 
 ## Delivery
 
 Strategy: ask-on-risk; chain strategy cached from stage 2–4: feature-branch-chain, merged top-down.
+
+Pull requests (opened 2026-10-12, merge top-down 05 → 04 → … → tracker → main):
+
+- #18 tracker `feat/project-case-studies` → main: `ee5dbad`..`2002d1c` (T3)
+- #19 `-01-elevate`: `a961c19`..`81b3740` (T4)
+- #20 `-02-hflow-htg`: `ae97bb0`..`810c584`
+- #21 `-03-four-projects`: `624368a`..`3bca673`
+- #22 `-04-horus-estudialo-urpov`: `42a98fc`..`c9c156f`
+- #23 `-05-anchor`: `e282f69`..HEAD
 
 ## Progress / evidence
 
@@ -96,4 +113,4 @@ Strategy: ask-on-risk; chain strategy cached from stage 2–4: feature-branch-ch
 
 ## Next step
 
-T1/T2 asset capture.
+All projects have a case study. PRs #18–#23 open; merge is the user's call. Optional: Orbys recapture.

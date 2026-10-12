@@ -1,7 +1,7 @@
 ---
 title: 'Estudialo AI'
 tagline: 'An AI tutor that explains, not just answers'
-description: 'Estudialo AI is a mobile-first study assistant built by a small Capsule Codes team: a Gemini-powered tutor with 14 study actions, education levels, free and premium plans on Stripe, and Spanish and English prompts. I led the product and the delivery.'
+description: 'Estudialo AI is a mobile-first study assistant that we built from scratch at Capsule Codes for a client: a Gemini-powered tutor with 14 study actions, education levels, free and premium plans on Stripe, and Spanish and English prompts.'
 publishedAt: 2025-09-01
 stack:
   - Next.js 16
@@ -13,7 +13,7 @@ stack:
   - Tailwind CSS 4
   - TanStack Query
   - next-intl
-role: 'Tech lead · Product & delivery'
+role: 'Fullstack · AI'
 year: 2025
 links: {}
 coverImage: /images/work/estudialo-ai/cover.webp
@@ -62,7 +62,7 @@ Most "AI for students" apps are a general chatbot with a school logo: paste the 
 
 ## The solution
 
-Estudialo AI is built by a small Capsule Codes team for a client, and I led the product and the delivery. The student opens the app, picks "Study with AI" and chats. Each message is routed to one of 14 study actions: summarize a text, generate a quiz, practice exercises, explain simply, run a study session, correct a text, help with homework, build a visual outline or a mind map, write an essay, and a few more. The action comes from a button the student taps or, when they just type, from a first Gemini call that classifies the intent.
+Estudialo AI is a client project that we built from scratch at Capsule Codes. The student opens the app, picks "Study with AI" and chats. Each message is routed to one of 14 study actions: summarize a text, generate a quiz, practice exercises, explain simply, run a study session, correct a text, help with homework, build a visual outline or a mind map, write an essay, and a few more. The action comes from a button the student taps or, when they just type, from a first Gemini call that classifies the intent.
 
 Every action has its own prompt, which is combined with the student's education level (elementary, high school or university), the interface language, and the plan. Students can attach photos and PDFs, which are sent as context. Past chats are kept in a history list, and there is a notifications screen and a profile.
 
@@ -72,7 +72,7 @@ The screenshots use invented demo data and sample replies written for the demo, 
 
 ## Stack and key decisions
 
-The team split the work by area: Stripe and Gemini on one side, Supabase on another, and I reviewed and merged the pull requests and kept the product direction. These are the decisions that shaped the app:
+We split the work by area, with Stripe and Gemini on one side and Supabase on another, and merged it through pull requests. These are the decisions that shaped the app:
 
 - **Next.js 16 with the App Router**: a mobile-first interface built with Tailwind 4 and TanStack Query, with `next-intl` for three locales (en-US, es-ES and es-LA)
 - **Vercel AI SDK with Gemini**: `generateText` for everything, no streaming. `gemini-2.5-flash` handles the chat, titles and intent routing, and a multimodal model is used when an image is attached
@@ -95,4 +95,4 @@ Up to two model calls per message is a good trade. The routing call, only needed
 
 Reading the subscription live from Stripe kept the system simple, with no webhooks or mirrored state to drift. The cost is a lookup on every message and a hard dependency on Stripe being reachable, so a local copy kept in sync by webhooks is the first thing we would revisit.
 
-And working as a small team made the lead's job mostly about interfaces: agreeing what each pull request touched, reviewing for the product rather than only the code, and keeping prompts, limits and plan copy consistent across three locales.
+And working as a small team made the job mostly about interfaces: agreeing what each pull request touched, reviewing for the product rather than only the code, and keeping prompts, limits and plan copy consistent across three locales.
