@@ -12,7 +12,7 @@ import Callout from '@/components/mdx/Callout.astro';
 
 Most devs think of offline-first as a feature: "we'll add some caching and call it a day." No. Offline-first is an **architecture decision** that affects every layer of your system, from the database schema to how you resolve conflicts between devices. If you make it late, you'll rewrite half the app.
 
-I know this because I lived it. In [Elevate](/en/work/elevate) (formerly FitCoach) — a fitness coaching app where users need to access their routines at the gym, often with no signal — we made this decision from day one. And it changed everything.
+I know this because I lived it. [Elevate](/en/work/elevate) is a suite of coaching apps for trainers, nutritionists and gyms, where clients need their routines and plans in a gym basement with no signal. I made this decision from day one, and it changed everything. Mobile (Expo) and desktop (Tauri) run the same offline-first model, so everything below applies to both.
 
 ## SQLite as source of truth, not as cache
 
@@ -21,14 +21,14 @@ The most common mistake is treating the local database as a mirror of the server
 In a real offline-first architecture, **the local database is the source of truth**. Every read comes from SQLite. Every write goes to SQLite first. The server is a sync node, not the authority.
 
 ```
-UI → Zustand Store → SQLite (source of truth) → Sync Service → Supabase
+UI → Zustand Store → SQLite (source of truth) → Sync engine → Supabase
 ```
 
 Why? Because if you reverse the direction, every operation depends on the network. And the network, at a gym, on the subway, on a plane, doesn't exist.
 
 ## The pendingSync / syncedAt pattern
 
-Every table in the database has two extra fields:
+Every synced table has two extra fields:
 
 ```typescript
 {
@@ -40,32 +40,30 @@ Every table in the database has two extra fields:
 The flow is straightforward:
 
 1. The user makes a change. It's saved to SQLite with `pendingSync: true`.
-2. The sync service (every 5 minutes or manual) reads all records with `pendingSync: true`.
-3. Pushes them to Supabase. On success, sets `pendingSync: false` and updates `syncedAt`.
-4. Then pulls remote changes and upserts them into SQLite.
+2. A sync cycle runs every 5 minutes, when connectivity comes back, or on demand.
+3. Each cycle pushes the pending rows to Supabase. On success it clears `pendingSync` and updates `syncedAt`.
+4. Then it pulls remote changes and upserts them into SQLite, skipping any row that still has `pendingSync` set.
+
+One detail that bit me: the push response arrives long after you read the pending set, and the user kept typing in between. If you clear the flag unconditionally, you un-flag an edit that was never sent, and the pull in the same cycle reverts it. So the engine re-reads the row after the push and only clears `pendingSync` if it is still the revision it sent.
 
 <Callout type="warning" title="Sync ordering matters">
-  If you have relationships between tables, sync order matters. You can't sync exercises before the
-  routines that contain them. In Elevate the order is: `profiles → trainer_clients → routines →
-  routine_days → exercises → exercise_logs`. Parent before child, always.
+  A cycle has a fixed order: first the queue of server-authoritative actions (more on that below),
+  then the table pushes, then the pull. Tables are pushed in the order each app configures, parents
+  before children (in the coach app: `profiles`, `professional_clients`, `routines`, `routine_days`,
+  `exercises`, `exercise_logs`, and so on). Within a table, deletes go before upserts, so a rename
+  followed by a delete can never leave a renamed row on the server.
 </Callout>
 
-This pattern is deliberately simple. It's not a CRDT, not an event log, not a Merkle tree. It's a boolean flag and a timestamp. Is it perfect? No. Does it cover 95% of real-world cases? Yes.
+This pattern is deliberately simple. It's not a CRDT and not a Merkle tree. It's a boolean flag and a timestamp, plus a few guards around it. Is it perfect? No. Does it cover most real-world cases? Yes.
 
-## Conflict resolution: last-write-wins
+## Conflict resolution: pick it per domain
 
 "But what happens if two devices edit the same thing?" This is the question that paralyzes teams. The honest answer: **it depends on the domain**.
 
-In Elevate, each data type has a single writer. The trainer creates routines, the client logs exercises. There's no real conflict. So the strategy is the simplest possible: **last-write-wins** via upsert.
+In Elevate most data has a single writer: the trainer creates routines, the client logs exercises. So the default strategy is the simplest possible. Unpushed local work always wins over a pull, and once a row is pushed, the server applies it with an upsert, so the last write wins.
 
 ```typescript
-await db
-  .insert(schema.routines)
-  .values({ ...remoteRoutine, pendingSync: false, syncedAt: new Date() })
-  .onConflictDoUpdate({
-    target: schema.routines.id,
-    set: { ...remoteRoutine, syncedAt: new Date() },
-  });
+const { error } = await supabase.from(table).upsert(rows, { onConflict: 'id' });
 ```
 
 Is this acceptable for a real-time collaborative editor? Absolutely not. Is it correct for an app where the trainer and client operate on different data? Absolutely.
@@ -73,8 +71,43 @@ Is this acceptable for a real-time collaborative editor? Absolutely not. Is it c
 <Callout type="danger" title="Don't over-engineer">
   If your domain has multiple writers on the same records, last-write-wins will cause data loss. In
   that case you need CRDTs (Automerge, Yjs) or an event log with manual merge. But don't start there
-  — 80% of apps don't need it, and the complexity it adds is brutal.
+  — most apps don't need it, and the complexity it adds is brutal.
 </Callout>
+
+## Actions the server must decide: a queue, not a flag
+
+Last-write-wins breaks down for things only the server may decide, like creating a gym or booking a class with limited capacity. A flag on a row is not enough, because the outcome is not "my copy of the data", it is "the server accepted this action".
+
+For those I queue the call offline as an RPC. Each cycle drains the queue **FIFO, before any table push**, because a queued `create_gym` has to exist before any row or RPC that references that gym. Two properties make it safe:
+
+- **Idempotency.** The client generates the UUIDs, so replaying a call after a lost response doesn't create a duplicate.
+- **Bounded retries.** An RPC that keeps failing is retried up to a limit, then moved to a dead-letter list and the queue keeps draining. A single poison call can't freeze everything behind it, and nothing is silently dropped. Table rows get the same treatment, but only when the server rejects the row's own data as malformed (an outage or a missing parent is retried indefinitely), and the local row is never deleted.
+
+## Deletes are the hard part
+
+Pulls are upserts. Nothing in an upsert loop can notice that a row it used to receive stopped arriving, so a row deleted on one device lives on forever on all the others. I hit this when a plan deleted on desktop stayed active on a phone.
+
+The fix is reconciliation: after a pull, drop the local rows that the server no longer returns. That is dangerous, because "absent" is only evidence of deletion if the pull saw the whole scope. And Supabase makes that hard to know: PostgREST silently caps every response at `max_rows` (1000 by default). A table with 1500 rows answers with HTTP 200, no error, and 1000 rows, which looks exactly like a pull where 500 rows were deleted.
+
+So the rules are:
+
+- **Page with a keyset cursor**, not offsets. Offset pagination skips a row when a concurrent insert shifts the pages, and a skipped row looks deleted.
+- **The fetch reports whether it reached the end** of its scope. Only a complete payload is allowed to drop anything.
+- **Never drop a row with unpushed local changes.**
+
+If any of that is in doubt, the reconcile does nothing. Not deleting is always the safe failure.
+
+## Deterministic IDs instead of coordination
+
+Sometimes two devices legitimately generate the same logical record. In Elevate's gym product, class instances are materialized from a template and a date. With random IDs, two devices regenerating the same week mint different primary keys, and the push collides with the server's unique constraint on `(template_id, date)`.
+
+Instead of making the devices agree, I made the ID a pure function of its inputs: an FNV-1a hash of `(template_id, date)`, formatted as a UUID.
+
+```typescript
+const id = gymClassInstanceId(templateId, dateIso);
+```
+
+Both devices produce the same primary key, so the upsert dedupes on its own. No coordination, no locks.
 
 ## When offline-first is overkill
 
@@ -83,32 +116,34 @@ Not every app needs this. Before you dive into the complexity of bidirectional s
 1. **Do users actually operate without a network?** If your app is an analytics dashboard used only in the office, you don't need offline-first. You need a good loading state.
 2. **How much mutable state is there?** If the app is mostly reads (a catalog, a blog reader), a service worker with cache-first is enough. You don't need local SQLite.
 3. **Do you have multiple writers on the same data?** If yes, conflict resolution complexity multiplies exponentially. Think twice.
-4. **Can your team maintain this?** Bidirectional sync is code that breaks silently. If you don't have automated tests and robust logging, it will rot in production without you noticing.
+4. **Can your team maintain this?** Bidirectional sync is code that breaks silently. If you don't have automated tests and robust logging, it will rot without you noticing.
 
 ## The structure that works
 
-If you've decided that yes, your app needs offline-first, here's the structure I recommend:
+If you've decided that yes, your app needs offline-first, here's the structure I recommend. The sync engine is not app code: in Elevate it's a shared package (`@elevate/sync`) used by both the Expo and Tauri apps, configured with a list of tables to push and a pull handler.
 
 ```
-lib/
-  db.ts           → SQLite initialization + helpers
-  schema.ts       → Schema with sync fields on every table
-  syncService.ts  → Push (local→remote) + Pull (remote→local)
+sync package (shared by mobile and desktop)
+  engine      → cycle: drain RPC queue → push tables → pull
+  reconcile   → decide which local rows a complete pull proves deleted
+  paginate    → keyset pagination that reports completeness
 
-stores/
-  syncStore.ts    → Sync state (isOnline, lastSync, isSyncing)
-  [domain]Store.ts → CRUD that reads/writes only to SQLite
+each app
+  db + schema → SQLite with sync fields on every table
+  sync config → push tables (parents first), pull handler, mappers
+  stores      → CRUD that reads/writes only to SQLite
 ```
 
-The key is that **domain stores don't know a server exists**. They read and write SQLite. Period. The sync service is a separate process that reconciles. This separation is what makes the app work the same with or without a network.
+The key is that **domain stores don't know a server exists**. They read and write SQLite. Period. The sync engine is a separate process that reconciles. This separation is what makes the app work the same with or without a network, and what lets two very different clients share one engine.
 
 ## What I'd take to the next app
 
-If I were starting an offline-first project from scratch today, I'd change two things:
+If I were starting an offline-first project from scratch today, I'd do three things from day one:
 
-1. **Add a `version` field to every record** to detect conflicts before upsert, instead of blindly assuming last-write-wins.
-2. **Implement a local operation log** for granular retry instead of re-syncing entire tables.
+1. **Queue server-authoritative actions as idempotent RPCs** with bounded retries and dead letters, instead of retrofitting it after the first stuck booking.
+2. **Treat deletes as a first-class problem.** Plan the reconciliation and the pagination before the first user deletes anything.
+3. **Prefer deterministic IDs** wherever two devices can create the same logical record.
 
-But here's the thing: these improvements add complexity. In Elevate I didn't need them because the single-writer model allowed it. Know your domain before you over-engineer.
+And I'd still keep the flag-and-timestamp core, because it holds up. These additions each exist because a specific failure forced them. Know your domain before you over-engineer, and let real failures tell you what to add.
 
 Offline-first architecture isn't glamorous. There are no trendy frameworks that solve it with a single import. It's plumbing work: pipes, valves, and knowing where it might leak. But when your user opens the app on the subway and everything works as if they had 5G — that's the payoff.
