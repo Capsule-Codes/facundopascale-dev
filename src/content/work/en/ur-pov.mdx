@@ -1,0 +1,103 @@
+---
+title: 'UR POV'
+tagline: 'Verified local recommendations, from real people'
+description: 'UR POV is a React Native app for finding trusted local businesses in South Africa: reviews, events, chat and a dashboard for business owners. We built it from scratch at Capsule Codes and still maintain it: Supabase backend, EAS release pipelines for iOS, Android and Huawei, nearby-listing fixes and R8 hardening.'
+publishedAt: 2025-10-22
+stack:
+  - Expo 54
+  - React Native
+  - TypeScript
+  - Expo Router
+  - Supabase
+  - EAS Build
+  - GitHub Actions
+role: 'Fullstack · Mobile'
+year: 2025
+links:
+  live: https://play.google.com/store/apps/details?id=com.creative.urpov
+coverImage: /images/work/ur-pov/cover.webp
+gallery:
+  - src: /images/work/ur-pov/onboarding-verified.webp
+    alt: 'UR POV onboarding carousel slide about verified users and verified businesses over a photo of a person using a phone'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/home.webp
+    alt: 'UR POV home with a search bar, a grid of business categories and a list of new business listings'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/business-detail.webp
+    alt: 'UR POV business detail with the description, photo album, rating, address, phone and opening hours'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/reviews.webp
+    alt: 'UR POV reviews list with usernames, star ratings, comments, photo thumbnails and relative dates'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/events.webp
+    alt: 'UR POV events list with an image, date, venue and city for each local event'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/chat.webp
+    alt: 'UR POV chat thread between a user and a business about a custom order'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/business-dashboard.webp
+    alt: 'UR POV business owner dashboard with analytics for views, clicks, reviews and rating, and the latest review'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/ur-pov/edit-listing.webp
+    alt: 'UR POV edit listing form with contact number, address pin, description, tags, photo uploads and opening hours per day'
+    kind: phone
+    width: 780
+    height: 1696
+lang: en
+translationId: ur-pov
+featured: true
+order: 10
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Finding a good local business usually means trusting a star rating you cannot verify. For a city directory to be useful, people have to believe the reviews are real and the businesses are who they say they are. The client wanted that trust in a mobile app for South Africa, for two audiences with different needs: people looking for places nearby, and business owners who want to be found and to hear from customers.
+
+## The solution
+
+UR POV is a mobile app that we built from scratch at Capsule Codes for a client, and we still maintain it. After the first build, the ongoing work (fixes, client-requested changes and releases) kept going through the same team. Users browse categories, see the newest listings near them, read and write reviews with photos, check opening hours, follow local events and message businesses. Business owners get their own side of the app with a dashboard of views, clicks and reviews, and a form to edit the listing. People can also browse as guests, without an account.
+
+The app is Expo 54 with React Native 0.81 and Expo Router, written in TypeScript, with the React Compiler enabled. The backend is Supabase: Auth, Postgres through PostgREST, Storage, Realtime and edge functions for registration and for creating a business.
+
+The screenshots come from a local environment with invented data. The business names, people, reviews and events are made up, and the logos and photos of the businesses are placeholders.
+
+## Stack and key decisions
+
+These are the decisions that shaped the app, from the original build and from the maintenance since:
+
+- **Role decides the app**: at login the app resolves whether the account owns a business, and Expo Router route groups send each person to the right place: onboarding, auth, guest, user, business, subscription
+- **Feature-sliced code**: `features/` holds auth, business, messaging, onboarding and more, each with its own hooks, services, screens and types, so a change to reviews or chat stays in one folder
+- **Reviews with guardrails**: a cooldown per author and business, photo uploads to a storage bucket, and a client-side profanity filter fed from a table of blocked words with a local cache as fallback
+- **Chat that expires**: conversations and messages live in Postgres, arrive through a Realtime subscription with unread counters, and are deleted after 30 days, which the inbox says
+- **Nearby listings, fixed at the query**: the home screen showed an empty list when new businesses were added in other cities, because it fetched the 20 newest businesses globally and filtered them by distance on the device. We moved the filter to the query with a bounding box on latitude and longitude, then refined the result by exact distance within 25 km
+- **A repeatable release path**: GitHub Actions workflows build iOS, Android and Huawei releases on EAS Build, environment variables live in EAS, and the repository is mirrored across two remotes with the same pull request flow. Android release builds use R8 minification and resource shrinking, which cleared a Play Console warning about obfuscation
+
+<Callout type="info" title="Filter before you limit">
+  A limit applied before a filter silently changes what the filter can find. Moving the distance
+  check into the query meant the 20 results are the 20 nearest, not the 20 newest that happen to be
+  nearby.
+</Callout>
+
+## What I learned
+
+Maintaining a project after launch is mostly reading carefully. The nearby-listing bug came from a reasonable decision made when there were few businesses, and it only showed up once there were enough of them in other cities.
+
+Release work is product work. A missing service account key and a build queue decide when a fix reaches people more than the fix itself, so we wrote the path down instead of keeping it in someone's head. The app has no over-the-air updates, so every JavaScript fix needs a new store build.
+
+And client feedback is a good source of small, high-value changes. Bigger category icons, new icons for events and bridal, and a new More button looked like polish, but they came straight from the client's feedback on how the home screen looks and feels in use.

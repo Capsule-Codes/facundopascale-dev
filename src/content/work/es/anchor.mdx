@@ -1,0 +1,98 @@
+---
+title: 'Anchor'
+tagline: 'Un planificador de tareas que funciona sin conexión y sincroniza cuando puede'
+description: 'Anchor es un planificador de tareas en React Native con prioridades, matriz de tareas, línea de tiempo, tareas recurrentes y recordatorios. Inicié la app, construí su base de datos local y la sincronización offline-first, el flujo de suscripciones y el tutorial de 12 pasos, y trabajé en el backend y en el panel de administración.'
+publishedAt: 2025-01-13
+stack:
+  - Expo 54
+  - React Native
+  - TypeScript
+  - SQLite
+  - Zustand
+  - Express
+  - PostgreSQL
+  - RevenueCat
+role: 'Fullstack · Líder mobile'
+year: 2025
+coverImage: /images/work/anchor/cover.webp
+gallery:
+  - src: /images/work/anchor/home.webp
+    alt: 'Pantalla de inicio de Anchor con las tareas de hoy como tarjetas de color según la prioridad, con hora, chips de repetición y ubicación, y una sección de hechas'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/task-matrix.webp
+    alt: 'Matriz de tareas de Anchor con cuatro cuadrantes: urgente e importante, importante no urgente, urgente no importante, y ni urgente ni importante'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/timeline.webp
+    alt: 'Línea de tiempo de Anchor con tarjetas de tareas por día y un selector de mes y año debajo'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/priorities.webp
+    alt: 'Vista de prioridades de Anchor con columnas para tareas Top, Medium, Low y Miscellaneous'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/create-task.webp
+    alt: 'Formulario de nueva tarea de Anchor con selector de tarea o evento, botón de entrada por voz, prioridad, fecha, hora, ubicación, repetición y recordatorios'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/account.webp
+    alt: 'Pantalla de cuenta de Anchor con el estado de acceso, cerrar sesión, eliminar cuenta y enlaces legales'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/admin-users.webp
+    alt: 'Panel de administración de Anchor con una tabla de usuarios con búsqueda, fecha de registro, estado de suscripción, selector de estado de acceso y botón para restablecer la contraseña'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: es
+translationId: anchor
+featured: true
+order: 11
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+La mayoría de las apps de tareas tratan todas las tareas igual, y dejan de servir apenas se cae la conexión. El cliente quería un planificador donde la primera pregunta fuera qué es lo más importante: tareas ordenadas por prioridad, una matriz de urgente e importante, una línea de tiempo por día y recordatorios que lleguen a tiempo. Y tenía que seguir funcionando en un tren o en un avión, con los cambios llegando al servidor más tarde.
+
+## La solución
+
+Anchor es una app móvil construida por Capsule Codes para un cliente, con un backend y un panel de administración. Las personas crean tareas y eventos con prioridad, fecha, hora, ubicación, regla de repetición y recordatorios, o los dictan por voz. Los ven en la pantalla de inicio como tarjetas de color según la prioridad, en una Matriz de tareas de cuatro cuadrantes, en una vista de prioridades y en una línea de tiempo por día. El acceso es con Apple, Google o correo electrónico, y un estado de acceso gratuito o pago define qué puede hacer cada cuenta.
+
+Inicié el proyecto móvil en enero de 2025 y trabajé en él hasta julio de 2026, junto con un equipo de otros desarrolladores, y también trabajé en el backend y en el panel de administración. El tutorial, el flujo de suscripciones, la sincronización y los arreglos de release que siguen son las partes que tocaron mis commits.
+
+La app móvil usa Expo 54 con React Native 0.81, TypeScript, React Navigation y Zustand. El backend es Node con Express, TypeORM y PostgreSQL. El panel de administración usa Vite, React y MUI.
+
+Las capturas provienen de un entorno local con una copia del backend, y los datos son inventados: los usuarios, las tareas y los lugares son ficticios, y los pagos y las notificaciones push están desactivados en ese build.
+
+## Stack y decisiones clave
+
+- **Offline-first, con una base SQLite local**: las tareas viven primero en una tabla local, y la app sincroniza en ambos sentidos con el servidor cuando cambia la red o el estado de la app, con debounce y un intervalo mínimo entre ejecuciones. Las tareas eliminadas se marcan como borradas y como no sincronizadas hasta que el servidor confirma, de modo que una eliminación no puede volver y una tarea nueva no se crea dos veces
+- **Tareas recurrentes expandidas en el dispositivo**: las reglas de repetición se expanden a fechas en el cliente, así que el inicio y la línea de tiempo funcionan sin conexión, y un gestor de zonas horarias mantiene las fechas consistentes
+- **Recordatorios en dos capas**: las notificaciones locales se programan en el dispositivo, y el backend envía notificaciones push mediante Firebase desde tareas cron que se ejecutan de forma programada
+- **Suscripciones con una fuente de verdad clara**: primero se consulta RevenueCat, con el estado de acceso del backend como respaldo, y los estados admin y gratis ilimitado omiten el paywall. Superwall muestra el paywall. Agregué el estado gratis ilimitado para acceso gratuito de por vida, y el panel de administración puede cambiarlo
+- **Un tutorial que sobrevive a una reinstalación**: el tutorial de onboarding de 12 pasos guarda su estado de finalización por usuario en el servidor, mediante un endpoint `PATCH /me/tutorial`, y una cuenta de prueba de QA se crea al iniciar para poder repetir el tutorial
+- **Flujos de autenticación y recuperación**: acceso con Apple, Google y correo, correos normalizados y un único lugar para manejar los errores del servidor. Los enlaces de restablecimiento de contraseña abren la app mediante una página puente que requiere un toque, que reforcé al descubrir que abría la app sin él
+- **Un panel de administración pequeño**: acceso solo para administradores, una tabla de usuarios con búsqueda, cambios de estado de acceso, generación de enlaces de restablecimiento de contraseña y exportación a Excel
+
+<Callout type="info" title="No cerrar sesión ante un 401">
+  En una app offline-first, una respuesta no autorizada durante la sincronización no es motivo para
+  borrar la sesión ni los datos locales. Anchor lo trata de forma conservadora y concilia con el
+  servidor más tarde, en lugar de descartar lo que la persona creó en el dispositivo.
+</Callout>
+
+## Aprendizajes
+
+Offline-first es sobre todo cuestión de los casos borde de la sincronización. Los bugs nunca estuvieron en el camino feliz: una tarea eliminada de un lado y editada del otro, un reintento que creó un duplicado, una respuesta que llegó cuando la persona ya había seguido adelante. Las marcas de qué está sincronizado y qué está borrado, y la conciliación con el servidor, sirvieron más que cualquier cantidad de reintentos.
+
+Un tutorial es una funcionalidad con su propio estado. Guardarlo en el servidor, con una cuenta de prueba para repetirlo, hizo más rápidas las rondas de QA y mantuvo la experiencia igual después de reinstalar.
+
+Y el trabajo de release es parte del producto. La memoria de los builds de Android, un enlace profundo que necesitaba un toque y una actualización que interrumpía un inicio de sesión fueron arreglos que ninguna captura muestra, y definieron si una versión podía salir.
