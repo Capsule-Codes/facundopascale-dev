@@ -98,10 +98,19 @@ Covers are inconsistent (plain SVGs vs the UR POV cover) and most showcase proje
 
 Strategy: ask-on-risk; chain strategy cached from stage 2–4: feature-branch-chain, merged top-down.
 
+Pull requests (opened 2026-10-12, merge top-down 05 → 04 → … → tracker → main):
+
+- #18 tracker `feat/project-case-studies` → main: `ee5dbad`..`2002d1c` (T3)
+- #19 `-01-elevate`: `a961c19`..`81b3740` (T4)
+- #20 `-02-hflow-htg`: `ae97bb0`..`810c584`
+- #21 `-03-four-projects`: `624368a`..`3bca673`
+- #22 `-04-horus-estudialo-urpov`: `42a98fc`..`c9c156f`
+- #23 `-05-anchor`: `e282f69`..HEAD
+
 ## Progress / evidence
 
 - Branch `feat/project-case-studies` created from main 36826ed.
 
 ## Next step
 
-All projects have a case study. Pending: optional Orbys recapture, then push + PR when the user decides.
+All projects have a case study. PRs #18–#23 open; merge is the user's call. Optional: Orbys recapture.
