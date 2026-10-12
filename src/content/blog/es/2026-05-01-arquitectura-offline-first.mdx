@@ -10,7 +10,7 @@ draft: true
 
 import Callout from '@/components/mdx/Callout.astro';
 
-La mayoría de los devs piensan en offline-first como un feature: "agregamos cache y listo." No. Offline-first es una **decisión de arquitectura** que afecta cada capa de tu sistema, desde el schema de la base de datos hasta cómo resuelves conflictos entre dispositivos. Si la tomas tarde, vas a reescribir la mitad de la app.
+La mayoría de los devs piensan en offline-first como un feature: "agregamos cache y listo." No. Offline-first es una **decisión de arquitectura** que afecta cada capa de tu sistema, desde el schema de la base de datos hasta cómo resolvés conflictos entre dispositivos. Si la tomás tarde, vas a reescribir la mitad de la app.
 
 Lo sé porque lo viví. [Elevate](/es/trabajo/elevate) es una suite de apps de coaching para entrenadores, nutricionistas y gimnasios, donde los clientes necesitan sus rutinas y planes en el subsuelo de un gimnasio, sin señal. Tomé esta decisión desde el día uno, y cambió todo. Mobile (Expo) y desktop (Tauri) corren el mismo modelo offline-first, así que todo lo que sigue aplica a ambos.
 
@@ -24,7 +24,7 @@ En una arquitectura offline-first real, **la base de datos local es la fuente de
 UI → Zustand Store → SQLite (source of truth) → Sync engine → Supabase
 ```
 
-¿Por qué? Porque si inviertes la dirección, cada operación depende de la red. Y la red, en un gimnasio, en el subte, en un avión, no existe.
+¿Por qué? Porque si invertís la dirección, cada operación depende de la red. Y la red, en un gimnasio, en el subte, en un avión, no existe.
 
 ## El patrón pendingSync / syncedAt
 
@@ -44,7 +44,7 @@ El flujo es simple:
 3. Cada ciclo sube las filas pendientes a Supabase. Si tiene éxito, limpia `pendingSync` y actualiza `syncedAt`.
 4. Después baja los cambios remotos y los hace upsert en SQLite, salteando cualquier fila que todavía tenga `pendingSync`.
 
-Un detalle que me mordió: la respuesta del push llega mucho después de haber leído el set de pendientes, y el usuario siguió escribiendo mientras tanto. Si limpias el flag sin condiciones, des-marcas una edición que nunca se envió, y el pull del mismo ciclo la revierte. Por eso el engine vuelve a leer la fila después del push y solo limpia `pendingSync` si sigue siendo la revisión que envió.
+Un detalle que me mordió: la respuesta del push llega mucho después de haber leído el set de pendientes, y el usuario siguió escribiendo mientras tanto. Si limpiás el flag sin condiciones, des-marcás una edición que nunca se envió, y el pull del mismo ciclo la revierte. Por eso el engine vuelve a leer la fila después del push y solo limpia `pendingSync` si sigue siendo la revisión que envió.
 
 <Callout type="warning" title="Orden de sincronización">
   Un ciclo tiene un orden fijo: primero la cola de acciones que decide el servidor (más abajo),
@@ -57,7 +57,7 @@ Un detalle que me mordió: la respuesta del push llega mucho después de haber l
 
 Este patrón es deliberadamente simple. No es un CRDT ni un Merkle tree. Es un flag booleano y un timestamp, más unas cuantas guardas alrededor. ¿Es perfecto? No. ¿Cubre la mayoría de los casos reales? Sí.
 
-## Resolución de conflictos: elígela por dominio
+## Resolución de conflictos: elegila por dominio
 
 "¿Pero qué pasa si dos dispositivos editan lo mismo?" Esta es la pregunta que paraliza a los equipos. La respuesta honesta: **depende del dominio**.
 
@@ -67,11 +67,11 @@ En Elevate la mayoría de los datos tiene un solo escritor: el entrenador crea r
 const { error } = await supabase.from(table).upsert(rows, { onConflict: 'id' });
 ```
 
-¿Es esto aceptable para un editor colaborativo en tiempo real? Para nada. ¿Es correcto para una app donde el trainer y el client operan sobre datos distintos? Absolutamente.
+¿Es esto aceptable para un editor colaborativo en tiempo real? Ni en pedo. ¿Es correcto para una app donde el trainer y el client operan sobre datos distintos? Absolutamente.
 
 <Callout type="danger" title="No te pases de listo">
   Si tu dominio tiene escritores múltiples sobre los mismos registros, last-write-wins te va a
-  causar pérdida de datos. En ese caso necesitas CRDTs (Automerge, Yjs) o un log de eventos con
+  causar pérdida de datos. En ese caso necesitás CRDTs (Automerge, Yjs) o un log de eventos con
   merge manual. Pero no arranques por ahí — la mayoría de las apps no lo necesita, y la complejidad
   que agrega es brutal.
 </Callout>
@@ -113,12 +113,12 @@ Ambos dispositivos producen la misma clave primaria, así que el upsert deduplic
 
 ## Cuándo offline-first es overkill
 
-No toda app necesita esto. Antes de embarrarte en la complejidad de sync bidireccional, pregúntate:
+No toda app necesita esto. Antes de embarrarte en la complejidad de sync bidireccional, preguntate:
 
-1. **¿Los usuarios realmente operan sin red?** Si tu app es un dashboard de analytics que solo se usa en la oficina, no necesitas offline-first. Necesitas un buen loading state.
-2. **¿Cuánto estado mutable hay?** Si la app es mayormente lectura (un catálogo, un blog reader), un service worker con cache-first te alcanza. No necesitas SQLite local.
-3. **¿Tienes escritores múltiples sobre los mismos datos?** Si la respuesta es sí, la complejidad de resolución de conflictos se multiplica exponencialmente. Piénsalo dos veces.
-4. **¿Tu equipo puede mantener esto?** Sync bidireccional es código que rompe en silencio. Si no tienes tests automatizados y logging robusto, se te va a pudrir sin que te des cuenta.
+1. **¿Los usuarios realmente operan sin red?** Si tu app es un dashboard de analytics que solo se usa en la oficina, no necesitás offline-first. Necesitás un buen loading state.
+2. **¿Cuánto estado mutable hay?** Si la app es mayormente lectura (un catálogo, un blog reader), un service worker con cache-first te alcanza. No necesitás SQLite local.
+3. **¿Tenés escritores múltiples sobre los mismos datos?** Si la respuesta es sí, la complejidad de resolución de conflictos se multiplica exponencialmente. Pensalo dos veces.
+4. **¿Tu equipo puede mantener esto?** Sync bidireccional es código que rompe en silencio. Si no tenés tests automatizados y logging robusto, se te va a pudrir sin que te des cuenta.
 
 ## La estructura que funciona
 
@@ -146,6 +146,6 @@ Si arrancara un proyecto offline-first de cero hoy, haría tres cosas desde el d
 2. **Tratar los borrados como un problema de primera clase.** Planear la reconciliación y la paginación antes de que el primer usuario borre algo.
 3. **Preferir IDs determinísticos** donde dos dispositivos puedan crear el mismo registro lógico.
 
-Y mantendría el núcleo de flag y timestamp, porque aguanta. Cada una de estas adiciones existe porque una falla concreta la forzó. Conoce tu dominio antes de sobre-ingeniar, y deja que las fallas reales te digan qué agregar.
+Y mantendría el núcleo de flag y timestamp, porque aguanta. Cada una de estas adiciones existe porque una falla concreta la forzó. Conocé tu dominio antes de sobre-ingeniar, y dejá que las fallas reales te digan qué agregar.
 
 La arquitectura offline-first no es glamorosa. No hay frameworks trendy que la resuelvan con un import. Es laburo de fontanería: tuberías, válvulas, y saber por dónde puede perder. Pero cuando tu usuario abre la app en el subte y todo funciona como si tuviera 5G, esa es la recompensa.
