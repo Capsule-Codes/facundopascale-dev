@@ -54,7 +54,7 @@ test.describe('work list', () => {
 
       test('keeps unmatched case studies reachable', async ({ page }) => {
         await page.goto(c.path);
-        await expect(page.locator('section#case-studies a[href*="fitcoach"]')).toHaveCount(1);
+        await expect(page.locator('section#case-studies a[href*="elevate"]')).toHaveCount(1);
       });
 
       test('has no horizontal overflow at 375px', async ({ page }) => {

@@ -1,0 +1,105 @@
+---
+title: 'Happiness To Go'
+tagline: 'A wellness app built on five small daily habits'
+description: 'Happiness To Go is an Expo app for building daily habits across five dimensions, with courses, a journal and a community. Supabase with RLS is the backend, and purchases are verified server-side against RevenueCat.'
+publishedAt: 2026-01-08
+stack:
+  - Expo SDK 54
+  - Expo Router 6
+  - React Native
+  - TypeScript
+  - Supabase
+  - PostgreSQL
+  - RevenueCat
+  - Next.js
+  - Tailwind CSS
+role: 'Mobile · Fullstack'
+year: 2026
+links: {}
+coverImage: /images/work/happiness-to-go/cover.webp
+gallery:
+  - src: /images/work/happiness-to-go/home.webp
+    alt: 'Happiness To Go home screen with the Daily Glow Wheel and a four day streak'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/home-activities.webp
+    alt: 'Happiness To Go list of today’s glow activities with three of five completed'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/courses.webp
+    alt: 'Happiness To Go course catalog with a featured course and owned courses'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/course-detail.webp
+    alt: 'Happiness To Go course detail with lesson progress and course content'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/journal.webp
+    alt: 'Happiness To Go journal with entries tagged by glow category'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/community.webp
+    alt: 'Happiness To Go community feed with posts, likes and comments'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/calendar.webp
+    alt: 'Happiness To Go calendar with the streak and the days the user completed every glow'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/landing.webp
+    alt: 'Happiness To Go landing page with the app description and store buttons'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: en
+translationId: happiness-to-go
+featured: true
+order: 5
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Wellness apps tend to be either a checklist or a content library, and people drop both after a week. Happiness To Go wanted something lighter: five small practices a day, a streak that rewards consistency, deeper courses when you want them, and other people nearby. It also had to make money without trusting the phone about who paid for what.
+
+## The solution
+
+Happiness To Go is a mobile app, built by Capsule Codes for a client, with a static landing page next to it. Every day the user completes five "glow" activities: Gratitude, Energy, Kindness, Connection and Calm. They are tracked on a glow wheel and a calendar, with a journal, a community feed and educational courses around them.
+
+The app is Expo SDK 54 with Expo Router 6. The backend is a single Supabase project: Auth, Postgres with row level security, three Edge Functions and 17 SQL migrations. Money goes through RevenueCat: a subscription unlocks everything, and individual courses are one-time purchases. The landing page is Next.js 15, exported as static files.
+
+The screenshots use invented demo data.
+
+## Stack and key decisions
+
+- **Mobile**: Expo SDK 54, React Native 0.81, Expo Router 6 with typed routes, TypeScript in strict mode
+- **One data layer**: a single Supabase client and one `database.ts` module that owns every query, so there is no second place that knows the schema
+- **One answer to "can this user see this?"**: a `useAccess()` hook resolves a fixed precedence: admin, premium, internal trial, purchased, gifted, blocked. The trial lives in a table filled by a database trigger on sign-up, and covers the glow wheel and calendar but never courses
+- **Purchases verified by the server**: after a course purchase, the app calls an Edge Function that asks the RevenueCat REST API whether that transaction belongs to this user, checks that the product tier matches the course tier, and only then writes the grant with the service role. The client never writes its own grants
+- **Webhook as the safety net**: a second Edge Function receives RevenueCat events, fails closed when its secret is missing, reconciles purchases that the app did not report, and revokes grants on cancellation or refund by transaction id
+- **Price tiers as data**: a map from course tier and price tier (regular, sale, flash) to store product ids, with a separate suffix on iOS because Apple does not let you reuse a deleted product id
+- **Restrictive RLS**: the first policies were wide open, and a later migration replaced them with owner-or-admin rules backed by an `app_admins` table. A weekly report Edge Function runs from `pg_cron` and sends email through Resend
+
+<Callout type="warning" title="Never trust the client for entitlements">
+  The app can ask for a course grant, but it cannot give itself one. Row level security blocks the
+  write, and the only path that creates a purchased grant is the Edge Function that verified the
+  receipt with RevenueCat.
+</Callout>
+
+## What I learned
+
+Put the access decision in one place. With four ways to get access (subscription, trial, purchase, gift), scattering the checks across screens guarantees that two of them disagree. One hook with an explicit order made every screen simpler.
+
+Server-verified purchases cost more up front and pay for themselves. A client that says "I paid" is a request, not a fact, and the Edge Function plus the webhook let the two sides check each other.
+
+Tighten security in migrations, not in memory. Starting with permissive policies and replacing them in a dedicated migration left a clear, reviewable history of what changed and why.
+
+And store constraints are part of the data model. A product id Apple will not let you reuse is the kind of detail that is cheaper to encode in a mapping than to rediscover in production.

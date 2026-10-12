@@ -9,7 +9,7 @@ import {
 const studies: CaseStudyRef[] = [
   { slug: 'estudialo-ai', title: 'Estudialo AI' },
   { slug: 'festivalpro', title: 'Festival Pro' },
-  { slug: 'fitcoach', title: 'FitCoach' },
+  { slug: 'elevate', title: 'Elevate' },
 ];
 
 describe('normalizeTitle', () => {
@@ -50,10 +50,22 @@ describe('unmatchedCaseStudies', () => {
       ['Festival PRO', 'EstudialoAI - Learning', 'UR POV'],
       studies
     );
-    expect(left.map((s) => s.slug)).toEqual(['fitcoach']);
+    expect(left.map((s) => s.slug)).toEqual(['elevate']);
   });
 
   it('returns all studies when there are no projects', () => {
     expect(unmatchedCaseStudies([], studies)).toHaveLength(3);
+  });
+});
+
+describe('Elevate case study', () => {
+  const elevate: CaseStudyRef[] = [{ slug: 'elevate', title: 'Elevate' }];
+
+  it.each(['Elevate', 'Elevate Coach', 'Elevate - Coaching Suite'])('matches "%s"', (title) => {
+    expect(findCaseStudy(title, elevate)?.slug).toBe('elevate');
+  });
+
+  it('does not match unrelated titles', () => {
+    expect(findCaseStudy('Elena', elevate)).toBeUndefined();
   });
 });

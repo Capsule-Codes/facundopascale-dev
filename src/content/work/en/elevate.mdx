@@ -1,0 +1,103 @@
+---
+title: 'Elevate'
+tagline: 'An offline-first coaching suite for trainers, nutritionists and gyms'
+description: 'Elevate is a suite of three products, Coach, Nutri and Gym, each with an Expo mobile app and a Tauri v2 desktop app, backed by one Supabase project. Local SQLite is the source of truth and a custom sync engine does the rest.'
+publishedAt: 2025-11-01
+stack:
+  - Expo SDK 54
+  - Tauri v2
+  - React 19
+  - Turborepo
+  - Drizzle ORM
+  - SQLite
+  - Supabase
+  - Astro
+  - Stripe
+  - Zustand
+  - NativeWind
+role: 'Architect · Fullstack'
+year: 2026
+links:
+  live: https://byelevate.app
+coverImage: /images/work/elevate/cover.webp
+gallery:
+  - src: /images/work/elevate/coach-dashboard.webp
+    alt: 'Elevate Coach desktop dashboard with the trainer’s clients and their weekly activity'
+    kind: desktop
+    width: 1200
+    height: 923
+  - src: /images/work/elevate/coach-rest-timer.webp
+    alt: 'Elevate Coach mobile app logging sets in a Push Pull Legs routine with a rest timer running'
+    kind: phone
+    width: 390
+    height: 1194
+  - src: /images/work/elevate/coach-client-detail.webp
+    alt: 'Elevate Coach trainer view of a client with weekly sessions and read-only nutrition data'
+    kind: phone
+    width: 390
+    height: 948
+  - src: /images/work/elevate/gym-dashboard.webp
+    alt: 'Elevate Gym desktop dashboard for gym owners with members, classes and activity'
+    kind: desktop
+    width: 1200
+    height: 860
+  - src: /images/work/elevate/gym-classes.webp
+    alt: 'Elevate Gym mobile app showing the weekly class schedule with capacity per class'
+    kind: phone
+    width: 390
+    height: 844
+  - src: /images/work/elevate/nutri-dashboard.webp
+    alt: 'Elevate Nutri desktop dashboard for nutritionists with patients and meal plans'
+    kind: desktop
+    width: 1200
+    height: 1010
+  - src: /images/work/elevate/nutri-patient-plan.webp
+    alt: 'Elevate Nutri mobile app showing a patient’s meal plan and macro progress, offline'
+    kind: phone
+    width: 390
+    height: 1365
+lang: en
+translationId: elevate
+featured: true
+order: 3
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Trainers, nutritionists and gym owners work on a computer, but their clients and members live on their phones, often in a gym basement with no signal. Most tools pick one side: either a web dashboard that dies offline, or a mobile app that is a thin client. And when the same client sees both a trainer and a nutritionist, nothing connects the two.
+
+## The solution
+
+Elevate, by Capsule Codes, is a suite of three products: **Coach** (trainers and their clients), **Nutri** (nutritionists and patients) and **Gym** (owners, staff and members). Each has a mobile app (Expo) and a desktop app (Tauri v2), plus one Astro website on Vercel with Stripe billing. It all lives in a pnpm and Turborepo monorepo, with shared packages like `@elevate/shared` and `@elevate/sync`.
+
+Both mobile and desktop are offline-first. Local SQLite is the source of truth, every row carries a `pendingSync` flag, and a sync engine pushes and pulls every five minutes and on reconnect. The backend is a single Supabase project with 113 migrations, around 136 RLS policies and five Edge Functions.
+
+Status: the website is live; the mobile apps are not in the stores yet and the desktop builds are pre-release.
+
+## Stack and key decisions
+
+- **Mobile**: Expo SDK 54, Expo Router 6, NativeWind 4, Drizzle with expo-sqlite, Zustand 5
+- **Desktop**: Tauri v2, React 19, Vite, Tailwind 4, Drizzle with tauri-plugin-sql. The same offline-first model as mobile, not a thin client
+- **Server-authoritative actions as a queue**: things only the server may decide are queued offline as RPCs and drained in FIFO order before table pushes. Client-generated UUIDs make replays idempotent, and rows the server rejects are retried up to a limit, then set aside as dead letters without losing the local row
+- **Deletion reconciliation**: pulls are upsert-only, so they never see deletes made on another device. `reconcile.ts` drops orphaned rows only when the pull is proven complete, using keyset pagination because PostgREST silently caps results at `max_rows`
+- **Deterministic IDs**: a gym class instance id is an FNV-1a hash of `(template_id, date)`, so two devices generating the same week produce the same primary key
+- **Cross-professional visibility**: when a client has a trainer and a nutritionist, `share_cross_data` lets each see the other's data read-only
+- **Schema-first CI**: migrations are never edited once pushed, `db-validate` runs on an ephemeral Postgres, `db-migrate` runs on merge, and i18n keys are checked in CI
+
+<Callout type="success" title="Billing stays out of the apps">
+  Stripe lives only on the website. A webhook upserts a `subscriptions` row tagged coach, nutri or
+  gym, and the apps just mirror that state read-only. No in-app purchases, no store-billing logic to
+  keep in sync with the backend.
+</Callout>
+
+## What I learned
+
+Offline-first is a sync protocol, not a cache. Once the local database is the source of truth, ordering, retries, idempotency and failure handling are the product, and most of the effort goes there rather than into screens.
+
+Deletes are the hard part. Upserting rows is easy; noticing that another device removed one is not, and a pull that is silently truncated looks exactly like a pull where rows were deleted. Refusing to delete anything unless the pull is provably complete is what keeps this safe.
+
+Determinism beats coordination. Instead of asking devices to agree on who creates next week's classes, I made the id a pure function of its inputs, so duplicates collapse on their own.
+
+And keep billing out of the apps. One place to charge, one webhook, and three products that only read the result.

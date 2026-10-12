@@ -1,0 +1,46 @@
+---
+import { resolveGalleryItem, type GalleryEntry } from '../lib/gallery';
+import type { Locale } from '../lib/i18n';
+
+interface Props {
+  items: GalleryEntry[];
+  locale: Locale;
+}
+
+const { items, locale } = Astro.props;
+const images = items.map(resolveGalleryItem);
+const heading = locale === 'es' ? 'Galería' : 'Gallery';
+---
+
+{
+  images.length > 0 && (
+    <section id="gallery" aria-labelledby="gallery-heading" class="mt-16">
+      <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// {images.length} img</p>
+      <h2 id="gallery-heading" class="text-3xl font-display mb-6">
+        {heading}
+      </h2>
+      <ul class="grid grid-cols-2 gap-4 items-start list-none p-0 m-0">
+        {images.map((img) => (
+          <li class={img.kind === 'desktop' ? 'col-span-2' : 'col-span-1 sm:col-span-1'}>
+            <figure class="m-0 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2">
+              <img
+                src={img.src}
+                alt={img.alt}
+                width={img.width}
+                height={img.height}
+                loading="lazy"
+                decoding="async"
+                class="block w-full h-auto"
+              />
+              {img.caption && (
+                <figcaption class="mt-2 font-mono text-xs text-[var(--color-text-dim)]">
+                  {img.caption}
+                </figcaption>
+              )}
+            </figure>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

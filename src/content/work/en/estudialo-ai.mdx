@@ -1,8 +1,8 @@
 ---
 title: 'Estudialo AI'
-tagline: 'AI-powered education that teaches, not cheats'
-description: 'AI-powered education platform built with Gemini, Supabase, and Stripe. The AI helps students learn instead of just giving away answers.'
-publishedAt: 2025-03-10
+tagline: 'An AI tutor that explains, not just answers'
+description: 'Estudialo AI is a mobile-first study assistant that we built from scratch at Capsule Codes for a client: a Gemini-powered tutor with 14 study actions, education levels, free and premium plans on Stripe, and Spanish and English prompts.'
+publishedAt: 2025-09-01
 stack:
   - Next.js 16
   - Vercel AI SDK 5
@@ -11,11 +11,43 @@ stack:
   - Stripe
   - TypeScript
   - Tailwind CSS 4
+  - TanStack Query
   - next-intl
-role: 'Fullstack lead · AI architecture'
+role: 'Fullstack · AI'
 year: 2025
 links: {}
-coverImage: /images/work/estudialo-ai.svg
+coverImage: /images/work/estudialo-ai/cover.webp
+gallery:
+  - src: /images/work/estudialo-ai/home.webp
+    alt: 'Estudialo AI home screen with the Study with AI card, a Generate Image card marked under construction and a Subscribe button'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/tutor-homework.webp
+    alt: 'Estudialo AI homework help chat with an exercise from the student, a worked reply and Easier and Harder buttons'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/quiz-feedback.webp
+    alt: 'Estudialo AI quiz chat where the student answers the questions and gets feedback with hints instead of the full answers'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/chat-history.webp
+    alt: 'Estudialo AI chat history with a list of past study conversations and a New Chat button'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/plans.webp
+    alt: 'Estudialo AI plans carousel showing the Premium plan with its message limits and benefits'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/notifications.webp
+    alt: 'Estudialo AI notifications list with a welcome message, a study streak and a new feature announcement'
+    kind: phone
+    width: 780
+    height: 1688
 lang: en
 translationId: estudialo-ai
 featured: true
@@ -26,34 +58,41 @@ import Callout from '@/components/mdx/Callout.astro';
 
 ## The problem
 
-Most "AI-powered education" apps are a ChatGPT wrapper where students paste the assignment and copy the answer. That's not education, it's automated cheating. The real challenge was building a platform where AI is a pedagogical tool: it guides, explains, generates exercises — but doesn't do the work for the student.
+Most "AI for students" apps are a general chatbot with a school logo: paste the assignment, copy the reply. A study tool has a different job. It should explain, adapt to the level of the student, and push them to practice, while staying cheap enough to offer a free tier. We also needed to be honest about what "not cheating" can mean in a product, because a student can always ask for the answer.
 
 ## The solution
 
-Estudialo AI uses **Gemini 2.5 Flash** through the **Vercel AI SDK** with an action-based prompt system. When a student sends a message, a first LLM call classifies the intent (summarize, generate quiz, explain, correct, etc.) and routes the conversation to a specialized prompt. It's not a generic chatbot — each action has its own system prompt with pedagogical constraints.
+Estudialo AI is a client project that we built from scratch at Capsule Codes. The student opens the app, picks "Study with AI" and chats. Each message is routed to one of 14 study actions: summarize a text, generate a quiz, practice exercises, explain simply, run a study session, correct a text, help with homework, build a visual outline or a mind map, write an essay, and a few more. The action comes from a button the student taps or, when they just type, from a first Gemini call that classifies the intent.
 
-The system differentiates between three education levels (elementary, high school, university) and adapts response complexity accordingly. An elementary student gets explanations with everyday examples and short sentences. A university student gets academic terminology and in-depth concepts.
+Every action has its own prompt, which is combined with the student's education level (elementary, high school or university), the interface language, and the plan. Students can attach photos and PDFs, which are sent as context. Past chats are kept in a history list, and there is a notifications screen and a profile.
 
-Monetization runs on **Stripe**: free users get responses capped at 100 words, premium users up to 300. The system prompts change based on the tier — it's not a cosmetic truncation, it's a real difference in depth.
+There are two plans. Basic is limited to 10 messages a day, answers of about 100 words and ads. Premium raises the limits to 30 messages a day and 300 words, advertises a more advanced model and removes ads. Payments run on Stripe. An image generator is on the home screen but is marked as under construction.
+
+The screenshots use invented demo data and sample replies written for the demo, not real model output.
 
 ## Stack and key decisions
 
-- **Next.js 16 with Turbopack**: Server Components for static pages, Client Components for the interactive chat
-- **Vercel AI SDK 5 + Gemini 2.5 Flash**: `generateText` for intent classification and title generation, streaming for chat responses
-- **Supabase for the entire backend**: Auth, database (conversations, messages, uploads), and RLS so each user only sees their own data
-- **Stripe with webhooks**: Monthly subscriptions with server-side tier verification
-- **next-intl**: i18n with three locales (en-US, es-ES, es-LA) — the LLM prompts are also localized
-- **File uploads**: Students upload PDFs parsed with `pdf2json` and injected as context into the conversation
+We split the work by area, with Stripe and Gemini on one side and Supabase on another, and merged it through pull requests. These are the decisions that shaped the app:
+
+- **Next.js 16 with the App Router**: a mobile-first interface built with Tailwind 4 and TanStack Query, with `next-intl` for three locales (en-US, es-ES and es-LA)
+- **Vercel AI SDK with Gemini**: `generateText` for everything, no streaming. `gemini-2.5-flash` handles the chat, titles and intent routing, and a multimodal model is used when an image is attached
+- **One message pipeline**: a single route checks the session, the subscription and the daily and monthly quotas, detects the action, builds the system prompt, sends the last 50 messages as history, saves the reply and updates the quotas
+- **Prompts as data**: the prompt for each action has a basic and a premium variant and lives in a JSON file per locale, so changing how an action behaves does not touch the pipeline
+- **Supabase for auth and data**: cookie-based sessions with email and password or Google, and tables for profiles, conversations, messages, attachments, notifications and usage. Uploads go to a storage bucket with limits per plan
+- **Stripe as the source of truth**: the app looks up the customer by email and reads the active subscription from Stripe, instead of keeping a copy in its own database. Routes handle subscribing, changing the plan, updating the card, cancelling and reactivating
 
 <Callout type="warning" title="Localized prompts">
-  System prompts ship in three languages (`prompts.json`, `prompts-es-ES.json`,
-  `prompts-es-LA.json`). It's not just about translating the UI — if the system prompt is in English
-  and the user writes in Spanish, the model mixes languages. Prompt localization is just as
-  important as interface localization.
+  The system prompts ship in three languages, not just the interface. If the prompt is in English
+  and the student writes in Spanish, the model tends to mix languages, and the Spanish of Spain and
+  of Latin America differs enough in idioms and formality to deserve separate files.
 </Callout>
 
-## What I learned
+## What we learned
 
-The most interesting decision was using `generateText` (not streaming) for intent classification. The first LLM call doesn't need streaming — it needs an exact response (`summarize-text`, `generate-quiz`, etc.) used to select the specialized prompt. That's two model calls per message, but the first one is near-instant with Flash and the final response quality is far better than a generic prompt.
+"Teaches, not cheats" was the pitch, and the code only partly delivers it. The general chat is restricted to educational topics and capped in length. Quizzes and exercises hold back the answers until the student asks for a check, and quiz feedback gives hints first. But homework help does give the final answer, with a step-by-step explanation next to it. That is a deliberate middle ground, not a Socratic tutor, and we learned to describe it as "explains, not just answers" rather than promising something a prompt cannot guarantee.
 
-What surprised me: the difference between es-ES and es-LA prompts. Idioms and formality levels change so much that I had to maintain two separate Spanish prompt files. That's not something most AI tutorials will mention.
+Up to two model calls per message is a good trade. The routing call, only needed when the student does not tap an action, is short and fast with a Flash model, and in return each action gets a specific prompt instead of one generic prompt that tries to do everything.
+
+Reading the subscription live from Stripe kept the system simple, with no webhooks or mirrored state to drift. The cost is a lookup on every message and a hard dependency on Stripe being reachable, so a local copy kept in sync by webhooks is the first thing we would revisit.
+
+And working as a small team made the job mostly about interfaces: agreeing what each pull request touched, reviewing for the product rather than only the code, and keeping prompts, limits and plan copy consistent across three locales.

@@ -1,0 +1,103 @@
+---
+title: 'Elevate'
+tagline: 'Suite de coaching offline-first para entrenadores, nutricionistas y gimnasios'
+description: 'Elevate es una suite de tres productos, Coach, Nutri y Gym, cada uno con app mobile en Expo y app desktop en Tauri v2, sobre un único proyecto de Supabase. SQLite local es la fuente de verdad y un motor de sync propio hace el resto.'
+publishedAt: 2025-11-01
+stack:
+  - Expo SDK 54
+  - Tauri v2
+  - React 19
+  - Turborepo
+  - Drizzle ORM
+  - SQLite
+  - Supabase
+  - Astro
+  - Stripe
+  - Zustand
+  - NativeWind
+role: 'Arquitecto · Fullstack'
+year: 2026
+links:
+  live: https://byelevate.app
+coverImage: /images/work/elevate/cover.webp
+gallery:
+  - src: /images/work/elevate/coach-dashboard.webp
+    alt: 'Dashboard desktop de Elevate Coach con los clientes del entrenador y su actividad semanal'
+    kind: desktop
+    width: 1200
+    height: 923
+  - src: /images/work/elevate/coach-rest-timer.webp
+    alt: 'App mobile de Elevate Coach registrando series de una rutina Push Pull Legs con el temporizador de descanso activo'
+    kind: phone
+    width: 390
+    height: 1194
+  - src: /images/work/elevate/coach-client-detail.webp
+    alt: 'Vista del entrenador en Elevate Coach con las sesiones semanales de un cliente y su nutrición en solo lectura'
+    kind: phone
+    width: 390
+    height: 948
+  - src: /images/work/elevate/gym-dashboard.webp
+    alt: 'Dashboard desktop de Elevate Gym para dueños de gimnasio con socios, clases y actividad'
+    kind: desktop
+    width: 1200
+    height: 860
+  - src: /images/work/elevate/gym-classes.webp
+    alt: 'App mobile de Elevate Gym con la grilla semanal de clases y el cupo de cada una'
+    kind: phone
+    width: 390
+    height: 844
+  - src: /images/work/elevate/nutri-dashboard.webp
+    alt: 'Dashboard desktop de Elevate Nutri para nutricionistas con pacientes y planes de comida'
+    kind: desktop
+    width: 1200
+    height: 1010
+  - src: /images/work/elevate/nutri-patient-plan.webp
+    alt: 'App mobile de Elevate Nutri con el plan de comidas de un paciente y su progreso de macros, sin conexión'
+    kind: phone
+    width: 390
+    height: 1365
+lang: es
+translationId: elevate
+featured: true
+order: 3
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Entrenadores, nutricionistas y dueños de gimnasio trabajan desde una computadora, pero sus clientes y socios viven en el celular, muchas veces en un subsuelo sin señal. La mayoría de las herramientas eligen un solo lado: un dashboard web que deja de funcionar sin conexión, o una app mobile que es apenas un cliente liviano. Y cuando la misma persona tiene entrenador y nutricionista, nada conecta a los dos.
+
+## La solución
+
+Elevate, de Capsule Codes, es una suite de tres productos: **Coach** (entrenadores y sus clientes), **Nutri** (nutricionistas y pacientes) y **Gym** (dueños, staff y socios). Cada uno tiene app mobile (Expo) y app desktop (Tauri v2), más un sitio web en Astro sobre Vercel con facturación en Stripe. Todo vive en un monorepo pnpm y Turborepo, con paquetes compartidos como `@elevate/shared` y `@elevate/sync`.
+
+Tanto mobile como desktop son offline-first. SQLite local es la fuente de verdad, cada fila lleva un flag `pendingSync` y un motor de sync empuja y trae cambios cada cinco minutos y al reconectar. El backend es un único proyecto de Supabase con 113 migraciones, unas 136 políticas RLS y cinco Edge Functions.
+
+Estado: el sitio web está en producción; las apps mobile todavía no están en las tiendas y los builds de desktop son pre-release.
+
+## Stack y decisiones clave
+
+- **Mobile**: Expo SDK 54, Expo Router 6, NativeWind 4, Drizzle con expo-sqlite, Zustand 5
+- **Desktop**: Tauri v2, React 19, Vite, Tailwind 4, Drizzle con tauri-plugin-sql. El mismo modelo offline-first que mobile, no un cliente liviano
+- **Acciones que decide el servidor, como cola**: lo que solo el servidor puede decidir se encola offline como RPCs y se drena en orden FIFO antes de empujar las tablas. Los UUID generados en el cliente hacen idempotente cada reintento, y las filas que el servidor rechaza se reintentan hasta un máximo y después se apartan como dead letters sin perder la fila local
+- **Reconciliación de borrados**: los pulls son solo upsert, así que nunca ven lo que otro dispositivo borró. `reconcile.ts` descarta filas huérfanas únicamente cuando el pull está probado como completo, con paginación keyset porque PostgREST corta en silencio en `max_rows`
+- **IDs determinísticos**: el id de una instancia de clase del gimnasio es un hash FNV-1a de `(template_id, date)`, así que dos dispositivos que generan la misma semana producen la misma clave primaria
+- **Visibilidad entre profesionales**: cuando un cliente tiene entrenador y nutricionista, `share_cross_data` deja que cada uno vea los datos del otro en solo lectura
+- **CI schema-first**: las migraciones no se editan una vez pusheadas, `db-validate` corre sobre un Postgres efímero, `db-migrate` corre al mergear y las claves de i18n se validan en CI
+
+<Callout type="success" title="La facturación queda fuera de las apps">
+  Stripe vive solo en el sitio web. Un webhook hace upsert de una fila en `subscriptions` marcada
+  como coach, nutri o gym, y las apps solo reflejan ese estado en solo lectura. Sin compras in-app y
+  sin lógica de billing de las tiendas que mantener sincronizada con el backend.
+</Callout>
+
+## Aprendizajes
+
+Offline-first es un protocolo de sync, no un caché. Cuando la base local es la fuente de verdad, el orden, los reintentos, la idempotencia y el manejo de fallas son el producto, y la mayor parte del esfuerzo va ahí y no a las pantallas.
+
+Los borrados son lo difícil. Hacer upsert de filas es fácil; darse cuenta de que otro dispositivo borró una no lo es, y un pull truncado en silencio se ve igual que uno en el que se borraron filas. Negarse a borrar algo si el pull no está probado como completo es lo que lo hace seguro.
+
+El determinismo le gana a la coordinación. En vez de pedirle a los dispositivos que se pongan de acuerdo en quién crea las clases de la semana próxima, hice que el id sea una función pura de sus entradas, y los duplicados se colapsan solos.
+
+Y la facturación, fuera de las apps. Un solo lugar para cobrar, un solo webhook y tres productos que solo leen el resultado.
