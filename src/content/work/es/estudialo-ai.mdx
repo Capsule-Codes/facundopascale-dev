@@ -1,8 +1,8 @@
 ---
 title: 'Estudialo AI'
-tagline: 'Plataforma educativa con IA que enseña, no que hace trampa'
-description: 'Plataforma web de educación potenciada por IA con Gemini, Supabase y Stripe. El estudiante aprende con ayuda de la IA, no la usa para copiar respuestas.'
-publishedAt: 2025-03-10
+tagline: 'Un tutor con IA que explica, no solo responde'
+description: 'Estudialo AI es un asistente de estudio mobile-first que construimos desde cero en Capsule Codes para un cliente: un tutor con Gemini y 14 acciones de estudio, niveles educativos, planes gratuito y premium en Stripe, y prompts en español e inglés.'
+publishedAt: 2025-09-01
 stack:
   - Next.js 16
   - Vercel AI SDK 5
@@ -11,17 +11,43 @@ stack:
   - Stripe
   - TypeScript
   - Tailwind CSS 4
+  - TanStack Query
   - next-intl
-role: 'Fullstack lead · Arquitectura AI'
+role: 'Fullstack · AI'
 year: 2025
 links: {}
-coverImage: /images/work/estudialo-ai.svg
+coverImage: /images/work/estudialo-ai/cover.webp
 gallery:
-  - src: /images/work/estudialo-ai.svg
-    alt: 'Estudialo AI, ilustración de la plataforma'
-    kind: desktop
-    width: 1200
-    height: 630
+  - src: /images/work/estudialo-ai/home.webp
+    alt: 'Pantalla de inicio de Estudialo AI con la tarjeta Estudiar con IA, una tarjeta de generar imágenes marcada en construcción y un botón Suscribirse'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/tutor-homework.webp
+    alt: 'Chat de ayuda con la tarea de Estudialo AI con un ejercicio del estudiante, una respuesta resuelta y los botones Más fácil y Más difícil'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/quiz-feedback.webp
+    alt: 'Chat de cuestionario de Estudialo AI donde el estudiante responde las preguntas y recibe pistas en lugar de las respuestas completas'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/chat-history.webp
+    alt: 'Historial de chats de Estudialo AI con una lista de conversaciones de estudio anteriores y un botón de nuevo chat'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/plans.webp
+    alt: 'Carrusel de planes de Estudialo AI con el plan Premium, sus límites de mensajes y sus beneficios'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/estudialo-ai/notifications.webp
+    alt: 'Lista de notificaciones de Estudialo AI con un mensaje de bienvenida, una racha de estudio y el anuncio de una novedad'
+    kind: phone
+    width: 780
+    height: 1688
 lang: es
 translationId: estudialo-ai
 featured: true
@@ -32,34 +58,42 @@ import Callout from '@/components/mdx/Callout.astro';
 
 ## El problema
 
-La mayoría de las apps "educativas con IA" son un wrapper de ChatGPT donde el pibe pega la consigna y copia la respuesta. Eso no es educación, es trampa automatizada. El desafío real era construir una plataforma donde la IA sea una herramienta pedagógica: que guíe, que explique, que genere ejercicios — pero que no haga el laburo por el estudiante.
+Muchas apps de "IA para estudiantes" son un chatbot general con el logo de una escuela: se pega la consigna y se copia la respuesta. Una herramienta de estudio tiene otro trabajo. Debe explicar, adaptarse al nivel del estudiante y empujarlo a practicar, y además resultar lo bastante barata como para ofrecer un plan gratuito. También había que ser honestos sobre lo que puede significar "no hacer trampa" en un producto, porque un estudiante siempre puede pedir la respuesta.
 
 ## La solución
 
-Estudialo AI usa **Gemini 2.5 Flash** a través del **Vercel AI SDK** con un sistema de prompts por acción educativa. Cuando un estudiante manda un mensaje, un primer LLM call clasifica la intención (resumir, generar quiz, explicar, corregir, etc.) y enruta la conversación al prompt especializado. No es un chatbot genérico — cada acción tiene su propio system prompt con restricciones pedagógicas.
+Estudialo AI es un proyecto para un cliente que construimos desde cero en Capsule Codes. El estudiante abre la app, elige "Estudiar con IA" y conversa. Cada mensaje se enruta a una de 14 acciones de estudio: resumir un texto, generar un cuestionario, practicar ejercicios, explicar de forma simple, armar una sesión de estudio, corregir un texto, ayudar con la tarea, crear un esquema visual o un mapa mental, escribir un ensayo y algunas más. La acción viene de un botón que el estudiante toca o, cuando simplemente escribe, de una primera llamada a Gemini que clasifica la intención.
 
-El sistema diferencia entre tres niveles educativos (primaria, secundaria, universidad) y adapta la complejidad de las respuestas. Un estudiante de primaria recibe explicaciones con ejemplos cotidianos y oraciones cortas. Uno universitario recibe terminología académica y conceptos en profundidad.
+Cada acción tiene su propio prompt, que se combina con el nivel educativo del estudiante (primaria, secundaria o universidad), el idioma de la interfaz y el plan. Se pueden adjuntar fotos y PDF, que se envían como contexto. Las conversaciones anteriores quedan en un historial, y hay una pantalla de notificaciones y un perfil.
 
-La monetización corre con **Stripe**: los usuarios free tienen respuestas de máximo 100 palabras, los premium hasta 300. Los prompts del sistema cambian según el tier — no es un truncado cosmético, es una diferencia real en profundidad.
+Hay dos planes. Basic se limita a 10 mensajes por día, respuestas de unas 100 palabras y anuncios. Premium sube los límites a 30 mensajes por día y 300 palabras, promete un modelo más avanzado y quita los anuncios. Los pagos corren sobre Stripe. En la pantalla de inicio hay un generador de imágenes, pero está marcado como en construcción.
+
+Las capturas usan datos de demostración inventados y respuestas de ejemplo escritas para la demo, no salidas reales del modelo.
 
 ## Stack y decisiones clave
 
-- **Next.js 16 con Turbopack**: Server Components para las páginas estáticas, Client Components para el chat interactivo
-- **Vercel AI SDK 5 + Gemini 2.5 Flash**: `generateText` para clasificación de intención y generación de títulos, streaming para las respuestas del chat
-- **Supabase para todo el backend**: Auth, base de datos (conversaciones, mensajes, uploads), y RLS para que cada usuario solo vea lo suyo
-- **Stripe con webhooks**: Suscripciones mensuales con verificación server-side del tier
-- **next-intl**: i18n con tres locales (en-US, es-ES, es-LA) — los prompts del LLM también están localizados
-- **Upload de archivos**: Los estudiantes suben PDFs que se parsean con `pdf2json` y se inyectan como contexto en la conversación
+Repartimos el trabajo por áreas, con Stripe y Gemini por un lado y Supabase por otro, y lo integramos mediante pull requests. Estas son las decisiones que dieron forma a la app:
+
+- **Next.js 16 con App Router**: una interfaz mobile-first con Tailwind 4 y TanStack Query, y `next-intl` para tres locales (en-US, es-ES y es-LA)
+- **Vercel AI SDK con Gemini**: `generateText` para todo, sin streaming. `gemini-2.5-flash` atiende el chat, los títulos y el enrutamiento de intención, y se usa un modelo multimodal cuando se adjunta una imagen
+- **Un solo pipeline de mensajes**: una única ruta verifica la sesión, la suscripción y las cuotas diaria y mensual, detecta la acción, arma el system prompt, envía los últimos 50 mensajes como historial, guarda la respuesta y actualiza las cuotas
+- **Prompts como datos**: el prompt de cada acción tiene una variante básica y una premium y vive en un archivo JSON por idioma, de modo que cambiar el comportamiento de una acción no toca el pipeline
+- **Supabase para auth y datos**: sesiones por cookie con email y contraseña o Google, y tablas para perfiles, conversaciones, mensajes, adjuntos, notificaciones y uso. Los archivos se suben a un bucket de storage con límites por plan
+- **Stripe como fuente de verdad**: la app busca al cliente por email y lee la suscripción activa desde Stripe, en lugar de mantener una copia en su propia base de datos. Hay rutas para suscribirse, cambiar de plan, actualizar la tarjeta, cancelar y reactivar
 
 <Callout type="warning" title="Prompts localizados">
-  Los prompts del sistema están en tres idiomas (`prompts.json`, `prompts-es-ES.json`,
-  `prompts-es-LA.json`). No es solo traducir la UI — si el system prompt está en inglés y el usuario
-  escribe en español, el modelo mezcla idiomas. La localización del prompt es tan importante como la
-  de la interfaz.
+  Los prompts del sistema se entregan en tres idiomas, no solo la interfaz. Si el prompt está en
+  inglés y el estudiante escribe en español, el modelo tiende a mezclar idiomas, y el español de
+  España y el de Latinoamérica difieren lo suficiente en modismos y formalidad como para merecer
+  archivos separados.
 </Callout>
 
 ## Aprendizajes
 
-La decisión más interesante fue usar `generateText` (no streaming) para la clasificación de intención. El primer call al LLM no necesita streaming — necesita una respuesta exacta (`summarize-text`, `generate-quiz`, etc.) que se usa para seleccionar el prompt especializado. Son dos calls al modelo por mensaje, pero el primero es casi instantáneo con Flash y la calidad de la respuesta final es mucho mejor que un prompt genérico.
+"Enseña, no hace trampa" era la propuesta, y el código solo la cumple en parte. El chat general está restringido a temas educativos y con la longitud limitada. Los cuestionarios y los ejercicios retienen las respuestas hasta que el estudiante pide una corrección, y la retroalimentación del cuestionario da pistas primero. Pero la ayuda con la tarea sí entrega la respuesta final, con una explicación paso a paso al lado. Es un punto medio deliberado, no un tutor socrático, y aprendimos a describirlo como "explica, no solo responde" en lugar de prometer algo que un prompt no puede garantizar.
 
-Lo que me sorprendió: la diferencia entre es-ES y es-LA en los prompts. Los modismos y el nivel de formalidad cambian tanto que tuve que mantener dos archivos de prompts separados para español. No es algo que la mayoría de los tutoriales de IA te van a mencionar.
+Hasta dos llamadas al modelo por mensaje es un buen intercambio. La llamada de enrutamiento, necesaria solo cuando el estudiante no toca una acción, es corta y rápida con un modelo Flash, y a cambio cada acción recibe un prompt específico en lugar de un prompt genérico que intenta hacerlo todo.
+
+Leer la suscripción en vivo desde Stripe mantuvo el sistema simple, sin webhooks ni estado replicado que se desincronice. El costo es una consulta en cada mensaje y una dependencia fuerte de que Stripe esté disponible, así que una copia local sincronizada por webhooks es lo primero que revisaríamos.
+
+Y trabajar como equipo pequeño hizo que el trabajo fuera sobre todo de interfaces: acordar qué tocaba cada pull request, revisar pensando en el producto y no solo en el código, y mantener coherentes los prompts, los límites y los textos de los planes en tres locales.

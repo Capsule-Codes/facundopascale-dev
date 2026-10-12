@@ -80,6 +80,11 @@ describe('buildCoverHtml', () => {
     expect(html).toContain('data:image/png;base64,L');
   });
 
+  it('turns a newline in the title into a line break', () => {
+    const html = buildCoverHtml({ ...base, title: 'Happiness\nTo Go' }, srcs);
+    expect(html).toContain('<h1>Happiness<br>To Go</h1>');
+  });
+
   it('builds the radial gradient from the stops', () => {
     const html = buildCoverHtml(base, srcs);
     expect(html).toContain('#111111 0%');

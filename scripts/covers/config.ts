@@ -3,6 +3,7 @@ export type CoverFrame = 'phone' | 'browser';
 export interface CoverConfig {
   /** Kebab-case project slug; also the output folder name. */
   slug: string;
+  /** Title; "\n" becomes a line break. */
   title: string;
   /** Tagline; "\n" becomes a line break. */
   tagline: string;

@@ -1,0 +1,100 @@
+---
+title: 'HFlow'
+tagline: 'Nómina multi-tenant donde cada país es un plugin'
+description: 'HFlow es un SaaS de nómina multi-tenant. Las reglas de pago son un grafo de componentes con plugins por país, cada corrida se registra con su contexto completo, y aprobaciones, RBAC y facturación viven en un backend Fastify, tRPC y Neon.'
+publishedAt: 2025-11-15
+stack:
+  - React 19
+  - Vite
+  - TanStack Router
+  - tRPC
+  - Fastify
+  - Drizzle ORM
+  - Neon Postgres
+  - better-auth
+  - Stripe
+  - Turborepo
+role: 'Fullstack · Arquitectura'
+year: 2025
+links: {}
+coverImage: /images/work/hflow/cover.webp
+gallery:
+  - src: /images/work/hflow/dashboard.webp
+    alt: 'Dashboard de nómina de HFlow con empleados activos, aprobaciones pendientes y el canal de aprobación'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/employees.webp
+    alt: 'Directorio de empleados de HFlow con búsqueda, filtros e importación masiva desde Excel'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/employee-detail.webp
+    alt: 'Ficha de empleado de HFlow con historial de nómina, ajustes del contrato y cuentas bancarias'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/payroll-runs.webp
+    alt: 'Lista de corridas de nómina de HFlow por período con su estado: borrador, aprobada o pagada'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/run-detail.webp
+    alt: 'Detalle de una corrida de nómina de HFlow con salario, deducciones y neto por empleado'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/evaluate.webp
+    alt: 'Resultado de la evaluación de un lote de nómina en HFlow con totales y desglose por empleado'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/dashboard-dark.webp
+    alt: 'Dashboard de HFlow en modo oscuro'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: es
+translationId: hflow
+featured: true
+order: 4
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+La nómina parece aritmética hasta que aparece un segundo país, una regla de impuestos nueva o una auditoría. La mayoría de las pymes la maneja en planillas, y las reglas terminan enterradas en fórmulas que nadie se anima a tocar. Un producto de nómina tiene que calcular bien, poder explicar cada número después, y dejar que cada empresa tenga su propio equipo, roles y aprobaciones sin ver los datos de nadie más.
+
+## La solución
+
+HFlow es una plataforma de nómina multi-tenant, construida por Capsule Codes para un cliente. Cada workspace gestiona sus empleados, contratos, calendarios de pago y definiciones de pago. Una corrida evalúa un período para un lote de empleados, alguien con el permiso correcto la revisa, y las corridas aprobadas alimentan los reportes mensuales y los lotes de pago.
+
+Es un monorepo pnpm y Turborepo. El frontend es Vite con React 19 y TanStack Router; el backend es Fastify con tRPC y Drizzle sobre Neon Postgres, con better-auth para las sesiones y Stripe para las suscripciones. Las reglas de nómina no están hardcodeadas: viven en los datos y en plugins por país.
+
+Las capturas usan datos de demo inventados.
+
+## Stack y decisiones clave
+
+- **Reglas de pago como grafo**: una definición de pago es un grafo de componentes (ingresos, deducciones, impuestos) con aristas para sus dependencias. El motor verifica que sea acíclico, lo ordena topológicamente y lo evalúa en ese orden. La misma verificación corre cuando alguien edita el grafo, así que una definición rota no se puede guardar
+- **Plugins por país**: un registro asocia un código de país con un plugin que trae sus componentes y plantillas, con un plugin por defecto como respaldo. República Dominicana y EE. UU. vienen incluidos. Los topes de aportes y los tramos de impuesto progresivo son configuración que leen calculadoras genéricas, no ramas de código
+- **Aritmética exacta para dinero**: los cálculos pasan por `decimal.js` en lugar de punto flotante
+- **Cada corrida es evidencia**: cada evaluación guarda su snapshot junto con el contexto serializado con el que corrió (contrato, período, asignaciones, overrides), y las fallas también se registran. Las definiciones de pago tienen versiones con fecha de vigencia y estado, así que una corrida pasada se puede explicar
+- **Una sola corrida aprobada por período**: aprobar una corrida rechaza cualquier otra aprobada del mismo calendario y período dentro de una única transacción. Por eso el backend tiene dos clientes de base de datos: el driver HTTP de Neon para consultas comunes y un pool WebSocket donde hace falta una transacción real
+- **Tenancy y permisos**: el workspace activo sale de la sesión, y un procedimiento de tRPC declara en su metadata los permisos que necesita, que se validan contra el rol del miembro
+
+<Callout type="info" title="Por qué un grafo y no una fórmula">
+  Una fórmula responde "cuánto", pero un grafo también responde "qué componente produjo este número
+  y de qué dependía". Hace trazable cada línea de un recibo, y permite que un país cambie sus reglas
+  editando datos en lugar de publicar código.
+</Callout>
+
+## Aprendizajes
+
+Modela las reglas, no los resultados. Cuando ingresos, deducciones e impuestos son nodos con dependencias explícitas, sumar un país es un problema de contenido y no un refactor, y el motor se mantiene chico y testeable.
+
+Un registro de auditoría es una funcionalidad que se diseña el primer día. Guardar el contexto junto al resultado, incluso cuando la corrida falla, es barato mientras se escribe el código e imposible de agregar después.
+
+Los invariantes de dinero van en la transacción de la base, no en la UI. "Una sola corrida aprobada por período" se cumple porque la escritura es atómica, sin importar cuánta gente haga clic a la vez.
+
+Y elige el driver de base de datos según la necesidad. Un driver HTTP serverless es ideal para lecturas cortas; el único lugar que necesita una transacción merece su propia conexión.
