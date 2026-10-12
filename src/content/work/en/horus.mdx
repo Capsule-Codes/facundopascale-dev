@@ -1,0 +1,104 @@
+---
+title: 'Horus'
+tagline: 'Patient education for cataract surgery, and the move from Supabase to AWS'
+description: 'Horus is a patient education platform for cataract surgeons, with an AI counselor that builds a Vision Profile. I scoped and worked on its move from Supabase and Vercel to AWS: CDK stacks, Aurora with row-level security, Cognito, Fargate, Bedrock and a parallel-run cutover plan.'
+publishedAt: 2026-05-05
+stack:
+  - React
+  - Vite
+  - TypeScript
+  - TanStack Query
+  - Tailwind
+  - Deno
+  - Postgres
+  - Supabase
+  - AWS CDK
+  - Aurora
+  - Cognito
+  - Bedrock
+role: 'Fullstack · Cloud'
+year: 2026
+links: {}
+coverImage: /images/work/horus/cover.webp
+gallery:
+  - src: /images/work/horus/landing.webp
+    alt: 'Horus landing page with the headline, a patient profile card and the request a demo call to action'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/horus/sessions.webp
+    alt: 'Horus sessions list for a practice with session code, patient, surgeon, IOL eye and status'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/horus/patient-detail.webp
+    alt: 'Horus patient detail with the counseling transcript, the selected IOL, the Vision Profile and education progress'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: en
+translationId: horus
+featured: true
+order: 9
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Before cataract surgery, the surgeon spends around twenty minutes with every patient explaining the lens options: monofocal, toric, multifocal and the trade-offs of each. It is the same conversation, repeated all day, and the patient still has to decide something that affects how they see for the rest of their life. The platform had to move that conversation before the appointment without replacing the surgeon, and it had to handle health data from day one.
+
+## The solution
+
+Horus is built for a client, with Capsule Codes. A patient follows a link, watches short education videos and asks questions to an AI counselor. From that conversation the counselor extracts a structured Vision Profile: lifestyle, priorities and lens preference. The surgeon sees the sessions of their practice, reads the transcript and the profile, and records the IOL selection. The IOL options come from the biometry report: the PDF is uploaded and a multimodal model extracts the lens options from it.
+
+The frontend is React with Vite and TypeScript, Tailwind and Radix, and TanStack Query. The pilot started on Supabase with edge functions and Vercel, and the largest part of the work was moving the platform to AWS, described in its own section below.
+
+The screenshots use invented demo data.
+
+## The move to AWS
+
+The first version came out of Lovable and ran on Supabase and Vercel. The trigger for leaving was compliance: patient chat is health information, and keeping the AI under a business associate agreement was the hard part. The June 2026 scoping document compares Azure and AWS and recommends AWS because on Amazon Bedrock AWS is the only processor of the prompts, so one agreement covers the whole stack, Claude included. It also estimates the infrastructure cost at a fraction of the Supabase and Vercel plans with their HIPAA add-ons. The decision was approved in June, and in September the plan was extended to move the anonymous pilot as well.
+
+The target is defined with AWS CDK in TypeScript, one stack per concern:
+
+- **`Horus-Network`**: a VPC with public, private and isolated subnets across two availability zones, an S3 gateway endpoint and VPC flow logs
+- **`Horus-Data`**: Aurora Serverless v2 on Postgres 16 in isolated subnets, encrypted with a customer-managed KMS key, credentials in Secrets Manager, IAM authentication and 7-day backups. It can scale to zero for the pilot's bursty traffic
+- **`Horus-Auth`**: two Cognito user pools. Staff sign in with required MFA and admin-created accounts. Patients use passwordless email or SMS codes with no self-signup
+- **`Horus-Compute`**: ECS Fargate services behind an Application Load Balancer, one for the counselor chat with long-lived streaming responses and one for the Deno API, with scoped IAM access to Bedrock and runtime secrets from Secrets Manager. A scheduled ECS task runs the retention purge
+- **`Horus-Storage`**: a KMS-encrypted, versioned, private S3 bucket for biometry PDFs, and a private bucket for the SPA behind CloudFront with origin access control
+- **`Horus-Dns`**: one ACM certificate for both edges. DNS stays with the client's provider, so there is no Route 53 zone and the validation records are added by hand
+
+There are two environments from the same code. Production runs in us-east-1 and dev in us-west-2, so the two share nothing and do not compete for globally unique names. Dev is also the cost-controlled one: a single Spot task per service, no NAT gateway, and a schedule that turns it off at night and on weekends. GitHub Actions deploys the API and the SPA to each environment through OIDC roles, with no long-lived AWS keys.
+
+**Moving the data.** A `pg_dump` into Aurora would not work, for two reasons. Identity changes: users were Supabase Auth ids and are now Cognito subjects, so every ownership column is rewritten through an identity map keyed on email, and the mappings are written by hand because a join could silently hand a clinician someone else's patients. And the data model changes: the pilot is anonymous and has no organizations, while Aurora was designed with tenancy from the start, so pilot sessions land as anonymous and the tenancy tables begin empty. The pipeline is one atomic transaction followed by a verification file that asserts the migrated counts and ownership. Its first run against a real source dump found things a synthetic fixture never showed, including a column that would have left every session without an owner.
+
+**Cutover.** The plan is a parallel run, never a hard cutover. Supabase and Vercel stay warm after the move, and the plan states honestly that rollback is free only until the first patient writes to Aurora, because there is no dual-write and the audit log is append-only. So the work went into making that window short and observable: a verification script that signs in with real Cognito and MFA, calls the deployed API and checks row-level security, and treats a skipped check as a failure. The chat service was the first piece to move to Bedrock on Fargate and was verified end to end.
+
+**Security hardening along the way.** The API connects to Aurora with TLS verification enforced and the RDS CA bundle baked into the image, the retention job runs as a separate database role, and the CSP allows the right Cognito region. Details are in the lessons below.
+
+## Application decisions
+
+- **Tenancy lives in the database**: the API connects to Aurora with a single least-privilege role. On each request it opens a transaction and sets the user, role and kiosk session as transaction-local settings, passed as bind parameters. The row-level security policies read those settings, so no handler adds a `WHERE organization_id = ...` and a forgotten filter cannot leak another practice's data
+- **A kiosk is not a user**: the in-clinic tablet gets a token narrowed to one session, and the policies restrict it to that session's rows
+- **Layered frontend**: pages call hooks, hooks call services, and only services reach the data layer and the single backend client. Moving from Supabase to a custom API meant swapping the data layer, not the screens
+- **A structured profile, not a chat log**: the counselor extracts the Vision Profile through tool calling, with prompt guardrails in a separate file. Preferences are merged between turns instead of overwritten, and the counselor recovers turns that come back without text
+- **Biometry extraction with an audit trail**: the edge function hashes the PDF, runs one idempotent extraction with a timeout and a single retry, and keeps the raw output when the model returns malformed JSON
+- **A separate role for retention**: a scheduled job purges data past each organization's retention period. It connects as its own database role, so the purge worker cannot read a patient record
+- **Provider-agnostic AI backend**: the same counselor code calls Anthropic directly or Amazon Bedrock, chosen by configuration. On Bedrock it authenticates with the task's IAM role, with no API keys in the environment
+
+<Callout type="info" title="Why the database decides who sees what">
+  With health data, an application-level filter is one missed line away from a breach. Putting the
+  rule in the row-level policy makes the safe behavior the default and the unsafe one impossible to
+  write by accident.
+</Callout>
+
+## What I learned
+
+Silent failures are the dangerous ones. The API was connecting to Aurora over TLS that failed verification and then carried on unencrypted, with every health check green. It showed up as two log lines next to an unrelated error. The fix was to enforce TLS and bake the CA bundle into the image, for every client, including the retention job that builds its own.
+
+A bug can hide the thing the product is for. The counselor was rebuilding the transcript on every render, which dropped messages and left the Vision Profile empty. A complete conversation with nothing for the surgeon is a worse outcome than a visible error.
+
+Check the whole path, not only the handler. Driving the product in a real browser as a brand-new administrator-created account found a sign-in that could never complete, something no unit test mounted.
+
+And a migration needs a way back. Keeping the previous runtime working while the new one proves itself is slower, and it is how you avoid breaking a live pilot during the cutover.

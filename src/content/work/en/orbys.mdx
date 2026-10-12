@@ -1,0 +1,96 @@
+---
+title: 'Orbys'
+tagline: 'An agency management suite that your AI assistant can operate'
+description: 'Orbys is a multi-tenant SaaS for agencies: clients, projects, time tracking with approvals, billing and partner splits. Built on Next.js and Supabase with row level security, and with a remote MCP server inside the same app.'
+publishedAt: 2026-04-10
+stack:
+  - Next.js 15
+  - React 19
+  - Supabase
+  - Postgres RLS
+  - Stripe
+  - next-intl
+  - Zod
+  - Tailwind 4
+  - Sentry
+  - MCP
+  - Vitest
+role: 'Founder · Fullstack'
+year: 2026
+links:
+  live: https://www.getorbys.com
+coverImage: /images/work/orbys/cover.webp
+gallery:
+  - src: /images/work/orbys/landing.webp
+    alt: 'Orbys marketing page with the headline to run your company without limits and a floating metrics card'
+    kind: desktop
+    width: 1440
+    height: 1024
+  - src: /images/work/orbys/dashboard.webp
+    alt: 'Orbys dashboard with active employees, clients, hours reported, billing and a project timeline chart'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/proyectos.webp
+    alt: 'Orbys projects view with portfolio health counters, status filters and project cards with progress'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/clientes.webp
+    alt: 'Orbys clients list with active clients, monthly billing, risk indicator and a searchable table'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/control-horas.webp
+    alt: 'Orbys time tracking screen with team hours, an approval queue and bulk approve button'
+    kind: desktop
+    width: 1440
+    height: 1040
+  - src: /images/work/orbys/agenda.webp
+    alt: 'Orbys monthly calendar with scheduled events and deadlines for the agency'
+    kind: desktop
+    width: 1440
+    height: 1040
+lang: en
+translationId: orbys
+featured: true
+order: 8
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+A small agency runs on five tools that do not talk to each other. Clients live in a spreadsheet, hours in a timer app, invoices in another tool, and the split between partners in someone's head. At the end of the month somebody reconciles it by hand, and approving hours or chasing what is ready to invoice takes a day. I wanted one place where the work, the time and the money are the same data.
+
+## The solution
+
+Orbys is my own product: a multi-tenant platform where each agency gets a workspace with clients, projects and tasks, time tracking with an approval flow, billing through Stripe, analytics, and a team and partners section. It is live at getorbys.com, with the interface in Spanish, English and Italian.
+
+The part I like most is that it ships with a remote MCP server. The same app that serves the web UI exposes a Model Context Protocol endpoint, so an AI assistant can list clients, log hours, approve a timesheet or ask what is ready to invoice, with the same permissions as the person who owns the key.
+
+The stack is Next.js 15 with the App Router and React 19, Supabase for auth and Postgres, Stripe, next-intl, Zod, Tailwind 4 and Sentry. The screenshots use fake seed data.
+
+## Stack and key decisions
+
+- **Tenant isolation in the database**: every business table carries a `company_id`, and row level security makes a query unable to leave its tenant, whatever the application code does. There are 85 migrations, and tenants also resolve from the subdomain in the middleware
+- **The MCP server lives inside the app**: it is a route handler plus a folder of tools grouped by domain (workspace, operations, finance, delivery, time tracking), not a separate service. Requests authenticate with an admin-approved API key as a bearer token, and the transport is stateless, so there is no session store to run
+- **Cache by tenant, invalidated by writes**: analytics queries are cached with a tag per company, and the mutations that move the numbers (hours, invoices, expenses) revalidate that tag. The invalidation is wrapped so a cache problem can never fail a write that already committed
+- **One error and origin policy for the API**: mutating requests pass an origin check and a rate limit in the middleware, with deliberate exceptions for the Stripe and Resend webhooks, which authenticate by signature, and for MCP, which authenticates by key
+- **Validation at the edge**: Zod schemas guard every route and every MCP tool input, so a date like `2026-02-31` is rejected with a clear message instead of becoming a wrong invoice
+
+<Callout type="info" title="Why MCP in the same app">
+  Duplicating the domain rules in a second service would have meant two places to keep correct. By
+  reusing the same data layer, the assistant and the web UI cannot disagree about what a user is
+  allowed to do.
+</Callout>
+
+## What I learned
+
+Multi-tenancy is a database problem first. Once isolation is a policy, forgetting a `where company_id` stops being a data leak.
+
+An API for machines is a product surface. Designing the MCP tools forced me to name the domain operations clearly, and that cleaned up the web code too.
+
+Exceptions to a security rule should be explicit and short. A list of three paths that skip the origin check is easy to review; an implicit one is not.
+
+And build the boring parts early. Calendar days versus timestamps, rate limits and cache invalidation are not exciting, and they are where the trust in a billing product comes from.

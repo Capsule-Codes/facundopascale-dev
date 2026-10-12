@@ -1,0 +1,90 @@
+---
+title: 'Stagionaly'
+tagline: 'La bolsa de trabajo para la hotelería estacional italiana'
+description: 'Stagionaly conecta hoteles, restaurantes y beach clubs con trabajadores de temporada en Italia. Un monorepo con web en Next.js y app en Expo sobre Supabase, donde el row level security y los tests de base de datos sostienen las reglas de privacidad.'
+publishedAt: 2026-05-01
+stack:
+  - Next.js 16
+  - Expo
+  - React Native
+  - Supabase
+  - Postgres RLS
+  - pgTAP
+  - next-intl
+  - Resend
+  - Vitest
+  - pnpm
+role: 'Fundador · Fullstack'
+year: 2026
+links:
+  live: https://www.stagionaly.com
+coverImage: /images/work/stagionaly/cover.webp
+gallery:
+  - src: /images/work/stagionaly/offers.webp
+    alt: 'Lista de ofertas de Stagionaly con búsqueda por palabra clave, filtros, sueldo y etiquetas de alojamiento y comida incluidos'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/offer-detail.webp
+    alt: 'Detalle de una oferta de Stagionaly con puesto, ubicación, sueldo, fecha de inicio, descripción y un mensaje opcional al empleador'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/chat.webp
+    alt: 'Conversación de chat de Stagionaly entre un empleador y un candidato por un puesto de cocina'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/applications.webp
+    alt: 'Pantalla de postulaciones de Stagionaly con cada postulación y su estado: enviada, vista, en evaluación, seleccionada'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/notifications.webp
+    alt: 'Pantalla de notificaciones de Stagionaly con avisos de mensajes nuevos y un botón para marcar todo como leído'
+    kind: phone
+    width: 780
+    height: 1695
+lang: es
+translationId: stagionaly
+featured: true
+order: 7
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+La hotelería italiana contrata por oleadas. Cada primavera hoteles, restaurantes y beach clubs necesitan cocineros, mozos y recepcionistas por unos meses, y los trabajadores necesitan una temporada. Hoy eso ocurre en grupos de chat y en bolsas de trabajo genéricas que no saben nada de comidas, alojamiento ni de la duración de una temporada. Además es un mercado con riesgos reales de privacidad: a un trabajador no se le deberían extraer los datos de contacto, y un empleador no debería recibir mensajes de alguien que bloqueó.
+
+## La solución
+
+Stagionaly es un producto propio: una bolsa de trabajo pensada para la hotelería estacional. Los candidatos exploran ofertas, se postulan y conversan con los empleadores. Los empleadores gestionan sus locales, publican ofertas, revisan postulaciones y hablan con los candidatos. Hay un lado de administración para aprobar empleadores y moderar. Está en producción en la web, el App Store y Google Play, en italiano, inglés y español.
+
+Es un monorepo pnpm. La web es Next.js 16 con next-intl y Resend para el correo, la app móvil es Expo, y ambas hablan con Supabase para autenticación, Postgres, almacenamiento y tiempo real. Las reglas de negocio viven en la base de datos tanto como sea posible, de modo que la web y la app no puedan contradecirse.
+
+Las capturas son de un dispositivo real con datos de demostración.
+
+## Stack y decisiones clave
+
+- **Reglas de privacidad como row level security**: los roles y la propiedad los imponen políticas y helpers `security definer`, no la interfaz. El proyecto tiene 112 migraciones y muchas llevan tests de pgTAP. Uno verifica que un candidato bloqueado por un empleador no pueda obtener el correo de ese empleador
+- **Datos públicos mediante RPC acotadas**: los visitantes anónimos ven las ofertas a través de una función que devuelve una lista explícita de columnas, nunca `select *`. Una política anterior exponía el id del establecimiento y la función cerró esa brecha a propósito
+- **Borrados que no mienten**: en una tabla con RLS, un `DELETE` denegado no devuelve error y afecta cero filas. Cada borrado pide `count: 'exact'` y falla si no cambió nada, así que la interfaz nunca informa un éxito fantasma
+- **Push con un único dueño por dispositivo**: un webhook de base de datos sobre las notificaciones nuevas dispara una edge function que lee las preferencias del destinatario y envía por Expo. Después de un incidente en que un mismo teléfono quedó asociado a dos cuentas, el token de un dispositivo pertenece a un solo usuario y se reclama en una única transacción
+- **Primero desarrollo, después producción**: cada cambio es una migración versionada, se mergea a una rama de desarrollo con su propia rama de Supabase y su preview de Vercel, se verifica y recién entonces se promueve. Nadie empuja a la base en la nube a mano
+
+<Callout type="warning" title="El cero silencioso">
+  Una escritura rechazada que devuelve "éxito" es peor que un error visible. Revisar la cantidad de
+  filas afectadas es un hábito de una línea que elimina toda una familia de bugs del tipo "dijo que
+  guardó pero no guardó".
+</Callout>
+
+## Aprendizajes
+
+La privacidad hay que ponerla donde no se pueda esquivar. Un chequeo en la interfaz protege una pantalla; una política con un test protege a todos los clientes que se escriban a futuro.
+
+Hay que testear la base como si fuera código. pgTAP convierte "¿este usuario puede ver esa fila?" en un test de regresión, y encontró más errores reales que cualquier test de extremo a extremo.
+
+Los incidentes de producción son insumo de diseño. El bug del token de push era un problema del modelo de datos, así que el arreglo fue una restricción y una transacción, no un parche en el cliente.
+
+Y un marketplace chico es sobre todo confianza. Los bloqueos, las aprobaciones y los estados vacíos honestos le importan más a los primeros usuarios que un filtro más.

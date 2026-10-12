@@ -1,0 +1,92 @@
+---
+title: 'Investamind'
+tagline: 'Educación financiera que se siente como un hábito, no como un curso'
+description: 'Investamind es una app móvil que enseña a invertir con lecciones cortas, un feed de comunidad y gamificación. Un stack Expo y Express con renovación de sesión compatible con biometría, sesiones en Postgres y webhooks de suscripción deduplicados.'
+publishedAt: 2026-02-15
+stack:
+  - Expo 54
+  - React Native
+  - NativeWind
+  - TanStack Query
+  - Zustand
+  - RevenueCat
+  - Express
+  - Socket.IO
+  - Drizzle ORM
+  - Supabase Postgres
+  - Zod
+  - Pino
+role: 'Fullstack · Mobile'
+year: 2026
+links:
+  live: https://apps.apple.com/app/id6757620060
+coverImage: /images/work/investamind/cover.webp
+gallery:
+  - src: /images/work/investamind/home.webp
+    alt: 'Pantalla de inicio de Investamind con el progreso de aprendizaje, un consejo rápido y la tarjeta para continuar la lección'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/learn.webp
+    alt: 'Pestaña Aprender de Investamind con racha de días, XP, la lección actual con su progreso y accesos a los cursos'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/community.webp
+    alt: 'Feed de la comunidad de Investamind con estadísticas de miembros y publicaciones etiquetadas por tema'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/profile.webp
+    alt: 'Perfil de Investamind con puntos, días activos, publicaciones, historias y progreso por curso'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/premium.webp
+    alt: 'Pantalla del plan premium de Investamind con la suscripción activa y los beneficios incluidos'
+    kind: phone
+    width: 780
+    height: 1661
+lang: es
+translationId: investamind
+featured: true
+order: 6
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Quien quiere aprender a invertir suele terminar con una pila de videos e hilos sueltos y ninguna noción de progreso. La educación financiera además tiene un problema de confianza: necesita estructura, un lugar para preguntar sin sentirse juzgado y una razón para volver mañana. El producto tenía que ser tan fácil de abrir como una app social y tan ordenado como un curso, en inglés y en español rioplatense.
+
+## La solución
+
+Investamind es una app móvil construida por Capsule Codes para un cliente. Combina lecciones estructuradas, un feed de comunidad donde los miembros publican y conversan, y una capa de gamificación con XP, rachas, insignias e historias. Un plan premium desbloquea el catálogo completo. La app está publicada en el App Store.
+
+El cliente móvil es Expo 54 con React Native 0.81, NativeWind para los estilos, TanStack Query para el estado del servidor y Zustand para el estado local. El backend es una API Express con Socket.IO para tiempo real, Drizzle sobre Postgres de Supabase, Zod para validar y Pino para logs estructurados. Las suscripciones pasan por RevenueCat, y las correcciones se publican por aire con `expo-updates`.
+
+Las capturas usan datos de demostración inventados.
+
+## Stack y decisiones clave
+
+- **Un solo aviso biométrico por desbloqueo**: el refresh token vive en el keychain del dispositivo, opcionalmente detrás de Face ID. Una renovación ingenua pediría la cara en cada request vencido. La renovación de sesión es single-flight, así que varios 401 simultáneos se convierten en una sola llamada, y una copia del token en memoria, nunca persistida y borrada cuando la app se bloquea, hace que el aviso aparezca una vez por desbloqueo
+- **Sesiones en Postgres**: las sesiones son por cookie y se guardan en una tabla, así que se pueden revocar y sobreviven a los deploys. Como el cliente iOS no maneja cookies como un navegador, el id de sesión también viaja en el cuerpo JSON y el cliente lo guarda como su propia cookie de sesión
+- **Webhooks de suscripción idempotentes**: RevenueCat puede entregar el mismo evento más de una vez. Cada id de evento se guarda junto con su origen detrás de un índice único, así que un duplicado se detecta en lugar de otorgar o quitar acceso dos veces
+- **Las traducciones se verifican, no se confía en ellas**: un script compara los catálogos en inglés y español y además detecta claves duplicadas, que `JSON.parse` resuelve en silencio quedándose con la última
+- **Actualizaciones por aire**: los arreglos de texto y los bugs chicos llegan a los usuarios sin esperar la revisión de las tiendas, mientras que los cambios nativos siguen pasando por un build
+
+<Callout type="info" title="Por qué no alcanza con guardar el token">
+  La protección biométrica solo sirve si la app no la anula. Dejar el secreto en el keychain y una
+  copia de corta vida en memoria hace que una app bloqueada necesite al usuario de nuevo, y que una
+  app desbloqueada no lo moleste.
+</Callout>
+
+## Aprendizajes
+
+Las funciones de seguridad tienen un costo de experiencia, y el trabajo consiste en volverlo invisible. Face ID en cada renovación habría sido seguro e inusable; el single-flight más la caché en memoria conservó ambas cosas.
+
+Hay que tratar cada webhook como entrega al menos una vez. Un índice único sobre el id del evento son unas pocas líneas y elimina toda una clase de bugs de facturación.
+
+Los clientes móviles no son navegadores. Las sesiones por cookie funcionan, pero solo después de decidir de forma explícita cómo las transporta el cliente, y dejarlo escrito en la API ahorra una semana de depuración.
+
+Y el contenido se valida igual que los datos. Un archivo de traducciones también es un esquema, y una clave duplicada es un bug silencioso que un script encuentra en milisegundos.

@@ -1,0 +1,92 @@
+---
+title: 'Investamind'
+tagline: 'Investing education that feels like a habit, not a course'
+description: 'Investamind is a mobile app that teaches investing through short lessons, a community feed and gamification. An Expo and Express stack with biometric-safe session refresh, Postgres-backed sessions and deduplicated subscription webhooks.'
+publishedAt: 2026-02-15
+stack:
+  - Expo 54
+  - React Native
+  - NativeWind
+  - TanStack Query
+  - Zustand
+  - RevenueCat
+  - Express
+  - Socket.IO
+  - Drizzle ORM
+  - Supabase Postgres
+  - Zod
+  - Pino
+role: 'Fullstack · Mobile'
+year: 2026
+links:
+  live: https://apps.apple.com/app/id6757620060
+coverImage: /images/work/investamind/cover.webp
+gallery:
+  - src: /images/work/investamind/home.webp
+    alt: 'Investamind home screen with learning progress, a quick tip and a continue-learning card'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/learn.webp
+    alt: 'Investamind learn tab with day streak, XP, the current lesson with progress and course shortcuts'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/community.webp
+    alt: 'Investamind community feed with member stats and posts tagged by topic'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/profile.webp
+    alt: 'Investamind profile with points, active days, posts, stories and learning progress per course'
+    kind: phone
+    width: 780
+    height: 1661
+  - src: /images/work/investamind/premium.webp
+    alt: 'Investamind premium plan screen with the active subscription and the included benefits'
+    kind: phone
+    width: 780
+    height: 1661
+lang: en
+translationId: investamind
+featured: true
+order: 6
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Most people who want to learn about investing end up with a pile of videos and threads and no sense of progress. Finance education also has a trust problem: it needs structure, a place to ask questions without feeling judged, and a reason to come back tomorrow. The product had to be as easy to open as a social app and as organized as a course, in English and in Rioplatense Spanish.
+
+## The solution
+
+Investamind is a mobile app built by Capsule Codes for a client. It combines structured lessons, a community feed where members post and discuss, and a gamification layer with XP, streaks, badges and stories. A premium plan unlocks the full catalog. The app is live on the App Store.
+
+The mobile client is Expo 54 with React Native 0.81, NativeWind for styling, TanStack Query for server state and Zustand for local state. The backend is an Express API with Socket.IO for realtime, Drizzle on Supabase Postgres, Zod for validation and Pino for structured logs. Subscriptions go through RevenueCat, and fixes ship over the air with `expo-updates`.
+
+The screenshots use invented demo data.
+
+## Stack and key decisions
+
+- **One biometric prompt per unlock**: the refresh token lives in the device keychain, optionally behind Face ID. A naive refresh would ask for the face on every expired request. Session refresh is single-flight, so concurrent 401s collapse into one call, and an in-memory copy of the token, never persisted and cleared when the app locks, means the prompt appears once per unlock
+- **Sessions in Postgres**: sessions are cookie-based and stored in a table, so they can be revoked and survive deploys. Because the iOS client does not handle cookies like a browser, the session id also travels in the JSON body and the client stores it as its own session cookie
+- **Idempotent subscription webhooks**: RevenueCat can deliver the same event more than once. Each event id is stored with its source behind a unique index, so a duplicate is detected instead of granting or revoking access twice
+- **Translations are checked, not trusted**: a script compares the English and Spanish catalogs and also catches duplicate keys, which `JSON.parse` would silently resolve by keeping the last one
+- **Over-the-air updates**: copy fixes and small bugs reach users without waiting for store review, while native changes still go through a build
+
+<Callout type="info" title="Why not just store the token">
+  Biometric protection only helps if the app does not defeat it. Keeping the secret in the keychain
+  and a short-lived copy in memory means a locked app needs the user again, and an unlocked app does
+  not nag them.
+</Callout>
+
+## What I learned
+
+Security features have a user experience cost, and the work is making that cost invisible. Face ID on every refresh would have been secure and unusable; single-flight plus a memory cache kept both.
+
+Treat every webhook as at-least-once. A unique index on the event id is a few lines and removes a whole class of billing bugs.
+
+Mobile clients are not browsers. Cookie sessions work, but only after you decide explicitly how the client carries them, and writing that down in the API saves a debugging week.
+
+And validate your content like you validate your data. A translation file is a schema too, and a duplicate key is a silent bug that a script finds in milliseconds.
