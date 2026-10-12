@@ -24,14 +24,14 @@ Close the four optional follow-ups left after `project-case-studies` and the cap
 - [x] T1 — Align the offline-first post (es/en) with Elevate's current sync engine (route: delegated writer, preparation trigger: reads the Elevate repo).
 - [ ] T2 — Recapture the Orbys cover and gallery with local demo data (route: delegated, needs the Orbys repo and local seed).
 - [ ] T3 — capsulecodes.com admin: upload or replace the project cover (`image`) (route: delegated writer, 2+ files).
-- [ ] T4 — Verify HTG `cover_media_id` provenance and fix it if wrong (route: inline, read-only SQL first).
+- [x] T4 — Verify HTG `cover_media_id` provenance and fix it if wrong (route: inline, read-only SQL first).
 
 ## Acceptance criteria
 
 - T1: the post never contradicts `src/content/work/*/elevate.mdx`. es/en are in parity, and `pnpm build` passes.
 - T2: the Orbys cover shows populated demo data and was regenerated via `pnpm covers orbys`.
 - T3: the admin can set the cover, the gallery `images[]` is untouched, and tests, tsc and build pass, verified locally.
-- T4: HTG cover_media_id points to the cover (or null) with evidence recorded.
+- T4: HTG cover_media_id provenance is documented with evidence, and the row is fixed only if it affects rendering.
 
 ## Checks
 
@@ -43,3 +43,5 @@ Close the four optional follow-ups left after `project-case-studies` and the cap
 
 - Branch `feat/portfolio-followups` (facundopascale-dev).
 - T1 done: both posts aligned with the Elevate sync engine; pnpm build, pnpm test and the fitcoach grep checked. commit: docs(blog): align offline-first post with Elevate's sync engine
+- T1 follow-up: es post restored to voseo (the author's es register, as in `hola-mundo`); commit `24e6930`. T1 commits: `2daa8c4`, `24e6930`. RDD assess (`432e5f1..2daa8c4`): medium, `review_due=false` (`under_budget`); pending in slice.
+- T4 done (read-only, no DB write). HTG `ebf137d8` has `cover_media_id = 3c193320…`, which is the mediaId of its last screenshot. The pre-cleanup backup did not include that column, so the original value cannot be proven. Evidence that it is inert: `lib/project-media.ts#getProjectThumb` only reads `coverMediaId` when `image` is empty, and every project now has `image`. The only visible effect is the "cover" star on that screenshot in the admin gallery, which T3 will address (cover now lives in `image`).
