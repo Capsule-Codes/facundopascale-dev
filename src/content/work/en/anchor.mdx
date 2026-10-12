@@ -1,0 +1,98 @@
+---
+title: 'Anchor'
+tagline: 'A task planner that works offline and syncs when it can'
+description: 'Anchor is a React Native task planner with priorities, a task matrix, timeline, recurring tasks and reminders. I bootstrapped the app, built its local database and offline-first sync, the subscription flow and the 12-step tutorial, and worked on the backend and the admin panel.'
+publishedAt: 2025-01-13
+stack:
+  - Expo 54
+  - React Native
+  - TypeScript
+  - SQLite
+  - Zustand
+  - Express
+  - PostgreSQL
+  - RevenueCat
+role: 'Fullstack · Mobile lead'
+year: 2025
+coverImage: /images/work/anchor/cover.webp
+gallery:
+  - src: /images/work/anchor/home.webp
+    alt: 'Anchor home screen with the tasks of the day as cards coloured by priority, with times, repeat and location chips and a Done section'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/task-matrix.webp
+    alt: 'Anchor Task Matrix with four quadrants: urgent and important, important but not urgent, urgent but not important, and neither'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/timeline.webp
+    alt: 'Anchor timeline with day cards of tasks and a month and year picker below'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/priorities.webp
+    alt: 'Anchor priorities view with columns for Top, Medium, Low and Miscellaneous tasks'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/create-task.webp
+    alt: 'Anchor create task form with a Task or Event toggle, a voice input button, priority, date, time, location, repeat and reminders'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/account.webp
+    alt: 'Anchor account screen with the access status, log out, delete account and legal links'
+    kind: phone
+    width: 780
+    height: 1696
+  - src: /images/work/anchor/admin-users.webp
+    alt: 'Anchor admin panel with a searchable user table, registration date, subscription status, an access status selector and a reset password button'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: en
+translationId: anchor
+featured: true
+order: 11
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Most to-do apps treat every task the same, and they stop being useful the moment the connection drops. The client wanted a planner where the first question is what matters most: tasks ranked by priority, an urgent and important matrix, a timeline by day, and reminders that arrive on time. And it had to keep working on a train or a plane, with the changes reaching the server later.
+
+## The solution
+
+Anchor is a mobile app built by Capsule Codes for a client, with a backend and an admin panel. People create tasks and events with a priority, date, time, location, repeat rule and reminders, or dictate them by voice. They see them on the home screen as cards coloured by priority, in a four-quadrant Task Matrix, in a priorities view and on a timeline by day. Sign-in is with Apple, Google or email, and a free or paid access status decides what each account can do.
+
+I started the mobile project in January 2025 and worked on it until July 2026, together with a team of other developers, and I also worked on the backend and the admin panel. The tutorial, the subscription flow, the sync and the release fixes below are the parts my commits touched.
+
+The mobile app is Expo 54 with React Native 0.81, TypeScript, React Navigation and Zustand. The backend is Node with Express, TypeORM and PostgreSQL. The admin panel is Vite, React and MUI.
+
+The screenshots come from a local environment with a copy of the backend, and the data is invented: the users, tasks and places are made up, and payments and push notifications are turned off in that build.
+
+## Stack and key decisions
+
+- **Offline-first, with a local SQLite database**: tasks live in a local table first, and the app syncs both ways with the server when the network or the app state changes, debounced and with a minimum interval between runs. Deleted tasks are soft-deleted and flagged as unsynced until the server confirms, so a deletion cannot come back and a new task is not created twice
+- **Recurring tasks expanded on the device**: repeat rules are expanded into dates on the client, so the home screen and the timeline work without a connection, and a time zone manager keeps the dates consistent
+- **Reminders in two layers**: local notifications are scheduled on the device, and the backend sends push notifications through Firebase from cron jobs that run on a schedule
+- **Subscriptions with a clear source of truth**: RevenueCat is checked first, with the backend access status as a fallback, and the admin and free unlimited statuses skip the paywall. Superwall shows the paywall. I added the free unlimited status for lifetime free access, and the admin panel can change it
+- **A tutorial that survives a reinstall**: the 12-step onboarding tutorial keeps its completion flag per user on the server, through a `PATCH /me/tutorial` endpoint, and a QA test account is seeded at startup so the tutorial can be replayed
+- **Auth and recovery flows**: Apple, Google and email sign-in, normalized emails and one place to handle server errors. Password reset links open the app through a bridge page that needs a tap, which I hardened after finding it opened the app without one
+- **A small admin panel**: an admin-only login, a searchable user table, access status changes, password reset link generation and an export to Excel
+
+<Callout type="info" title="Do not log out on a 401">
+  In an offline-first app, an unauthorized response during sync is not a reason to wipe the session
+  or the local data. Anchor treats it conservatively and reconciles with the server later instead of
+  discarding what the person created on the device.
+</Callout>
+
+## What I learned
+
+Offline-first is mostly about the edge cases of sync. The bugs were never in the happy path: a task deleted on one side and edited on the other, a retry that created a duplicate, a response that arrived after the person had moved on. Flags for what is synced and what is deleted, and reconciling with the server, did more than any amount of retrying.
+
+A tutorial is a feature with its own state. Keeping it on the server, with a test account to replay it, made QA rounds faster and kept the experience the same after a reinstall.
+
+And the release work is part of the product. Android build memory settings, a deep link that needed a tap and an update that interrupted a login were all fixes that no screenshot shows, and they decided whether a version could ship.

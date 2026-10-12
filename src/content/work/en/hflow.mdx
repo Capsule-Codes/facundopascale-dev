@@ -1,0 +1,100 @@
+---
+title: 'HFlow'
+tagline: 'Multi-tenant payroll where each country is a plugin'
+description: 'HFlow is a multi-tenant payroll SaaS. Pay rules are a graph of components with country plugins, runs are logged with the full evaluation context, and approvals, RBAC and billing sit on a Fastify, tRPC and Neon backend.'
+publishedAt: 2025-11-15
+stack:
+  - React 19
+  - Vite
+  - TanStack Router
+  - tRPC
+  - Fastify
+  - Drizzle ORM
+  - Neon Postgres
+  - better-auth
+  - Stripe
+  - Turborepo
+role: 'Fullstack · Architecture'
+year: 2025
+links: {}
+coverImage: /images/work/hflow/cover.webp
+gallery:
+  - src: /images/work/hflow/dashboard.webp
+    alt: 'HFlow payroll dashboard with active employees, pending approvals and the approval pipeline'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/employees.webp
+    alt: 'HFlow employee directory with search, filters and bulk import from Excel'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/employee-detail.webp
+    alt: 'HFlow employee profile with payroll history, contract settings and bank accounts'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/payroll-runs.webp
+    alt: 'HFlow list of payroll runs by period with their status: draft, approved or paid'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/run-detail.webp
+    alt: 'HFlow payroll run detail with salary, deductions and net pay per employee'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/evaluate.webp
+    alt: 'HFlow evaluation result of a payroll batch with totals and per-employee breakdown'
+    kind: desktop
+    width: 1920
+    height: 1200
+  - src: /images/work/hflow/dashboard-dark.webp
+    alt: 'HFlow dashboard in dark mode'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: en
+translationId: hflow
+featured: true
+order: 4
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Payroll looks like arithmetic until a second country, a new tax rule or an audit shows up. Most small and mid-size companies run it on spreadsheets, and the rules end up buried in formulas nobody dares to touch. A payroll product has to calculate correctly, explain every number later, and let each company have its own team, roles and approvals without seeing anyone else's data.
+
+## The solution
+
+HFlow is a multi-tenant payroll platform built by Capsule Codes for a client. Each workspace manages its employees, contracts, pay schedules and pay definitions. A run evaluates a period for a batch of employees, someone with the right permission reviews it, and approved runs feed monthly reports and payment batches.
+
+It is a pnpm and Turborepo monorepo. The frontend is Vite with React 19 and TanStack Router; the backend is Fastify with tRPC and Drizzle on Neon Postgres, with better-auth for sessions and Stripe for subscriptions. Payroll rules are not hardcoded: they live in the data and in country plugins.
+
+The screenshots use invented demo data.
+
+## Stack and key decisions
+
+- **Pay rules as a graph**: a pay definition is a graph of components (earnings, deductions, taxes) with edges for their dependencies. The engine checks that it is acyclic, sorts it topologically and evaluates it in that order. The same acyclic check runs when someone edits the graph, so a broken definition cannot be saved
+- **Country plugins**: a registry maps a country code to a plugin that ships its components and templates, with a default plugin as fallback. The Dominican Republic and the US are built in. Contribution caps and progressive tax brackets are configuration read by generic calculators, not code branches
+- **Exact money math**: calculations go through `decimal.js` instead of floating point
+- **Every run is evidence**: each evaluation stores its snapshot together with the serialized context it ran on (contract, period, assignments, overrides), and failures are logged too. Pay definitions are versioned with an effective date and a status, so a past run can be explained
+- **One approved run per period**: approving a run rejects any other approved run for the same schedule and period inside a single transaction. That is why the backend has two database clients: Neon's HTTP driver for ordinary queries and a WebSocket pool where a real transaction is needed
+- **Tenancy and permissions**: the active workspace comes from the session, and a tRPC procedure declares the permissions it needs in its metadata, checked against the member's role
+
+<Callout type="info" title="Why a graph and not a formula">
+  A formula answers "how much", but a graph also answers "which component produced this number and
+  what did it depend on". It makes each line of a payslip traceable, and it lets a country change
+  its rules by editing data instead of shipping code.
+</Callout>
+
+## What I learned
+
+Model the rules, not the results. Once earnings, deductions and taxes are nodes with explicit dependencies, adding a country is a content problem instead of a refactor, and the engine stays small and testable.
+
+An audit trail is a feature you design on day one. Storing the context next to the result, even when the run fails, is cheap while writing the code and impossible to add afterwards.
+
+Money invariants belong in the database transaction, not in the UI. "Only one approved run per period" holds because the write is atomic, no matter how many people click at once.
+
+And pick your database driver per need. A serverless HTTP driver is great for short reads; the one place that needs a transaction deserves its own connection.

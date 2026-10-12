@@ -1,21 +1,48 @@
 ---
 title: 'Festival Pro'
-tagline: 'Two apps from a single codebase with EAS Build'
-description: 'Mobile app for music festivals with a dual-variant architecture, OTA updates, and a single React Native + Expo codebase that ships two distinct apps to the App Store and Google Play.'
+tagline: 'Two festival apps from one codebase, themed by the festival itself'
+description: 'Festival Pro is a multi-tenant festival schedule app. One React Native codebase ships two branded apps, derives each festival theme from a CMS color, builds its tab bar from the feed and keeps working with a patchy connection.'
 publishedAt: 2025-01-15
 stack:
   - React Native
   - Expo SDK 54
   - TypeScript
   - EAS Build
+  - EAS Update
   - Zustand
-  - React Query
   - React Navigation
+  - React Native Paper
   - Zod
 role: 'Mobile lead · Architecture'
 year: 2024
 links: {}
-coverImage: /images/work/festivalpro.svg
+coverImage: /images/work/festivalpro/cover.webp
+gallery:
+  - src: /images/work/festivalpro/stages.webp
+    alt: 'Festival Pro schedule grouped by stage in the dark theme, with a search bar, day filter and artist cards'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/hours.webp
+    alt: 'Festival Pro schedule grouped by hour, with a count of events per time slot and favorite hearts'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/venue.webp
+    alt: 'Festival Pro venue detail with a header image, address, buttons to open maps and the website, and a link to the schedule'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/map.webp
+    alt: 'Festival Pro festival map in the light theme with a pinch to zoom hint and a different tab bar'
+    kind: phone
+    width: 780
+    height: 1736
+  - src: /images/work/festivalpro/more.webp
+    alt: 'Festival Pro more menu listing news, sponsors, venues, website, settings and a switch event option'
+    kind: phone
+    width: 780
+    height: 1736
 lang: en
 translationId: festivalpro
 featured: true
@@ -26,33 +53,36 @@ import Callout from '@/components/mdx/Callout.astro';
 
 ## The problem
 
-Music festivals need dedicated apps: schedule grids, maps, last-minute change notifications. The issue was that each festival wanted its own branded app, but 90% of the functionality was identical. Maintaining two parallel codebases is insane — duplicated bugs, features arriving late to one version, and manual deploys per platform.
+A music festival needs its own app: a schedule that changes the day of the event, a map, a way to save favorites. But every festival wants its own branding, and about ninety percent of the functionality is the same. Maintaining a codebase per festival means duplicated bugs, features that reach one app late and a manual release for each store. The other extreme, one generic app, loses the identity that organizers pay for.
 
 ## The solution
 
-I built a **dual-variant** architecture where a single React Native + Expo repository produces two completely different apps: **Festival Pro Schedules** and **Folk Alliance 2026**. Each variant has its own bundle identifier, icon, splash screen, color scheme, and notification config, but they share 100% of the business logic.
+Festival Pro is a mobile app built by Capsule Codes for a client, as a multi-tenant product: one React Native and Expo codebase that ships as two distinct apps, Festival Pro Schedules and Folk Alliance 2026. An `EXPO_PUBLIC_APP_VARIANT` switch in the Expo config loads the configuration for each one, with its own bundle id, icon, splash, deep link scheme and EAS profiles, and its own update channel for over-the-air changes.
 
-The key is in `app.config.js`: a switch on `EXPO_PUBLIC_APP_VARIANT` that loads either `festival.config.js` or `folk.config.js`. EAS Build handles the rest — each variant gets its own development, staging, and production profiles with separate channels for OTA updates.
+Inside each app the festival is data. The user picks an event, and the schedule, the map, the venues and even the tab bar come from a CMS feed. The app only needs to know how to render them.
 
-The real win is the OTA update system via `expo-updates`. When a festival's schedule changes (which happens ALL the time), I don't need to go through App Store review. I push an update to the corresponding channel and users get it on the next app launch. Each variant has its own channel: `production-festival` and `production-folk`.
+Expo SDK 54 and React Native 0.81, React Navigation 7 and React Native Paper with Material 3 build the interface. Zustand holds the state and Zod validates everything that comes from outside. The screenshots show public festival content from the apps themselves.
 
 ## Stack and key decisions
 
-- **Expo SDK 54 + React Native 0.81**: Managed workflow with prebuild for native module access when needed
-- **EAS Build with 10 profiles**: development, preview, staging, production, and local builds for each variant — the `eas.json` is the most detailed build config you'll see
-- **Zustand for state**: Lightweight and TypeScript-first. For a read-heavy app with infrequent data changes, Redux was overkill
-- **React Query for data fetching**: Smart caching for schedule grids — users check the schedule 50 times a day
-- **Shopify FlashList**: Artist and event lists need real performance, not vanilla FlatList
-- **Zod 4 for validation**: Data comes from an external CMS, and I don't trust anything that hasn't passed through a schema
+- **Two apps, one repo**: each variant has its own config, bundle id and scheme, and EAS profiles for development, preview, staging and production, each with a separate channel. A schedule fix reaches one app's users over the air without a store review, and cannot leak into the other
+- **A theme derived from one color**: each festival sends a seed color, and a Material 3 palette is generated from it for light and dark modes. An invalid value, such as a URL where a color was expected, falls back to the default instead of breaking the screen, and a set of contrast checks keeps text readable on whatever the festival picked
+- **A tab bar from the feed**: the bottom tabs are built from the menu items each festival publishes, which is why one app shows a map and vendors while another does not
+- **Offline tolerant by construction**: the feed pipeline reads the cache first and commits what validates, then fetches in parallel unless the device is known to be offline. A failing menu does not hurt its siblings, and an empty response gets a single retry after a short pause
+- **A guard against stale writes**: if the user switches festival while a request is in flight, the late result is discarded, so one festival's artists never show up inside another festival's app
+- **Zod at the boundary**: both cached and fresh payloads go through the same schema before they reach the store
 
-<Callout type="info" title="The prebuild trick">
-  The prebuild script renames the `ios` and `android` folders per variant (`ios-festival`,
-  `android-folk`) so they coexist in the same repo without conflicts. It's ugly but it works
-  flawlessly — and the alternative was maintaining two repos.
+<Callout type="info" title="Why the stale guard exists">
+  Every fetch writes into the same shared stores. In a multi-tenant app a slow response from the
+  festival you just left is not a harmless race, it is wrong data on the wrong brand.
 </Callout>
 
 ## What I learned
 
-The Android build of Folk Alliance is at **versionCode 45** and Festival Pro at **61**. Every build you upload to the stores needs a unique incremental versionCode, and when you have two variants in parallel, losing count is easier than you'd think.
+Treat the tenant as data and the variant as configuration. Once colors, tabs and content come from the feed, a new festival is mostly content work, and the code stays the same.
 
-What I'd do differently: from day one I would have set up versionCodes as environment variables in EAS instead of hardcoding them in the configs. And I'd invest more time upfront in the notification system — `expo-notifications` + `expo-background-task` for syncing last-minute changes is where I spent the most time iterating.
+Remote data is hostile by default. Validating the cache and the network with the same schema, and allowing partial failure, made the app behave well in venues where the signal is the worst.
+
+Race conditions get more expensive when state is shared. A tiny guard that compares who requested the data with who is selected is cheaper than any amount of debugging at a live event.
+
+What I would change: keep build numbers out of config files and in EAS environment variables from day one, and spend more time earlier on background sync for last-minute schedule changes.

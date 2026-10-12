@@ -33,7 +33,8 @@ for (const locale of ['es', 'en'] as const) {
   });
 }
 
-test('case studies without a gallery render no gallery section', async ({ page }) => {
-  await page.goto('/en/work/festivalpro/');
+// Every case study now carries a gallery, so a page that is not a case study stands in.
+test('pages without a gallery render no gallery section', async ({ page }) => {
+  await page.goto('/en/work/');
   await expect(page.locator('section#gallery')).toHaveCount(0);
 });

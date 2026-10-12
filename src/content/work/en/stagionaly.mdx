@@ -1,0 +1,89 @@
+---
+title: 'Stagionaly'
+tagline: 'The job board for Italian seasonal hospitality'
+description: 'Stagionaly connects hotels, restaurants and beach clubs with seasonal workers in Italy. A monorepo with a Next.js web app and an Expo mobile app on Supabase, where row level security and database tests carry the privacy rules.'
+publishedAt: 2026-05-01
+stack:
+  - Next.js 16
+  - Expo
+  - React Native
+  - Supabase
+  - Postgres RLS
+  - pgTAP
+  - next-intl
+  - Resend
+  - Vitest
+  - pnpm
+role: 'Founder · Fullstack'
+year: 2026
+links:
+  live: https://www.stagionaly.com
+coverImage: /images/work/stagionaly/cover.webp
+gallery:
+  - src: /images/work/stagionaly/offers.webp
+    alt: 'Stagionaly job offers list with keyword search, filters, salary, accommodation and meals included badges'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/offer-detail.webp
+    alt: 'Stagionaly offer detail with role, location, salary, start date, description and an optional message to the employer'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/chat.webp
+    alt: 'Stagionaly chat thread between an employer and a candidate about a kitchen position'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/applications.webp
+    alt: 'Stagionaly applications screen listing each application with its status: sent, seen, under review, selected'
+    kind: phone
+    width: 780
+    height: 1695
+  - src: /images/work/stagionaly/notifications.webp
+    alt: 'Stagionaly notifications screen with new message alerts and a mark all as read button'
+    kind: phone
+    width: 780
+    height: 1695
+lang: en
+translationId: stagionaly
+featured: true
+order: 7
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## The problem
+
+Italian hospitality hires in waves. Every spring hotels, restaurants and beach clubs need cooks, waiters and receptionists for a few months, and workers need a season. Today that happens in group chats and generic job boards that know nothing about meals, lodging or the length of a season. It is also a market with real privacy stakes: a worker should not have their contact data scraped, and an employer should not be flooded by someone they blocked.
+
+## The solution
+
+Stagionaly is my own product: a job board built for seasonal hospitality. Candidates browse offers, apply and chat with employers. Employers manage their venues, publish offers, review applications and talk to candidates. There is an admin side for approving employers and moderating. It is live on the web, the App Store and Google Play, in Italian, English and Spanish.
+
+It is a pnpm monorepo. The web app is Next.js 16 with next-intl and Resend for email, the mobile app is Expo, and both talk to Supabase for auth, Postgres, storage and realtime. Business rules live in the database as much as possible, so the web app and the mobile app cannot disagree.
+
+The screenshots come from a real device with demo data.
+
+## Stack and key decisions
+
+- **Privacy rules as row level security**: roles and ownership are enforced by policies and security-definer helpers, not by the UI. The suite has 112 migrations, and many have pgTAP tests. One test asserts that a candidate who was blocked by an employer cannot fetch that employer's email
+- **Public data through narrow RPCs**: anonymous visitors see offers through a function that returns an explicit list of columns, never `select *`. An earlier policy exposed the establishment id, and the function closed that gap on purpose
+- **Deletes that cannot lie**: on a table with RLS, a denied `DELETE` returns no error and affects zero rows. Every delete asks for `count: 'exact'` and fails if nothing changed, so the interface never reports a phantom success
+- **Push with a single owner per device**: a database webhook on new notifications triggers an edge function that reads the recipient's preferences and sends through Expo. After an incident where one phone was attached to two accounts, a device token now belongs to exactly one user and is claimed through a single transaction
+- **Dev first, then production**: every change is a committed migration, merged to a development branch with its own Supabase branch and Vercel preview, verified, and only then promoted. Nobody pushes to the cloud database by hand
+
+<Callout type="warning" title="The silent zero">
+  A rejected write that returns "success" is worse than a visible error. Checking the affected row
+  count is a one-line habit that removes a whole family of "it said saved but it was not" bugs.
+</Callout>
+
+## What I learned
+
+Put privacy where it cannot be bypassed. A UI check protects one screen; a policy with a test protects every client you will ever write.
+
+Test the database like code. pgTAP turns "can this user see that row" into a regression test, and it caught more real mistakes than any end-to-end test.
+
+Production incidents are design input. The push token bug was a data model problem, so the fix was a constraint and a transaction, not a patch in the client.
+
+And a small marketplace is mostly trust. Blocks, approvals and honest empty states matter more to early users than another filter.

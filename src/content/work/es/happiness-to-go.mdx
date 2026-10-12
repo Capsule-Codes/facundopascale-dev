@@ -1,0 +1,105 @@
+---
+title: 'Happiness To Go'
+tagline: 'Una app de bienestar basada en cinco pequeños hábitos diarios'
+description: 'Happiness To Go es una app en Expo para construir hábitos diarios en cinco dimensiones, con cursos, diario y comunidad. Supabase con RLS es el backend, y las compras se verifican en el servidor contra RevenueCat.'
+publishedAt: 2026-01-08
+stack:
+  - Expo SDK 54
+  - Expo Router 6
+  - React Native
+  - TypeScript
+  - Supabase
+  - PostgreSQL
+  - RevenueCat
+  - Next.js
+  - Tailwind CSS
+role: 'Mobile · Fullstack'
+year: 2026
+links: {}
+coverImage: /images/work/happiness-to-go/cover.webp
+gallery:
+  - src: /images/work/happiness-to-go/home.webp
+    alt: 'Pantalla de inicio de Happiness To Go con la rueda Daily Glow y una racha de cuatro días'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/home-activities.webp
+    alt: 'Lista de actividades glow del día en Happiness To Go con tres de cinco completadas'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/courses.webp
+    alt: 'Catálogo de cursos de Happiness To Go con un curso destacado y cursos adquiridos'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/course-detail.webp
+    alt: 'Detalle de un curso de Happiness To Go con progreso de lecciones y contenido del curso'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/journal.webp
+    alt: 'Diario de Happiness To Go con entradas etiquetadas por categoría de glow'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/community.webp
+    alt: 'Feed de la comunidad de Happiness To Go con publicaciones, likes y comentarios'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/calendar.webp
+    alt: 'Calendario de Happiness To Go con la racha y los días en que se completaron todos los glows'
+    kind: phone
+    width: 780
+    height: 1688
+  - src: /images/work/happiness-to-go/landing.webp
+    alt: 'Landing de Happiness To Go con la descripción de la app y los botones de las tiendas'
+    kind: desktop
+    width: 1920
+    height: 1200
+lang: es
+translationId: happiness-to-go
+featured: true
+order: 5
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+## El problema
+
+Las apps de bienestar suelen ser una lista de tareas o una biblioteca de contenido, y la gente abandona ambas en una semana. Happiness To Go buscaba algo más liviano: cinco pequeñas prácticas por día, una racha que premia la constancia, cursos más profundos cuando se quiere, y otras personas cerca. Además tenía que generar ingresos sin confiar en el teléfono para saber quién pagó qué.
+
+## La solución
+
+Happiness To Go es una app mobile, construida por Capsule Codes para un cliente, con una landing estática al lado. Cada día el usuario completa cinco actividades "glow": Gratitud, Energía, Amabilidad, Conexión y Calma. Se registran en una rueda y en un calendario, y alrededor hay un diario, un feed de comunidad y cursos educativos.
+
+La app usa Expo SDK 54 con Expo Router 6. El backend es un único proyecto de Supabase: Auth, Postgres con row level security, tres Edge Functions y 17 migraciones SQL. El dinero pasa por RevenueCat: una suscripción desbloquea todo, y cada curso se compra una sola vez. La landing es Next.js 15 exportada como archivos estáticos.
+
+Las capturas usan datos de demo inventados.
+
+## Stack y decisiones clave
+
+- **Mobile**: Expo SDK 54, React Native 0.81, Expo Router 6 con rutas tipadas, TypeScript en modo estricto
+- **Una sola capa de datos**: un único cliente de Supabase y un módulo `database.ts` que concentra todas las consultas, así no hay un segundo lugar que conozca el esquema
+- **Una sola respuesta a "¿este usuario puede ver esto?"**: un hook `useAccess()` resuelve una precedencia fija: admin, premium, prueba interna, comprado, regalado, bloqueado. La prueba vive en una tabla que llena un trigger de la base al registrarse, y cubre la rueda y el calendario pero nunca los cursos
+- **Compras verificadas por el servidor**: tras comprar un curso, la app llama a una Edge Function que consulta a la API REST de RevenueCat si esa transacción pertenece a ese usuario, verifica que el nivel del producto coincida con el del curso, y recién entonces escribe el permiso con el service role. El cliente nunca escribe sus propios permisos
+- **El webhook como red de seguridad**: una segunda Edge Function recibe los eventos de RevenueCat, falla cerrada si falta su secreto, reconcilia compras que la app no reportó y revoca permisos ante cancelaciones o reembolsos por id de transacción
+- **Niveles de precio como datos**: un mapa de nivel de curso y nivel de precio (regular, oferta, flash) a ids de producto de las tiendas, con un sufijo aparte en iOS porque Apple no permite reutilizar un id de producto eliminado
+- **RLS restrictivo**: las primeras políticas eran totalmente abiertas, y una migración posterior las reemplazó por reglas de dueño o admin respaldadas por una tabla `app_admins`. Una Edge Function de reporte semanal corre desde `pg_cron` y envía correos con Resend
+
+<Callout type="warning" title="Nunca confiar en el cliente para los permisos">
+  La app puede pedir el permiso de un curso, pero no puede dárselo a sí misma. Row level security
+  bloquea la escritura, y el único camino que crea un permiso de compra es la Edge Function que
+  verificó el recibo con RevenueCat.
+</Callout>
+
+## Aprendizajes
+
+Pon la decisión de acceso en un solo lugar. Con cuatro formas de obtener acceso (suscripción, prueba, compra, regalo), repartir las verificaciones por las pantallas garantiza que dos de ellas se contradigan. Un hook con un orden explícito simplificó cada pantalla.
+
+Verificar las compras en el servidor cuesta más al principio y se paga solo. Un cliente que dice "pagué" es una solicitud, no un hecho, y la Edge Function junto con el webhook hacen que ambos lados se controlen entre sí.
+
+Ajusta la seguridad en migraciones, no de memoria. Empezar con políticas permisivas y reemplazarlas en una migración dedicada dejó un historial claro y revisable de qué cambió y por qué.
+
+Y las restricciones de las tiendas son parte del modelo de datos. Un id de producto que Apple no deja reutilizar es el tipo de detalle que sale más barato codificar en un mapa que redescubrir en producción.
