@@ -13,12 +13,12 @@ test.describe('blog', () => {
 
   test('blog index lists the published post', async ({ page }) => {
     await page.goto('/es/blog/');
-    await expect(page.getByRole('heading', { level: 3, name: /Bienvenido al blog/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: /Bienvenido al blog/ })).toBeVisible();
   });
 
   test('blog index does NOT list the draft post', async ({ page }) => {
     await page.goto('/es/blog/');
-    await expect(page.getByRole('heading', { level: 3, name: /offline-first/i })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 2, name: /offline-first/i })).toHaveCount(0);
   });
 
   test('post page renders with correct heading', async ({ page }) => {
