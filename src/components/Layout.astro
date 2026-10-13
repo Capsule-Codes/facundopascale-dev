@@ -1,6 +1,10 @@
 ---
 import { getCollection } from 'astro:content';
 import '../styles/global.css';
+// `?url` resolves to the same hashed asset the @font-face rules in global.css point at, so the
+// preload below matches the request the stylesheet would make a round trip later.
+import newsreaderLatin from '@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2?url';
+import jetbrainsMonoLatin from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url';
 import { type Locale, type PageKey } from '../lib/i18n';
 import { buildOgSlug, buildOgUrl, DEFAULT_OG_SLUG } from '../lib/og';
 import {
@@ -143,6 +147,8 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
     <title>{title}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="preload" as="font" type="font/woff2" href={newsreaderLatin} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={jetbrainsMonoLatin} crossorigin />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
