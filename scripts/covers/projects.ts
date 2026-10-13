@@ -96,7 +96,7 @@ export const covers: CoverConfig[] = [
   {
     slug: 'horus',
     title: 'Horus',
-    tagline: 'Cataract lens education,\nnow moving to AWS.',
+    tagline: 'Cataract lens education,\nnow running on AWS.',
     pill: 'HEALTHCARE SAAS · AWS',
     gradient: ['#2FA3A0', '#0F7C7C', '#0A4A4D', '#05262A'],
     textColor: '#ffffff',
