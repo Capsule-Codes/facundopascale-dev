@@ -191,6 +191,7 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
     <Header
       locale={locale}
       wide={wide}
+      {...currentPageKey !== undefined ? { currentPageKey } : {}}
       {...currentDocId !== undefined ? { currentDocId } : {}}
       {...currentCollection !== undefined ? { currentCollection } : {}}
     />
@@ -198,6 +199,18 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
       <slot />
     </main>
     <Footer locale={locale} wide={wide} />
+    <script is:inline>
+      document.addEventListener('click', function (e) {
+        const a =
+          e.target instanceof Element ? e.target.closest('a[data-missing-translation]') : null;
+        if (!a) return;
+        try {
+          sessionStorage.setItem('missing-translation', '1');
+        } catch {
+          /* ignore: sessionStorage unavailable */
+        }
+      });
+    </script>
     <script is:inline>
       (function () {
         try {
