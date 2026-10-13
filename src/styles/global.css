@@ -104,7 +104,7 @@ pre {
  * `--shiki-light` and `--shiki-dark` CSS vars but no inline color. We pick the
  * right variable here based on the project's `data-theme` attribute (not the
  * raw `prefers-color-scheme` media query — that is handled by the inline boot
- * script in `Layout.astro` and the ThemeToggle island).
+ * script in `Layout.astro` and the ThemeToggle component).
  *
  * Default (no `data-theme='dark'`): light theme wins. This covers the SSR
  * default `<html data-theme="light">`.

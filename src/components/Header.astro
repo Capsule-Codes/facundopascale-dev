@@ -2,7 +2,7 @@
 import { getCollection } from 'astro:content';
 import { localizedPath, type Locale, type PageKey } from '../lib/i18n';
 import { findTranslation } from '../lib/translations';
-import ThemeToggle from './islands/ThemeToggle.tsx';
+import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
   locale: Locale;
@@ -82,7 +82,7 @@ const nav = [
           </a>
         ))
       }
-      <ThemeToggle client:load />
+      <ThemeToggle />
       <a
         href={targetPath ?? localizedPath('home', other)}
         hreflang={other}
