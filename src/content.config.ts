@@ -27,6 +27,8 @@ const work = defineCollection({
     title: z.string(),
     tagline: z.string(),
     description: z.string(),
+    /** Optional short text (<=160 chars) for <meta name=description>/OG; falls back to `description`. */
+    seoDescription: z.string().max(160).optional(),
     publishedAt: z.coerce.date(),
     stack: z.array(z.string()),
     role: z.string(),
