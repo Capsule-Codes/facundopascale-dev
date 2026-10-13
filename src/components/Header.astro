@@ -1,26 +1,26 @@
 ---
 import { getCollection } from 'astro:content';
-import { localizedPath, type Locale } from '../lib/i18n';
+import { localizedPath, type Locale, type PageKey } from '../lib/i18n';
 import { findTranslation } from '../lib/translations';
-import LanguageSwitcher from './islands/LanguageSwitcher.tsx';
 import ThemeToggle from './islands/ThemeToggle.tsx';
 
 interface Props {
   locale: Locale;
+  currentPageKey?: PageKey;
   currentDocId?: string;
   currentCollection?: 'blog' | 'work';
   wide?: boolean;
 }
-const { locale, currentDocId, currentCollection, wide = false } = Astro.props;
+const { locale, currentPageKey, currentDocId, currentCollection, wide = false } = Astro.props;
 
 const other: Locale = locale === 'es' ? 'en' : 'es';
 
 // Resolve a sibling translation for the current doc (if any) so the
-// language switcher can deep-link across locales. Empty collections and
-// missing siblings both collapse to `null`, in which case the island falls
-// back to `targetHomePath`.
+// language switcher can deep-link across locales. Static pages map to their
+// twin via `currentPageKey`. A missing sibling falls back to the other
+// locale's home and flags the link so a toast explains why.
 type TranslatableEntry = { id: string; data: { lang: Locale; translationId: string } };
-let targetPath: string | null = null;
+let targetPath: string | null = currentPageKey ? localizedPath(currentPageKey, other) : null;
 
 if (currentDocId && currentCollection) {
   let all: TranslatableEntry[] = [];
@@ -83,12 +83,15 @@ const nav = [
         ))
       }
       <ThemeToggle client:load />
-      <LanguageSwitcher
-        client:load
-        currentLocale={locale}
-        targetPath={targetPath}
-        targetHomePath={localizedPath('home', other)}
-      />
+      <a
+        href={targetPath ?? localizedPath('home', other)}
+        hreflang={other}
+        lang={other}
+        data-missing-translation={targetPath ? undefined : ''}
+        class="font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border border-[var(--color-border)] px-2 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+      >
+        {locale.toUpperCase()} → {other.toUpperCase()}
+      </a>
     </nav>
   </div>
 </header>

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { isPublished, filterPublished, byLocale, sortByDate } from '../../src/lib/content';
+import {
+  isPublished,
+  filterPublished,
+  byLocale,
+  sortByDate,
+  metaDescription,
+} from '../../src/lib/content';
 
 type MockEntry = {
   id: string;
@@ -51,5 +57,15 @@ describe('sortByDate', () => {
   it('sorts newest first', () => {
     const sorted = sortByDate(filterPublished(entries, NOW));
     expect(sorted.map((e) => e.id)).toEqual(['d', 'a']);
+  });
+});
+
+describe('metaDescription', () => {
+  it('prefers seoDescription when present', () => {
+    expect(metaDescription({ description: 'long', seoDescription: 'short' })).toBe('short');
+  });
+  it('falls back to description when seoDescription is missing or blank', () => {
+    expect(metaDescription({ description: 'long' })).toBe('long');
+    expect(metaDescription({ description: 'long', seoDescription: '  ' })).toBe('long');
   });
 });

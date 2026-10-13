@@ -10,6 +10,7 @@ import {
   type PageDescriptor,
 } from '../lib/hreflang';
 import { findTranslation } from '../lib/translations';
+import { buildBlogPostingJsonLd, buildHomeJsonLd, serializeJsonLd } from '../lib/json-ld';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 
@@ -78,6 +79,7 @@ const ogImageAlt =
 // Pages that don't pass any of the hreflang hints (e.g. one-off endpoints)
 // simply get no alternates — the canonical link above still anchors SEO.
 let hreflangPair: HreflangPair | null = null;
+let jsonLd: unknown = null;
 
 if (currentPageKey) {
   const descriptor: PageDescriptor = { kind: 'static', pageKey: currentPageKey };
@@ -90,6 +92,23 @@ if (currentPageKey) {
     currentCollection === 'blog' ? await getCollection('blog') : await getCollection('work');
   const current = all.find((d) => d.id === currentDocId);
   if (current) {
+    if (currentCollection === 'blog' && Astro.site && canonicalUrl) {
+      const d = current.data as unknown as {
+        title: string;
+        description: string;
+        publishedAt: Date;
+        updatedAt: Date | null;
+      };
+      jsonLd = buildBlogPostingJsonLd(Astro.site, {
+        title: d.title,
+        description: d.description,
+        url: canonicalUrl,
+        imageUrl: ogImageUrl,
+        publishedAt: d.publishedAt,
+        updatedAt: d.updatedAt,
+        locale,
+      });
+    }
     const other: Locale = locale === 'es' ? 'en' : 'es';
     const sibling = findTranslation(current, all, other);
     const currentSlug = currentDocId.replace(`${locale}/`, '').replace(/\.mdx$/, '');
@@ -102,6 +121,10 @@ if (currentPageKey) {
       siblingSlug,
     });
   }
+}
+
+if (currentPageKey === 'home' && Astro.site) {
+  jsonLd = buildHomeJsonLd(Astro.site, locale, description);
 }
 
 const hreflangHref = (path: string): string | null =>
@@ -160,6 +183,7 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
         </>
       )
     }
+    {jsonLd && <script is:inline type="application/ld+json" set:html={serializeJsonLd(jsonLd)} />}
     <link
       rel="alternate"
       type="application/rss+xml"
@@ -191,6 +215,7 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
     <Header
       locale={locale}
       wide={wide}
+      {...currentPageKey !== undefined ? { currentPageKey } : {}}
       {...currentDocId !== undefined ? { currentDocId } : {}}
       {...currentCollection !== undefined ? { currentCollection } : {}}
     />
@@ -198,6 +223,18 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
       <slot />
     </main>
     <Footer locale={locale} wide={wide} />
+    <script is:inline>
+      document.addEventListener('click', function (e) {
+        const a =
+          e.target instanceof Element ? e.target.closest('a[data-missing-translation]') : null;
+        if (!a) return;
+        try {
+          sessionStorage.setItem('missing-translation', '1');
+        } catch {
+          /* ignore: sessionStorage unavailable */
+        }
+      });
+    </script>
     <script is:inline>
       (function () {
         try {

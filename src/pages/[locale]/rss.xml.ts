@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ params, site }) => {
   if (!locale || !isLocale(locale)) {
     return new Response('Not found', { status: 404 });
   }
-  // `site` comes from `astro.config.ts` (`site: 'https://facundopascale.dev'`).
+  // `site` comes from `astro.config.ts` (`site: 'https://www.facundopascale.dev'`).
   // Guard narrows the type for `rss()` without a non-null assertion — the
   // typescript-eslint `no-non-null-assertion` rule is active via the v8
   // `recommended` config, so `site!` would warn.

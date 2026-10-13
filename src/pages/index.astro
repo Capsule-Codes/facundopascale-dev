@@ -1,3 +1,5 @@
 ---
+// Static output: prerendered as a meta-refresh page (HTTP 200), not a real 301.
+// A config-level `redirects: { '/': ... }` is not emitted by the Vercel adapter.
 return Astro.redirect('/es/', 301);
 ---

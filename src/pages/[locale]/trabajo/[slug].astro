@@ -2,7 +2,7 @@
 import { getCollection, render } from 'astro:content';
 import Gallery from '../../../components/Gallery.astro';
 import Layout from '../../../components/Layout.astro';
-import { byLocale } from '../../../lib/content';
+import { byLocale, metaDescription } from '../../../lib/content';
 import { type Locale } from '../../../lib/i18n';
 
 export async function getStaticPaths() {
@@ -24,7 +24,7 @@ const loc: Locale = 'es';
 
 <Layout
   title={`${d.title} — Trabajo`}
-  description={d.description}
+  description={metaDescription(d)}
   locale={loc}
   currentDocId={entry.id}
   currentCollection="work"
