@@ -1,0 +1,39 @@
+---
+/**
+ * Theme switch. Plain HTML + a tiny inline script instead of a React island, so the React runtime
+ * only ships on pages that need it (contact form). The head script in `Layout.astro` has already
+ * resolved the theme (stored choice, else OS preference) onto `<html data-theme>`; this reads it
+ * back so the glyph and `aria-pressed` are correct before first paint.
+ */
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  aria-label="Toggle theme"
+  aria-pressed="false"
+  class="font-mono text-xs text-[var(--color-text-muted)] hover:text-[var(--color-accent)] border border-[var(--color-border)] px-2 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+  >☾</button
+>
+<script is:inline>
+  (function () {
+    const btn = document.currentScript.previousElementSibling;
+    if (!btn) return;
+    function render() {
+      const dark = document.documentElement.dataset.theme === 'dark';
+      btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      btn.textContent = dark ? '☀' : '☾';
+    }
+    render();
+    btn.addEventListener('click', function () {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      render();
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        /* ignore: localStorage unavailable, theme still applies for this session */
+      }
+    });
+  })();
+</script>
