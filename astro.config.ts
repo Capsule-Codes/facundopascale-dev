@@ -8,6 +8,8 @@ import vercel from '@astrojs/vercel';
 
 import { remarkReadingTime } from './src/lib/reading-time';
 
+const SUPABASE_STORAGE_HOST = 'qijznxwebaukhrkqkbdn.supabase.co';
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://www.facundopascale.dev',
@@ -93,8 +95,34 @@ export default defineConfig({
   },
   // Origin check on POSTs to on-demand pages (default is already true; explicit for /admin).
   security: { checkOrigin: true },
+  // Showcase images live in Supabase Storage. Astro needs the pattern to optimize them; the
+  // Vercel optimizer's own allow-list is set in `imagesConfig.remotePatterns` below, because the
+  // adapter drops Astro patterns that carry a `protocol` (its filter is always false for them).
+  image: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: SUPABASE_STORAGE_HOST,
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
   adapter: vercel({
     webAnalytics: { enabled: true },
     imageService: true,
+    // Only widths listed in `sizes` can be requested from /_vercel/image; the defaults are too
+    // coarse for phone-sized cards and gallery thumbnails. WebP only: at the same quality number sharp's
+    // AVIF came out 20-55% larger than WebP on the portrait and the UI screenshots.
+    imagesConfig: {
+      sizes: [320, 480, 640, 750, 828, 960, 1200, 1440, 1920],
+      minimumCacheTTL: 604800,
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: SUPABASE_STORAGE_HOST,
+          pathname: '/storage/v1/object/public/**',
+        },
+      ],
+    },
   }),
 });

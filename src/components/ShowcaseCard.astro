@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import type { ShowcaseProject } from '../lib/site-data';
 
 interface Props {
@@ -28,11 +29,14 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
   >
     {
       p.image ? (
-        <img
+        <Image
           src={cover?.src ?? p.image}
           alt={cover?.alt || p.title}
           width={cover?.width || 640}
           height={cover?.height || 360}
+          widths={[320, 480, 640, 750, 960]}
+          sizes="(min-width: 1240px) 400px, (min-width: 640px) 45vw, 100vw"
+          quality={75}
           loading="lazy"
           decoding="async"
           class="h-full w-full object-cover object-top"

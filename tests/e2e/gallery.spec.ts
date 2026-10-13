@@ -22,6 +22,15 @@ for (const locale of ['es', 'en'] as const) {
       }
     });
 
+    test('serves responsive, optimized sources', async ({ page }) => {
+      await page.goto(c.path);
+      for (const img of await page.locator('section#gallery img').all()) {
+        await expect(img).toHaveAttribute('srcset', /\/_vercel\/image\?url=.+ \d+w,/);
+        await expect(img).toHaveAttribute('sizes', /\S/);
+        await expect(img).toHaveAttribute('src', /&q=75$/);
+      }
+    });
+
     test('has no horizontal overflow at 375px', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 800 });
       await page.goto(c.path);
