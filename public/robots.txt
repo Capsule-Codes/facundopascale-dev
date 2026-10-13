@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin
 
-Sitemap: https://facundopascale.dev/sitemap-index.xml
+Sitemap: https://www.facundopascale.dev/sitemap-index.xml

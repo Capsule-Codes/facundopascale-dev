@@ -10,7 +10,7 @@ import { remarkReadingTime } from './src/lib/reading-time';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://facundopascale.dev',
+  site: 'https://www.facundopascale.dev',
   integrations: [
     react(),
     mdx({
@@ -45,13 +45,14 @@ export default defineConfig({
     // aligns the signals and preserves reach.
     //
     // The `filter` callback excludes the project root (`/`) from the
-    // sitemap. The root is a meta-refresh redirect shim (`src/pages/index.astro`
-    // returns `Astro.redirect('/es/', 301)`), not a canonical URL. When it is
+    // sitemap. The root is a redirect shim (`src/pages/index.astro` calls
+    // `Astro.redirect('/es/', 301)`; under static output Astro prerenders it as
+    // a meta-refresh HTML page served with 200, not a real 301), not a canonical URL. When it is
     // included, the i18n pairing logic emits a duplicate
     // `hreflang="es"` entry in the home `<url>` group — one for `/` and one
     // for `/es/` — which violates the RFC (one href per hreflang value per
     // group). The filter receives absolute URL strings like
-    // `https://facundopascale.dev/` (verified against
+    // `https://www.facundopascale.dev/` (verified against
     // `node_modules/@astrojs/sitemap/dist/index.js` line 95), so the regex
     // matches any URL whose path is empty or just `/`.
     sitemap({
