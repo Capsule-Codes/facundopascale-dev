@@ -39,6 +39,9 @@ keeping the site's Blueprint identity (paper, ink, accent, Newsreader display, J
 - [x] T3 Gallery redesign — route: inline
 - [x] T4 e2e updates + new specs; full verification; screenshots before/after — route: inline
 
+- [x] T5 Lightbox (native dialog, keys, swipe, focus return, lazy full-size) — 751da0a, 538d38a
+- [x] T6 Voseo in the work index CTA — a1d73d6
+
 Route note: executed inline by the delegated writer agent (this agent is the delegated worker).
 
 ## Acceptance criteria
@@ -61,8 +64,12 @@ Route note: executed inline by the delegated writer agent (this agent is the del
   meta), next-project card and CTA, and a ~68ch body measure (77 chars/line at 16px).
 - `pnpm build` 0 warnings · `pnpm test` 314 passed · `astro check` 0 errors/0 warnings ·
   `pnpm lint` clean · `playwright test` 97 passed.
-- Known gap: phone frames use a 9:19.5 crop (object-top), so Elevate's three long scroll
-  captures are cropped; there is no lightbox to see them in full.
+- Phone frames crop to 9:19.5; the lightbox (T5) shows every shot uncropped. Long captures
+  (h/w > 2.3) keep a 440px width and scroll; other shots fit the viewport height.
+- Follow-up checks: build 0 warnings · test 322 passed · astro check 0/0 · lint clean ·
+  playwright 100 passed.
+- Out of scope, not changed: home page CTA (`src/pages/[locale]/index.astro`) still uses
+  "¿Tienes un proyecto?".
 
 ## Next step
 
