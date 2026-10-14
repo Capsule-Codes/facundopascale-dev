@@ -1,7 +1,8 @@
 ---
-import { Image } from 'astro:assets';
+import { getImage, Image } from 'astro:assets';
 import { resolveGalleryItem, type GalleryEntry } from '../lib/gallery';
 import type { Locale } from '../lib/i18n';
+import { balancedRows, desktopLayout, groupGallery } from '../lib/work-detail';
 
 interface Props {
   items: GalleryEntry[];
@@ -10,47 +11,376 @@ interface Props {
 
 const { items, locale } = Astro.props;
 const images = items.map(resolveGalleryItem);
-// Rendered widths: the article is max-w-3xl (768px) with 24px gutters and the figure frame adds
-// 18px (p-2 + border). Desktop shots span both grid columns, phone shots take one.
-const DESKTOP_WIDTHS = [480, 640, 750, 960, 1200, 1440];
-const DESKTOP_SIZES = '(min-width: 768px) 702px, calc(100vw - 66px)';
+const groups = groupGallery(images);
+const mixed = groups.length > 1;
+// Lightbox order follows the visual order (groups, then items inside each group).
+const ordered = groups.flatMap((g) => g.items);
+const indexOf = new Map(ordered.map((img, i) => [img, i]));
+
+/** Phones per row on wide screens; below `md` phones become a scroll-snap strip. */
+const PHONES_PER_ROW = 4;
+
+// Rendered widths inside the 1240px page container (1192px content). The figure frame
+// (p-1.5/p-2 + 1.5px border) is subtracted from each slot.
 const PHONE_WIDTHS = [320, 480, 640, 750];
-const PHONE_SIZES = '(min-width: 768px) 334px, calc(50vw - 50px)';
-const heading = locale === 'es' ? 'Galería' : 'Gallery';
+const PHONE_SIZES =
+  '(min-width: 1080px) 228px, (min-width: 768px) calc((100vw - 120px) / 4 - 15px), min(calc(62vw - 15px), 228px)';
+const DESKTOP_WIDTHS = [480, 640, 960, 1200, 1440, 1920];
+const DESKTOP_TILE_SIZES =
+  '(min-width: 1240px) 567px, (min-width: 768px) calc(50vw - 46px), calc(100vw - 67px)';
+const DESKTOP_FEATURED_SIZES = '(min-width: 947px) 861px, calc(100vw - 67px)';
+
+// Full-size sources for the lightbox: only referenced from data attributes, so nothing is
+// downloaded until the dialog opens. Widths must be in the Vercel optimizer's `sizes`.
+const FULL = {
+  phone: { widths: [480, 750], sizes: 'min(92vw, 440px)' },
+  desktop: { widths: [960, 1200, 1440, 1920], sizes: 'min(92vw, 1400px)' },
+} as const;
+const full = new Map(
+  await Promise.all(
+    ordered.map(async (img) => {
+      const r = await getImage({
+        src: img.src,
+        width: img.width,
+        height: img.height,
+        widths: [...FULL[img.kind].widths],
+        quality: 75,
+      });
+      return [img, { src: r.src, srcset: r.srcSet.attribute }] as const;
+    })
+  )
+);
+
+const copy = {
+  es: {
+    heading: 'Galería',
+    desktop: 'Escritorio',
+    phone: 'Móvil',
+    swipe: 'Deslizá para ver más',
+    open: 'Ampliar imagen',
+    dialog: 'Imagen ampliada',
+    close: 'Cerrar',
+    prev: 'Anterior',
+    next: 'Siguiente',
+  },
+  en: {
+    heading: 'Gallery',
+    desktop: 'Desktop',
+    phone: 'Mobile',
+    swipe: 'Swipe to see more',
+    open: 'Enlarge image',
+    dialog: 'Enlarged image',
+    close: 'Close',
+    prev: 'Previous',
+    next: 'Next',
+  },
+}[locale];
+
+/** Attributes for the button that opens an image in the lightbox. */
+const trigger = (img: (typeof ordered)[number]) => ({
+  type: 'button' as const,
+  'aria-label': `${copy.open}: ${img.alt}`,
+  'aria-haspopup': 'dialog' as const,
+  'data-lightbox-index': indexOf.get(img),
+  'data-full-src': full.get(img)?.src,
+  'data-full-srcset': full.get(img)?.srcset,
+  'data-full-sizes': FULL[img.kind].sizes,
+  'data-width': img.width,
+  'data-height': img.height,
+  'data-alt': img.alt,
+  'data-caption': img.caption ?? '',
+  class: `block w-full cursor-zoom-in ${focus}`,
+});
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const lbBtn =
+  'inline-flex items-center gap-2 border border-[#f1eee6]/40 px-3 py-2 font-mono text-xs text-[#f1eee6] transition-colors hover:border-[#ff7a4d] hover:text-[#ff7a4d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff7a4d]';
+
+const phoneRows = (count: number) => {
+  let start = 0;
+  return balancedRows(count, PHONES_PER_ROW).map((size) => {
+    const row = { start, end: start + size };
+    start += size;
+    return row;
+  });
+};
+const caption = 'mt-2 font-mono text-xs leading-snug text-text-dim';
 ---
 
 {
   images.length > 0 && (
-    <section id="gallery" aria-labelledby="gallery-heading" class="mt-16">
-      <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// {images.length} img</p>
-      <h2 id="gallery-heading" class="text-3xl font-display mb-6">
-        {heading}
+    <section
+      id="gallery"
+      aria-labelledby="gallery-heading"
+      class="mt-16 border-t-[1.5px] border-rule pt-12 md:mt-20 md:pt-14"
+    >
+      <p class="m-0 mb-2 font-mono text-xs text-accent">// {images.length} img</p>
+      <h2 id="gallery-heading" class="m-0 mb-10 text-4xl font-normal md:text-5xl">
+        {copy.heading}
       </h2>
-      <ul class="grid grid-cols-2 gap-4 items-start list-none p-0 m-0">
-        {images.map((img) => (
-          <li class={img.kind === 'desktop' ? 'col-span-2' : 'col-span-1 sm:col-span-1'}>
-            <figure class="m-0 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2">
-              <Image
-                src={img.src}
-                alt={img.alt}
-                width={img.width}
-                height={img.height}
-                widths={img.kind === 'desktop' ? DESKTOP_WIDTHS : PHONE_WIDTHS}
-                sizes={img.kind === 'desktop' ? DESKTOP_SIZES : PHONE_SIZES}
-                quality={75}
-                loading="lazy"
-                decoding="async"
-                class="block w-full h-auto"
-              />
-              {img.caption && (
-                <figcaption class="mt-2 font-mono text-xs text-[var(--color-text-dim)]">
-                  {img.caption}
-                </figcaption>
+      <div class="flex flex-col gap-14">
+        {groups.map((group) => {
+          const labelId = `gallery-${group.kind}`;
+          return (
+            <div
+              data-gallery-group={group.kind}
+              {...(mixed ? { role: 'group', 'aria-labelledby': labelId } : {})}
+            >
+              {mixed && (
+                <h3
+                  id={labelId}
+                  class="m-0 mb-5 font-mono! text-xs font-normal tracking-wide text-text-muted uppercase"
+                >
+                  {group.kind === 'desktop' ? copy.desktop : copy.phone} · {group.items.length}
+                </h3>
               )}
-            </figure>
-          </li>
-        ))}
-      </ul>
+              {group.kind === 'desktop' ? (
+                <ul class="m-0 grid list-none items-start gap-5 p-0 md:grid-cols-2">
+                  {group.items.map((img, i) => {
+                    const featured = i === 0 && desktopLayout(group.items.length).featured;
+                    return (
+                      <li
+                        class={featured ? 'md:col-span-2' : ''}
+                        data-featured={featured || undefined}
+                      >
+                        <figure
+                          class:list={[
+                            'm-0 border-[1.5px] border-rule bg-bg-elevated p-2',
+                            featured && 'md:mx-auto md:max-w-[880px]',
+                          ]}
+                        >
+                          <button {...trigger(img)}>
+                            <Image
+                              src={img.src}
+                              alt={img.alt}
+                              width={img.width}
+                              height={img.height}
+                              widths={DESKTOP_WIDTHS}
+                              sizes={featured ? DESKTOP_FEATURED_SIZES : DESKTOP_TILE_SIZES}
+                              quality={75}
+                              loading="lazy"
+                              decoding="async"
+                              class:list={[
+                                'block h-auto w-full',
+                                !featured && 'md:aspect-[16/10] md:object-cover md:object-top',
+                              ]}
+                            />
+                          </button>
+                          {img.caption && <figcaption class={caption}>{img.caption}</figcaption>}
+                        </figure>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <>
+                  <p
+                    class="m-0 mb-3 font-mono text-[11px] text-text-dim md:hidden"
+                    aria-hidden="true"
+                  >
+                    {copy.swipe} →
+                  </p>
+                  <ul
+                    data-phone-strip
+                    class="-mx-6 m-0 flex snap-x snap-mandatory list-none gap-4 overflow-x-auto scroll-px-6 px-6 pb-3 md:mx-0 md:flex-wrap md:justify-center md:gap-x-6 md:gap-y-4 md:overflow-visible md:px-0 md:pb-0"
+                  >
+                    {phoneRows(group.items.length).map((row, r) => (
+                      <>
+                        {r > 0 && (
+                          <li
+                            aria-hidden="true"
+                            class="hidden basis-full md:block"
+                            role="presentation"
+                          />
+                        )}
+                        {group.items.slice(row.start, row.end).map((img) => (
+                          <li class="w-[62vw] max-w-[240px] shrink-0 snap-start md:w-[calc((100%-4.5rem)/4)]">
+                            <figure class="m-0 border-[1.5px] border-rule bg-bg-elevated p-1.5">
+                              <button {...trigger(img)}>
+                                <Image
+                                  src={img.src}
+                                  alt={img.alt}
+                                  width={img.width}
+                                  height={img.height}
+                                  widths={PHONE_WIDTHS}
+                                  sizes={PHONE_SIZES}
+                                  quality={75}
+                                  loading="lazy"
+                                  decoding="async"
+                                  class="block aspect-[9/19.5] h-auto w-full object-cover object-top"
+                                />
+                              </button>
+                              {img.caption && (
+                                <figcaption class={caption}>{img.caption}</figcaption>
+                              )}
+                            </figure>
+                          </li>
+                        ))}
+                      </>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </section>
   )
 }
+
+{
+  images.length > 0 && (
+    <dialog
+      data-lightbox
+      aria-label={copy.dialog}
+      class="lightbox m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-[#0d1424] p-0 text-[#f1eee6]"
+    >
+      <div class="flex h-full flex-col">
+        <div class="flex items-center justify-between gap-4 px-4 py-3 md:px-6">
+          <p data-lightbox-counter class="m-0 font-mono text-xs" aria-live="polite" />
+          <button type="button" data-lightbox-close class={lbBtn}>
+            <span aria-hidden="true">✕</span>
+            {copy.close}
+          </button>
+        </div>
+        <div
+          data-lightbox-stage
+          class="flex min-h-0 flex-1 overflow-auto overscroll-contain px-4 md:px-20"
+        >
+          <figure data-lightbox-figure class="m-auto w-full py-2">
+            <img data-lightbox-img alt="" decoding="async" class="block h-auto w-full" />
+            <figcaption
+              data-lightbox-caption
+              class="mt-3 font-mono text-xs leading-snug text-[#c9cfdd] empty:hidden"
+            />
+          </figure>
+        </div>
+        <div data-lightbox-nav class="flex justify-center gap-3 px-4 py-3">
+          <button type="button" data-lightbox-prev class={lbBtn}>
+            <span aria-hidden="true">←</span>
+            {copy.prev}
+          </button>
+          <button type="button" data-lightbox-next class={lbBtn}>
+            {copy.next}
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </dialog>
+  )
+}
+
+<style>
+  .lightbox::backdrop {
+    background: rgb(13 20 36 / 0.6);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] {
+      animation: lightbox-in 160ms ease-out;
+    }
+  }
+  @keyframes lightbox-in {
+    from {
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  import { lightboxFit, swipeStep, wrapIndex } from '../lib/work-detail';
+
+  const dialog = document.querySelector<HTMLDialogElement>('dialog[data-lightbox]');
+  const triggers = [...document.querySelectorAll<HTMLButtonElement>('[data-lightbox-index]')].sort(
+    (a, b) => Number(a.dataset.lightboxIndex) - Number(b.dataset.lightboxIndex)
+  );
+
+  if (dialog && triggers.length > 0) {
+    const q = <T extends Element>(sel: string) => dialog.querySelector<T>(sel)!;
+    const img = q<HTMLImageElement>('[data-lightbox-img]');
+    const figure = q<HTMLElement>('[data-lightbox-figure]');
+    const caption = q<HTMLElement>('[data-lightbox-caption]');
+    const counter = q<HTMLElement>('[data-lightbox-counter]');
+    const stage = q<HTMLElement>('[data-lightbox-stage]');
+    const nav = q<HTMLElement>('[data-lightbox-nav]');
+    let current = 0;
+    let opener: HTMLElement | null = null;
+
+    nav.hidden = triggers.length < 2;
+
+    const show = (i: number) => {
+      const t = triggers[i];
+      if (!t) return;
+      current = i;
+      const d = t.dataset;
+      const width = Number(d.width);
+      const height = Number(d.height);
+      const fit = lightboxFit(width, height);
+      // Clear first so the previous image never flashes at the new size.
+      img.removeAttribute('src');
+      img.removeAttribute('srcset');
+      img.width = width;
+      img.height = height;
+      img.alt = d.alt ?? '';
+      img.sizes = d.fullSizes ?? '';
+      img.srcset = d.fullSrcset ?? '';
+      img.src = d.fullSrc ?? '';
+      figure.style.maxWidth = fit.maxWidth;
+      caption.textContent = d.caption ?? '';
+      counter.textContent = `${i + 1} / ${triggers.length}`;
+      stage.scrollTop = 0;
+    };
+
+    const step = (delta: number) => show(wrapIndex(current, delta, triggers.length));
+
+    triggers.forEach((t, i) =>
+      t.addEventListener('click', () => {
+        opener = t;
+        show(i);
+        document.documentElement.style.overflow = 'hidden';
+        dialog.showModal();
+      })
+    );
+
+    dialog.addEventListener('close', () => {
+      document.documentElement.style.overflow = '';
+      img.removeAttribute('src');
+      img.removeAttribute('srcset');
+      opener?.focus();
+    });
+    q('[data-lightbox-close]').addEventListener('click', () => dialog.close());
+    q('[data-lightbox-prev]').addEventListener('click', () => step(-1));
+    q('[data-lightbox-next]').addEventListener('click', () => step(1));
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
+      else return;
+      e.preventDefault();
+    });
+    // Clicks on the dark area around the image (not the image, caption or controls) close it.
+    dialog.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target === dialog || target === stage || target.parentElement === dialog) dialog.close();
+    });
+
+    let startX = 0;
+    let startY = 0;
+    stage.addEventListener(
+      'touchstart',
+      (e) => {
+        const t = e.changedTouches[0];
+        if (t) [startX, startY] = [t.clientX, t.clientY];
+      },
+      { passive: true }
+    );
+    stage.addEventListener(
+      'touchend',
+      (e) => {
+        const t = e.changedTouches[0];
+        if (!t) return;
+        const delta = swipeStep(t.clientX - startX, t.clientY - startY);
+        if (delta !== 0 && triggers.length > 1) step(delta);
+      },
+      { passive: true }
+    );
+  }
+</script>
