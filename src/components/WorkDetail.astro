@@ -1,0 +1,281 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import globeIcon from 'lucide-static/icons/globe.svg?raw';
+import appleIcon from 'lucide-static/icons/apple.svg?raw';
+import playIcon from 'lucide-static/icons/play.svg?raw';
+import codeIcon from 'lucide-static/icons/code.svg?raw';
+import externalIcon from 'lucide-static/icons/external-link.svg?raw';
+import Gallery from './Gallery.astro';
+import Layout from './Layout.astro';
+import Toc from './Toc.astro';
+import { byLocale, metaDescription } from '../lib/content';
+import { localizedPath, type Locale } from '../lib/i18n';
+import { nextProject, projectLinks, type ProjectLinkKind } from '../lib/work-detail';
+
+interface Props {
+  entry: CollectionEntry<'work'>;
+  locale: Locale;
+}
+
+const { entry, locale: loc } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+
+const copy = {
+  es: {
+    titleSuffix: 'Trabajo',
+    back: 'Trabajo',
+    plate: 'CASO DE ESTUDIO',
+    role: 'Rol',
+    year: 'Año',
+    stack: 'Stack',
+    links: 'Enlaces',
+    coverAlt: `Portada del caso de estudio de ${d.title}`,
+    link: {
+      live: 'Sitio web',
+      appStore: 'App Store',
+      playStore: 'Google Play',
+      github: 'GitHub',
+      caseStudy: 'Caso completo',
+    },
+    newTab: '(se abre en una pestaña nueva)',
+    next: 'Siguiente proyecto',
+    nextCta: 'Ver el caso',
+    ctaPlate: 'CONTACTO',
+    ctaBefore: '¿Tenés un proyecto parecido? ',
+    ctaAccent: 'Hablemos.',
+    ctaText: 'Contame qué querés construir y te respondo con un primer enfoque.',
+    cta: 'Escribime',
+    all: 'Todos los proyectos',
+  },
+  en: {
+    titleSuffix: 'Work',
+    back: 'Work',
+    plate: 'CASE STUDY',
+    role: 'Role',
+    year: 'Year',
+    stack: 'Stack',
+    links: 'Links',
+    coverAlt: `${d.title} case study cover`,
+    link: {
+      live: 'Website',
+      appStore: 'App Store',
+      playStore: 'Google Play',
+      github: 'GitHub',
+      caseStudy: 'Full case study',
+    },
+    newTab: '(opens in a new tab)',
+    next: 'Next project',
+    nextCta: 'Read the case study',
+    ctaPlate: 'CONTACT',
+    ctaBefore: 'Have a similar project? ',
+    ctaAccent: "Let's talk.",
+    ctaText: 'Tell me what you want to build and I will reply with a first approach.',
+    cta: 'Get in touch',
+    all: 'All projects',
+  },
+}[loc];
+
+const ICONS: Record<ProjectLinkKind, string> = {
+  live: globeIcon,
+  appStore: appleIcon,
+  playStore: playIcon,
+  github: codeIcon,
+  caseStudy: externalIcon,
+};
+
+const links = projectLinks(d.links);
+
+const slugOf = (e: CollectionEntry<'work'>) => e.id.replace(`${loc}/`, '').replace(/\.mdx$/, '');
+const siblings = byLocale(await getCollection('work'), loc).map((e) => ({
+  slug: slugOf(e),
+  order: e.data.order,
+  entry: e,
+}));
+const next = nextProject(siblings, slugOf(entry));
+
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const plateLabel = 'm-0 font-mono text-xs uppercase tracking-wide text-accent';
+const metaLabel = 'font-mono text-[11px] uppercase tracking-wide text-text-dim';
+const btnBase = `inline-flex items-center gap-2 px-4 py-3 font-mono text-sm transition-colors ${focus}`;
+const btnPrimary = `${btnBase} bg-accent text-paper hover:bg-accent-hover`;
+const btnSecondary = `${btnBase} border-[1.5px] border-rule text-text hover:border-accent hover:text-accent`;
+const icon = '[&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0';
+---
+
+<Layout
+  title={`${d.title} — ${copy.titleSuffix}`}
+  description={metaDescription(d)}
+  locale={loc}
+  currentDocId={entry.id}
+  currentCollection="work"
+  wide
+>
+  <article>
+    <header class="bg-blueprint border-b-[1.5px] border-rule" data-case-hero>
+      <div class="mx-auto max-w-[1240px] px-6 pt-10 pb-14 md:pt-14 lg:pb-20">
+        <a
+          href={localizedPath('work', loc)}
+          class={`inline-flex items-center gap-1.5 font-mono text-xs text-text-muted hover:text-accent ${focus}`}
+        >
+          <span aria-hidden="true">←</span>
+          {copy.back}
+        </a>
+        <div
+          class="mt-8 grid gap-10 lg:mt-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:gap-14"
+        >
+          <div class="flex min-w-0 flex-col gap-6">
+            <p class={plateLabel}>{copy.plate} · {d.role} · {d.year}</p>
+            <h1
+              class="m-0 text-[clamp(44px,6vw,80px)] leading-[0.98] font-normal tracking-[-0.025em]"
+            >
+              {d.title}
+            </h1>
+            <p class="font-display m-0 text-2xl leading-snug italic">{d.tagline}</p>
+            <p class="m-0 max-w-[60ch] text-lg leading-relaxed text-text-muted">
+              {metaDescription(d)}
+            </p>
+            <dl
+              class="m-0 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 border-t border-rule pt-5"
+            >
+              <dt class={`${metaLabel} pt-0.5`}>{copy.role}</dt>
+              <dd class="m-0">{d.role}</dd>
+              <dt class={`${metaLabel} pt-0.5`}>{copy.year}</dt>
+              <dd class="m-0">{d.year}</dd>
+              <dt class={`${metaLabel} pt-1`}>{copy.stack}</dt>
+              <dd class="m-0">
+                <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                  {
+                    d.stack.map((t) => (
+                      <li class="border border-rule/40 bg-bg-elevated px-2 py-0.5 font-mono text-[11px]">
+                        {t}
+                      </li>
+                    ))
+                  }
+                </ul>
+              </dd>
+            </dl>
+            {
+              links.length > 0 && (
+                <ul
+                  class="m-0 flex list-none flex-wrap gap-3 p-0"
+                  aria-label={copy.links}
+                  data-case-links
+                >
+                  {links.map((l, i) => (
+                    <li>
+                      <a
+                        href={l.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-link-kind={l.kind}
+                        class={`${i === 0 ? btnPrimary : btnSecondary} ${icon}`}
+                      >
+                        <span aria-hidden="true" set:html={ICONS[l.kind]} />
+                        {copy.link[l.kind]}
+                        <span class="sr-only">{copy.newTab}</span>
+                        <span aria-hidden="true">↗</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )
+            }
+          </div>
+          <figure class="m-0 border-[1.5px] border-rule bg-bg-elevated p-2" data-case-cover>
+            <Image
+              src={d.coverImage}
+              alt={copy.coverAlt}
+              width={1600}
+              height={1000}
+              widths={[480, 640, 800, 960, 1200, 1600]}
+              sizes="(min-width: 1240px) 604px, (min-width: 1024px) calc(54vw - 70px), calc(100vw - 67px)"
+              quality={75}
+              priority
+              class="block aspect-[16/10] h-auto w-full object-cover"
+            />
+          </figure>
+        </div>
+      </div>
+    </header>
+
+    <div class="mx-auto max-w-[1240px] px-6 py-12 md:py-20">
+      <div
+        class="grid gap-12 lg:grid-cols-[12rem_minmax(0,68ch)] lg:justify-center lg:gap-16 xl:gap-24"
+      >
+        <aside class="hidden lg:block">
+          <Toc headings={headings} locale={loc} class="sticky top-24" />
+        </aside>
+        <div class="prose dark:prose-invert max-w-none min-w-0 leading-relaxed text-text-muted">
+          <Content />
+        </div>
+      </div>
+      <Gallery items={d.gallery} locale={loc} />
+    </div>
+
+    <footer class="border-t-[1.5px] border-rule">
+      <div class="mx-auto max-w-[1240px] px-6">
+        {
+          next && (
+            <nav aria-label={copy.next} class="border-b-[1.5px] border-rule py-10 md:py-14">
+              <a
+                href={localizedPath('work', loc, next.slug)}
+                data-next-project
+                class={`group grid items-center gap-6 border-[1.5px] border-rule bg-bg-elevated p-4 transition-colors hover:border-accent md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10 md:p-5 ${focus}`}
+              >
+                <Image
+                  src={next.entry.data.coverImage}
+                  alt=""
+                  width={1600}
+                  height={1000}
+                  widths={[320, 480, 640, 800]}
+                  sizes="(min-width: 1240px) 452px, (min-width: 768px) 37vw, calc(100vw - 86px)"
+                  quality={75}
+                  loading="lazy"
+                  decoding="async"
+                  class="block aspect-[16/10] h-auto w-full border border-rule/30 object-cover"
+                />
+                <span class="flex min-w-0 flex-col gap-3">
+                  <span class={plateLabel}>{copy.next} →</span>
+                  <span class="font-display text-[clamp(32px,4vw,52px)] leading-none">
+                    {next.entry.data.title}
+                  </span>
+                  <span class="text-lg leading-snug text-text-muted">
+                    {next.entry.data.tagline}
+                  </span>
+                  <span class="font-mono text-sm text-text group-hover:text-accent">
+                    {copy.nextCta} →
+                  </span>
+                </span>
+              </a>
+            </nav>
+          )
+        }
+        <section
+          aria-labelledby="case-cta-title"
+          class="flex flex-col items-start gap-5 py-14 md:py-[72px]"
+          data-case-cta
+        >
+          <p class={plateLabel}>{copy.ctaPlate}</p>
+          <h2
+            id="case-cta-title"
+            class="m-0 font-display text-[clamp(36px,5vw,64px)] leading-[0.98] font-normal"
+          >
+            {copy.ctaBefore}<em>{copy.ctaAccent}</em>
+          </h2>
+          <p class="m-0 max-w-[52ch] text-lg text-text-muted">{copy.ctaText}</p>
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <a href={localizedPath('contact', loc)} class={btnPrimary}>{copy.cta} →</a>
+            <a
+              href={localizedPath('work', loc)}
+              class={`font-mono text-sm underline underline-offset-4 hover:text-accent ${focus}`}
+            >
+              ← {copy.all}
+            </a>
+          </div>
+        </section>
+      </div>
+    </footer>
+  </article>
+</Layout>
