@@ -16,9 +16,18 @@ test.describe('blog', () => {
     await expect(page.getByRole('heading', { level: 2, name: /Bienvenido al blog/ })).toBeVisible();
   });
 
-  test('blog index does NOT list the draft post', async ({ page }) => {
+  test('blog index lists the offline-first post in both locales', async ({ page }) => {
     await page.goto('/es/blog/');
-    await expect(page.getByRole('heading', { level: 2, name: /offline-first/i })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 2, name: /offline-first/i })).toBeVisible();
+    await page.goto('/en/blog/');
+    await expect(page.getByRole('heading', { level: 2, name: /offline-first/i })).toBeVisible();
+  });
+
+  test('offline-first post page renders', async ({ page }) => {
+    await page.goto('/es/blog/2026-10-13-arquitectura-offline-first/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Arquitectura offline-first en la práctica'
+    );
   });
 
   test('post page renders with correct heading', async ({ page }) => {
