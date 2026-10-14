@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import { resolveGalleryItem, type GalleryEntry } from '../lib/gallery';
 import type { Locale } from '../lib/i18n';
+import { balancedRows, desktopLayout, groupGallery } from '../lib/work-detail';
 
 interface Props {
   items: GalleryEntry[];
@@ -10,47 +11,152 @@ interface Props {
 
 const { items, locale } = Astro.props;
 const images = items.map(resolveGalleryItem);
-// Rendered widths: the article is max-w-3xl (768px) with 24px gutters and the figure frame adds
-// 18px (p-2 + border). Desktop shots span both grid columns, phone shots take one.
-const DESKTOP_WIDTHS = [480, 640, 750, 960, 1200, 1440];
-const DESKTOP_SIZES = '(min-width: 768px) 702px, calc(100vw - 66px)';
-const PHONE_WIDTHS = [320, 480, 640, 750];
-const PHONE_SIZES = '(min-width: 768px) 334px, calc(50vw - 50px)';
-const heading = locale === 'es' ? 'Galería' : 'Gallery';
+const groups = groupGallery(images);
+const mixed = groups.length > 1;
+
+/** Phones per row on wide screens; below `md` phones become a scroll-snap strip. */
+const PHONES_PER_ROW = 4;
+
+// Rendered widths inside the 1240px page container (1192px content). The figure frame
+// (p-1.5/p-2 + 1.5px border) is subtracted from each slot.
+const PHONE_WIDTHS = [240, 360, 480, 640, 780];
+const PHONE_SIZES =
+  '(min-width: 1080px) 228px, (min-width: 768px) calc((100vw - 120px) / 4 - 15px), min(calc(62vw - 15px), 228px)';
+const DESKTOP_WIDTHS = [480, 640, 800, 960, 1200, 1440, 1920];
+const DESKTOP_TILE_SIZES =
+  '(min-width: 1240px) 567px, (min-width: 768px) calc(50vw - 46px), calc(100vw - 67px)';
+const DESKTOP_FEATURED_SIZES = '(min-width: 947px) 861px, calc(100vw - 67px)';
+
+const copy = {
+  es: { heading: 'Galería', desktop: 'Escritorio', phone: 'Móvil', swipe: 'Deslizá para ver más' },
+  en: { heading: 'Gallery', desktop: 'Desktop', phone: 'Mobile', swipe: 'Swipe to see more' },
+}[locale];
+
+const phoneRows = (count: number) => {
+  let start = 0;
+  return balancedRows(count, PHONES_PER_ROW).map((size) => {
+    const row = { start, end: start + size };
+    start += size;
+    return row;
+  });
+};
+const caption = 'mt-2 font-mono text-xs leading-snug text-text-dim';
 ---
 
 {
   images.length > 0 && (
-    <section id="gallery" aria-labelledby="gallery-heading" class="mt-16">
-      <p class="font-mono text-xs text-[var(--color-accent)] mb-2">// {images.length} img</p>
-      <h2 id="gallery-heading" class="text-3xl font-display mb-6">
-        {heading}
+    <section
+      id="gallery"
+      aria-labelledby="gallery-heading"
+      class="mt-16 border-t-[1.5px] border-rule pt-12 md:mt-20 md:pt-14"
+    >
+      <p class="m-0 mb-2 font-mono text-xs text-accent">// {images.length} img</p>
+      <h2 id="gallery-heading" class="m-0 mb-10 text-4xl font-normal md:text-5xl">
+        {copy.heading}
       </h2>
-      <ul class="grid grid-cols-2 gap-4 items-start list-none p-0 m-0">
-        {images.map((img) => (
-          <li class={img.kind === 'desktop' ? 'col-span-2' : 'col-span-1 sm:col-span-1'}>
-            <figure class="m-0 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2">
-              <Image
-                src={img.src}
-                alt={img.alt}
-                width={img.width}
-                height={img.height}
-                widths={img.kind === 'desktop' ? DESKTOP_WIDTHS : PHONE_WIDTHS}
-                sizes={img.kind === 'desktop' ? DESKTOP_SIZES : PHONE_SIZES}
-                quality={75}
-                loading="lazy"
-                decoding="async"
-                class="block w-full h-auto"
-              />
-              {img.caption && (
-                <figcaption class="mt-2 font-mono text-xs text-[var(--color-text-dim)]">
-                  {img.caption}
-                </figcaption>
+      <div class="flex flex-col gap-14">
+        {groups.map((group) => {
+          const labelId = `gallery-${group.kind}`;
+          return (
+            <div
+              data-gallery-group={group.kind}
+              {...(mixed ? { role: 'group', 'aria-labelledby': labelId } : {})}
+            >
+              {mixed && (
+                <h3
+                  id={labelId}
+                  class="m-0 mb-5 font-mono! text-xs font-normal tracking-wide text-text-muted uppercase"
+                >
+                  {group.kind === 'desktop' ? copy.desktop : copy.phone} · {group.items.length}
+                </h3>
               )}
-            </figure>
-          </li>
-        ))}
-      </ul>
+              {group.kind === 'desktop' ? (
+                <ul class="m-0 grid list-none items-start gap-5 p-0 md:grid-cols-2">
+                  {group.items.map((img, i) => {
+                    const featured = i === 0 && desktopLayout(group.items.length).featured;
+                    return (
+                      <li
+                        class={featured ? 'md:col-span-2' : ''}
+                        data-featured={featured || undefined}
+                      >
+                        <figure
+                          class:list={[
+                            'm-0 border-[1.5px] border-rule bg-bg-elevated p-2',
+                            featured && 'md:mx-auto md:max-w-[880px]',
+                          ]}
+                        >
+                          <Image
+                            src={img.src}
+                            alt={img.alt}
+                            width={img.width}
+                            height={img.height}
+                            widths={DESKTOP_WIDTHS}
+                            sizes={featured ? DESKTOP_FEATURED_SIZES : DESKTOP_TILE_SIZES}
+                            quality={75}
+                            loading="lazy"
+                            decoding="async"
+                            class:list={[
+                              'block h-auto w-full',
+                              !featured && 'md:aspect-[16/10] md:object-cover md:object-top',
+                            ]}
+                          />
+                          {img.caption && <figcaption class={caption}>{img.caption}</figcaption>}
+                        </figure>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <>
+                  <p
+                    class="m-0 mb-3 font-mono text-[11px] text-text-dim md:hidden"
+                    aria-hidden="true"
+                  >
+                    {copy.swipe} →
+                  </p>
+                  <ul
+                    data-phone-strip
+                    class="-mx-6 m-0 flex snap-x snap-mandatory list-none gap-4 overflow-x-auto scroll-px-6 px-6 pb-3 md:mx-0 md:flex-wrap md:justify-center md:gap-x-6 md:gap-y-4 md:overflow-visible md:px-0 md:pb-0"
+                  >
+                    {phoneRows(group.items.length).map((row, r) => (
+                      <>
+                        {r > 0 && (
+                          <li
+                            aria-hidden="true"
+                            class="hidden basis-full md:block"
+                            role="presentation"
+                          />
+                        )}
+                        {group.items.slice(row.start, row.end).map((img) => (
+                          <li class="w-[62vw] max-w-[240px] shrink-0 snap-start md:w-[calc((100%-4.5rem)/4)]">
+                            <figure class="m-0 border-[1.5px] border-rule bg-bg-elevated p-1.5">
+                              <Image
+                                src={img.src}
+                                alt={img.alt}
+                                width={img.width}
+                                height={img.height}
+                                widths={PHONE_WIDTHS}
+                                sizes={PHONE_SIZES}
+                                quality={75}
+                                loading="lazy"
+                                decoding="async"
+                                class="block aspect-[9/19.5] h-auto w-full object-cover object-top"
+                              />
+                              {img.caption && (
+                                <figcaption class={caption}>{img.caption}</figcaption>
+                              )}
+                            </figure>
+                          </li>
+                        ))}
+                      </>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </section>
   )
 }
