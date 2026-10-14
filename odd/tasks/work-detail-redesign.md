@@ -34,10 +34,10 @@ keeping the site's Blueprint identity (paper, ink, accent, Newsreader display, J
 
 ## Tasks
 
-- [ ] T1 Pure helpers + unit tests (RED → GREEN) — route: inline
-- [ ] T2 WorkDetail component (hero, body + TOC, next project, CTA), thin routes — route: inline
-- [ ] T3 Gallery redesign — route: inline
-- [ ] T4 e2e updates + new specs; full verification; screenshots before/after — route: inline
+- [x] T1 Pure helpers + unit tests (RED → GREEN) — route: inline
+- [x] T2 WorkDetail component (hero, body + TOC, next project, CTA), thin routes — route: inline
+- [x] T3 Gallery redesign — route: inline
+- [x] T4 e2e updates + new specs; full verification; screenshots before/after — route: inline
 
 Route note: executed inline by the delegated writer agent (this agent is the delegated worker).
 
@@ -55,8 +55,15 @@ Route note: executed inline by the delegated writer agent (this agent is the del
 
 ## Progress / evidence
 
-- Baseline heights (main, 1440 / 390): ur-pov 5876 / 6027, elevate 7474 / 6487, horus 5610 / 7723.
+- T1 b3e7230 (RED: module missing → GREEN: 19 tests). T2 b3bffc9. T3 b648e0d. T4 1cd2404.
+- Heights 1440 / 390, before → after: ur-pov 5876→5423 / 6027→6642; elevate 7474→5996 /
+  6487→7329; horus 5610→6788 / 7723→9216. Mobile and horus grow from the new hero (cover +
+  meta), next-project card and CTA, and a ~68ch body measure (77 chars/line at 16px).
+- `pnpm build` 0 warnings · `pnpm test` 314 passed · `astro check` 0 errors/0 warnings ·
+  `pnpm lint` clean · `playwright test` 97 passed.
+- Known gap: phone frames use a 9:19.5 crop (object-top), so Elevate's three long scroll
+  captures are cropped; there is no lightbox to see them in full.
 
 ## Next step
 
-T1.
+Review; push/PR are the user's decision.
