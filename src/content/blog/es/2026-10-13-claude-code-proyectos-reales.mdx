@@ -1,0 +1,95 @@
+---
+title: 'Cómo uso Claude Code en proyectos reales'
+description: Una semana de trabajo real con Claude Code sobre mis dos sitios, una auditoría, una pasada de performance y un error mío, y por qué el valor está en el proceso.
+publishedAt: 2026-10-13
+tags: ['ia', 'herramientas', 'craft']
+lang: es
+translationId: claude-code-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+Hay dos formas de contar cómo usás un asistente de código. Una es la demo: "le pedí una app y me la hizo en diez minutos". La otra es mostrar una semana de trabajo de verdad, con lo que salió bien y con lo que rompí. Esta es la segunda.
+
+Esta semana usé Claude Code sobre mis dos sitios: este, facundopascale.dev, y el de la agencia, [capsulecodes.com](https://www.capsulecodes.com/#products). Nada de proyectos de clientes en este post, a propósito. Te cuento qué hice, qué números salieron, y el proceso que hay alrededor, que es lo que de verdad hace que funcione.
+
+[FACU: por qué decidiste auditar los dos sitios esta semana: qué viste o qué te hizo sospechar]
+
+## Historia: una auditoría en vivo
+
+Lo primero fue una auditoría completa de los dos sitios en producción. No del código: de lo que ve un visitante. Recorrer cada página, seguir cada link, cambiar de idioma, mirar qué se descarga.
+
+Lo que apareció:
+
+- **Links rotos.** Links que llevaban a páginas que no respondían.
+- **Un canonical apuntando a un host que redirige.** El host canónico declarado era el dominio sin `www`, que a su vez redirige. Le estás diciendo a Google que la versión "verdadera" de tu página es una URL que no responde con la página.
+- **El selector de idioma aterrizando en la página equivocada.** Cambiabas de español a inglés y no caías en la versión traducida de la página donde estabas.
+- **Traducciones truncadas.** Textos que en un idioma estaban completos y en el otro cortados a la mitad.
+- **Un logo de 584 KB mostrado a 50 píxeles.** Medio mega para algo del tamaño de un botón.
+
+Nada de esto es exótico. Es exactamente el tipo de cosa que se acumula en un sitio que vas cambiando de a poco y que nadie recorre entero desde afuera. Lo que cambia con un asistente es que recorrerlo entero deja de ser una tarde aburrida.
+
+## Prueba: la pasada de performance
+
+Después de arreglar lo de la auditoría vino una pasada de performance. Todas las mediciones con Lighthouse en modo mobile, sobre builds de producción, antes y después.
+
+**capsulecodes.com, home:**
+
+- Performance: **80 → 90**.
+- Bytes de imágenes: **220 KB → 39 KB**.
+- El HTML ahora se sirve desde cache (ISR), en vez de generarse en cada request.
+
+**facundopascale.dev, home:**
+
+- Performance: **92 → 99**.
+- LCP (el tiempo hasta que se pinta el elemento más grande): **3,1 s → 2,0 s**.
+
+En este sitio, los cambios fueron cosas concretas: servir las imágenes de la galería y las tarjetas a través del optimizador de Vercel, reemplazar una isla de React que solo existía para el botón de tema por un script inline, precargar los subsets de las fuentes y marcar los assets estáticos como inmutables en cache. Cada uno es un commit separado.
+
+[FACU: si querés, cuál de estos cambios te sorprendió más por el impacto que tuvo]
+
+## Prueba: el error de la semana
+
+No todo salió bien, y prefiero contarlo.
+
+Al publicar el post sobre offline-first, el PR se mergeó antes de que terminara el CI. Había un test e2e viejo que verificaba exactamente lo contrario de lo que el PR hacía: que el post, entonces borrador, **no** apareciera en el índice del blog.
+
+```typescript
+test('blog index does NOT list the draft post', async ({ page }) => {
+  await page.goto('/es/blog/');
+  await expect(page.getByRole('heading', { level: 2, name: /offline-first/i })).toHaveCount(0);
+});
+```
+
+Publicar el post lo rompió, y como el merge no esperó al CI, quedó roto en `main`. La corrección fue chica (actualizar el test para que espere el post publicado en los dos idiomas) pero la lección no es el test. Es que me salteé un paso del proceso por apuro. Desde ahí, el merge espera al CI. Siempre.
+
+## El proceso alrededor de la herramienta
+
+Esta es la parte que más me importa, porque es la que no se ve en una demo. Lo describo en general, sin pegar mi configuración.
+
+**Cada cambio arranca como una tarea en un documento.** Antes de tocar código hay un documento del feature con el objetivo, el alcance, una lista de tareas y los chequeos que tienen que pasar. Si la tarea es de código, empieza con tests. El documento queda en el repo: si una sesión se corta, se retoma desde ahí, no desde la memoria de nadie.
+
+**Branches y commits chicos.** Nada se hace sobre `main`. Cada tarea es al menos un commit, con un mensaje que dice qué cambió. Si algo sale mal, se revierte un commit, no una tarde.
+
+**Una revisión antes de mergear.** Cada cambio pasa por una revisión antes de llegar a `main`. Que el código lo haya escrito una herramienta no lo exime; si algo, lo hace más necesario.
+
+**Delegar la lectura amplia.** Cuando entender algo requiere leer muchos archivos, esa lectura la hace un sub-agente que devuelve un resumen corto. El hilo principal queda limpio para decidir.
+
+**Una lista escrita de cosas que nunca toca.** Las bases de datos de producción de clientes. Secretos y claves. Cualquier cosa que mande plata o mensajes. No es una sugerencia que el modelo puede interpretar: es una regla escrita, y lo que requiere permiso pide permiso.
+
+**Verificar en producción después del deploy.** Que el CI pase no significa que el sitio funcione. Después de cada deploy, se mira el sitio real: las páginas que cambiaron, los links, los números.
+
+<Callout type="info" title="Lo que no hace">
+  Nada de esto es "la IA trabaja sola". Yo decido qué se hace, en qué orden y qué se mergea. La
+  herramienta tipea más rápido que yo y lee más rápido que yo. El criterio sigue siendo mío, y el
+  error de esta semana fue mío, no de la herramienta.
+</Callout>
+
+## Criterio: el valor es el proceso
+
+Si te quedás con una idea: **el valor no está en la herramienta, está en el proceso alrededor.** Claude Code sin tareas escritas, sin tests, sin revisión y sin verificación en producción es una forma muy rápida de generar código que no entendés. Con ese proceso, es una forma muy rápida de hacer trabajo que podés defender.
+
+Lo que cuesta: escribir la tarea antes de empezar, esperar al CI aunque estés apurado, revisar código que "ya funciona", y volver a mirar producción después de cada deploy. Es más lento que la demo. También es la diferencia entre una semana con dos sitios más rápidos y una semana con dos sitios rotos.
+
+[FACU: cierre personal: qué le dirías a alguien que está empezando a usar estas herramientas en proyectos reales]

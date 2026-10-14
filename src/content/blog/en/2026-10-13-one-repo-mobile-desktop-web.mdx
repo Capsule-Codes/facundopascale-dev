@@ -1,0 +1,118 @@
+---
+title: 'One product on mobile, desktop and web from a single repo'
+description: How the Elevate monorepo is laid out, six apps and a website, and why what gets shared is the logic (model, validation, i18n, sync) and not the UI.
+publishedAt: 2026-10-13
+tags: ['architecture', 'monorepo', 'mobile']
+lang: en
+translationId: monorepo-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+[Elevate](/en/work/elevate/) is three products in one: an app for trainers, one for nutritionists and one for gyms. Each of them has two sides: the professional, who works a lot at a computer, and their client, who uses a phone at the gym or in the kitchen. That makes six apps, plus the website.
+
+The temptation with a product like this is one of two things: either six repos that slowly drift apart until they share nothing, or a single "write once, run everywhere" framework that forces the desktop to feel like a phone. I did neither. I built a monorepo where logic is shared and UI isn't.
+
+[FACU: el momento concreto en que decidiste armarlo como monorepo: qué estabas por duplicar, o qué se rompió por tenerlo separado]
+
+Today the Elevate website is live. The mobile apps aren't in the stores yet and the desktop version is in pre-release. So this isn't a post about scale. It's a post about how the code is organized so that three products on two platforms don't turn into six different products.
+
+## Proof: the layout
+
+It's a monorepo with pnpm workspaces and Turborepo. Trimmed, it looks like this:
+
+```
+elevate/
+├── apps/
+│   ├── coach-mobile/     # Expo (React Native)
+│   ├── coach-desktop/    # Tauri v2 + React + Vite
+│   ├── nutri-mobile/     # Expo
+│   ├── nutri-desktop/    # Tauri v2
+│   ├── gym-mobile/       # Expo
+│   ├── gym-desktop/      # Tauri v2
+│   └── web/              # Astro
+├── packages/
+│   ├── shared/           # @elevate/shared: models, types, validation, i18n
+│   ├── sync/             # @elevate/sync: the offline-first sync engine
+│   ├── supabase/         # @elevate/supabase: generated types and helpers
+│   ├── ui/               # @elevate/ui: DOM components + headless hooks
+│   ├── anthropometry/    # @elevate/anthropometry: body composition math
+│   └── pdf/              # @elevate/pdf: PDF reports
+└── supabase/             # migrations, seed and Edge Functions (not a package)
+```
+
+The `pnpm-workspace.yaml` has two useful lines: `apps/*` and `packages/*`. Turborepo runs `build`, `test` and `type-check` in dependency-graph order: packages first, then the apps that use them.
+
+## What gets shared
+
+What lives in the packages is everything that has to produce **the same result** on every platform:
+
+- **The model.** Domain types (`Routine`, `Exercise`, `MealPlan`, `GymClassTemplate`...) are defined once in `@elevate/shared`.
+- **Validation and rules.** What a valid routine name is, how a subscription's status is computed, which licenses a gym has.
+- **Translations.** Spanish, English and Italian live in `@elevate/shared`, and both apps of a product load them the same way.
+- **Sync.** The engine I described in [the offline-first post](/en/blog/2026-10-13-offline-first-architecture/) is a package, `@elevate/sync`, used by both the Expo and the Tauri apps.
+
+A real example: this is how the trainer's mobile app sets up i18n.
+
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import * as Localization from 'expo-localization';
+
+import { en, es, it } from '@elevate/shared';
+```
+
+And this is the desktop one:
+
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import { en, es, it } from '@elevate/shared';
+```
+
+The translations are the same. What changes is how each platform finds out the language: the phone asks the OS through `expo-localization`, the desktop reads `localStorage` and `navigator.language`. Shared logic, platform integration in each app.
+
+Another example, a more interesting one. In the gym product, a week's classes are generated from a template and a date. If two devices generate the same week with random IDs, they collide on the server. The fix is a deterministic ID, and it lives in `@elevate/shared`:
+
+```typescript
+import { gymClassInstanceId } from '@elevate/shared';
+// ...
+const id = gymClassInstanceId(tpl.id, dateIso);
+```
+
+That same line is in `gym-mobile` and in `gym-desktop`. And the important detail is in the implementation: it's pure `BigInt` arithmetic, with no `crypto.subtle` and no `uuid` package, so it gives exactly the same result under Hermes (Expo's JavaScript engine) and in the Tauri webview. Sharing logic isn't just moving it into a package; it's making sure it doesn't depend on anything one platform has and the other doesn't.
+
+## What doesn't get shared
+
+The UI. Each app's screens are written for its platform: React Native with NativeWind on the phone, React with Vite on the desktop. The trainer at the computer works with tables and client management screens. The client on the phone logs sets with a rest timer in hand. They're different experiences because the usage is different.
+
+There's a nuance worth telling, because the tree above has a `ui` package. `@elevate/ui` does have components (buttons, modals, tables), but they're DOM components and only the desktop apps use them, since those share a platform. What the mobile apps import from that package is something else: the **headless hooks** in `@elevate/ui/hooks`, which touch neither `react-native` nor `react-dom`. The file that exports them says so explicitly:
+
+```typescript
+// Headless hooks — safe for both React Native and React web consumers.
+// None of these files may import from react-native, react-dom, expo-*, or
+// any app-specific module. Only `react` + `@elevate/shared` are allowed.
+```
+
+So, for example, `useRoutineBuilder` (the state and rules for building a routine) is used by both the trainer's and the gym's mobile apps, and each one draws its own form on top.
+
+The rule ends up like this: UI is shared only between apps on the **same** platform, and across platforms we share only what doesn't draw anything.
+
+<Callout type="info" title="And the website">
+  The Elevate website, built with Astro, doesn't depend on any shared package. It's the product's
+  site, not a seventh app. Putting it in the same dependency graph would have added coupling without
+  giving it anything in return.
+</Callout>
+
+## Lesson: what it cost and what I take away
+
+Not everything is free. Three concrete costs:
+
+1. **The local database isn't fully shared.** The phone uses `expo-sqlite` and the desktop uses `tauri-plugin-sql`, both with Drizzle on top, but each app has its own schema and migrations. In the desktop apps the DDL lives in several places at once, and when they drift it fails silently. That's why `@elevate/shared` has a "schema drift" check that compares, at startup, what the code expects with what SQLite actually has.
+2. **A change in a shared package touches six apps.** That's the advantage and it's the cost. Without tests in the packages and without Turborepo running what it should, a "small" change in `shared` is a fast way to break something you weren't looking at.
+3. **Boundary discipline.** That the headless hooks don't import `react-native` isn't guaranteed by good intentions: it's a written rule, and it has to be enforced in every review.
+
+[FACU: algún caso concreto donde compartir te ahorró trabajo, o donde un cambio en un paquete compartido rompió algo en otra app]
+
+What I take away: share the model, validation, translations and sync, because those have to give the same result everywhere and a bug there is a bug in six apps. Don't share UI across platforms, because a desktop and a phone aren't used the same way, and forcing them to look the same ends up as two mediocre apps instead of two good ones. And when you do share, make sure what's shared doesn't depend on anything one of the platforms doesn't have.

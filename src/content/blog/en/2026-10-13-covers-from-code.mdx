@@ -1,0 +1,103 @@
+---
+title: 'My project covers are generated from code'
+description: Every case study cover is an HTML template, a Playwright screenshot and a sharp conversion. Changing one means editing a line and running a command.
+publishedAt: 2026-10-13
+tags: ['craft', 'tools', 'automation']
+lang: en
+translationId: covers-code-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+This week the [Horus](/en/work/horus/) migration to AWS finished. The case study cover said "now moving to AWS", and that wasn't true anymore. It had to change.
+
+Changing the cover meant editing one line and running one command:
+
+```bash
+pnpm covers horus
+```
+
+With that, `public/images/work/horus/cover.webp` was regenerated with the new copy, "now running on AWS", with the same background, the same logo, the same screenshot and the same type as every other cover. Without opening a design tool.
+
+[FACU: cómo hacías las portadas antes de esto (Figma, a mano, plantillas) y qué te llevó a automatizarlas]
+
+This post is about how that works, and about the idea behind it: if a design repeats, it's code.
+
+## Story: eleven covers that have to look alike
+
+The covers in the [work](/en/work/) section all follow the same design: a background with a radial gradient in the project's colors, the logo on a white card, the name in large type, a one-line description, an uppercase pill underneath and, on the right, the product: one or two tilted phones, or a browser window.
+
+Today there are eleven projects. Eleven times the same design with different colors, copy and screenshots. Making them by hand means each one drifts a little from the others: a different margin, a shadow that doesn't quite match, a line of text half a pixel higher. And it means changing anything, even one word, is reopening the design file.
+
+## Proof: a project's config
+
+Each cover is one entry in `scripts/covers/projects.ts`. This is Horus, as it stands today:
+
+```typescript
+{
+  slug: 'horus',
+  title: 'Horus',
+  tagline: 'Cataract lens education,\nnow running on AWS.',
+  pill: 'HEALTHCARE SAAS · AWS',
+  gradient: ['#2FA3A0', '#0F7C7C', '#0A4A4D', '#05262A'],
+  textColor: '#ffffff',
+  logo: 'assets/horus/logo.png',
+  screenshots: ['assets/horus/screenshot.png'],
+  frame: 'browser',
+},
+```
+
+And this was the entire change to that file when the migration finished:
+
+```diff
+-    tagline: 'Cataract lens education,\nnow moving to AWS.',
++    tagline: 'Cataract lens education,\nnow running on AWS.',
+```
+
+Everything that defines a cover is there: the slug (which is also the output folder), the title, the tagline with `\n` for the line break, the pill, two to five colors for the gradient, the text color, the logo, one or two screenshots, and the frame: `phone` or `browser`.
+
+## Proof: the pipeline
+
+The `covers` command runs `scripts/covers/render.ts`, a Node script of about fifty lines that uses a template and a validator living next to it. Between the three of them they do four things:
+
+1. **Validate the config.** Kebab-case slug, non-empty title and tagline, two to five hex colors, one or two screenshots, and the browser frame with exactly one. If something's wrong, it fails before drawing anything.
+2. **Build the HTML.** A template with a fixed 1600×1000 pixel canvas, the radial gradient, the logo, the escaped copy and the matching frame. Images go in as data URIs, so the HTML doesn't depend on any server.
+3. **Photograph it with Playwright.** It opens Chromium with a viewport of exactly 1600×1000, loads the HTML and takes a PNG screenshot.
+4. **Convert it with sharp.** The PNG becomes a WebP at quality 88 and is saved to `public/images/work/<slug>/cover.webp`.
+
+The core of the render is almost literally that:
+
+```typescript
+const html = buildCoverHtml(config, {
+  logo: await toDataUri(config.logo),
+  screenshots: await Promise.all(config.screenshots.map(toDataUri)),
+});
+await page.setContent(html, { waitUntil: 'load' });
+const png = await page.screenshot({ type: 'png' });
+const out = coverOutputPath(root, config.slug);
+await mkdir(path.dirname(out), { recursive: true });
+await sharp(png).webp({ quality: 88 }).toFile(out);
+```
+
+With a slug, `pnpm covers horus` regenerates a single cover. With no arguments, it regenerates all of them. If you pass a slug that doesn't exist, it tells you which ones do.
+
+<Callout type="info" title="It has tests too">
+  The validation, the HTML escaping, the template (canvas, gradient, phone frame, browser frame or
+  two overlapping phones) and the output path have unit tests. The only thing CI doesn't test is the
+  screenshot itself, which depends on a browser. That one gets verified by looking at it.
+</Callout>
+
+## Lesson: if a design repeats, it's code
+
+The rule I take away is simple: **if you're going to make the same design more than two or three times, write it as code.** A template with data gives you three things a design file doesn't:
+
+- **Free consistency.** All eleven covers share the same margins, shadows and type because they come from the same template. There's nothing to remember.
+- **Cheap changes.** Fixing copy is editing one line. Changing a shadow on all of them is editing one CSS rule and running one command.
+- **History.** Every cover has its config in git. The commit that changed the Horus one says what changed, when and why, together with the change to the case study.
+
+What it costs: building the template the first time takes longer than making one cover by hand. The design is bounded by what the template knows how to do: if a project needs something different, you extend the template, you don't improvise. And the type depends on what's installed on the machine running the script, because the template uses system fonts.
+
+[FACU: si alguna portada te pidió algo que la plantilla no sabía hacer, y cómo lo resolviste]
+
+It isn't a design system and doesn't pretend to be. It's a small script that turns a repetitive task into a command. And the next time something changes in a project, the cover will be up to date in the time it takes me to write one line.

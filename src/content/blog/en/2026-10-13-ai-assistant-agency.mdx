@@ -1,0 +1,114 @@
+---
+title: 'I gave my AI assistant access to how I run my agency'
+description: Orbys, the tool we run Capsule Codes with, has an MCP server. What the assistant can do, what it can't, and which part of that the code actually guarantees.
+publishedAt: 2026-10-13
+tags: ['ai', 'mcp', 'agency']
+lang: en
+translationId: ai-agency-mcp-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+Recently I realized I had unlogged hours on a client project. Before, that meant opening the app, finding the client, finding the project, picking the date, writing the description, saving, and repeating for every day I'd forgotten. This time I wrote one sentence to my AI assistant and that was it. The hours were logged, pending approval.
+
+[FACU: la oración real que escribiste (sin el nombre del cliente) y qué te respondió el asistente]
+
+That works because [Orbys](/en/work/orbys/), the tool we use to run the agency, exposes an MCP (Model Context Protocol) server. It's the standard way to give an assistant like Claude a set of tools it can call: instead of the model "knowing" things about your business, you give it concrete functions with concrete parameters, and it decides when to call them.
+
+Sounds good. It also sounds dangerous. Giving a model access to your company's hours, expenses and billing is exactly the kind of decision you should think through twice. This post is about how I approached it, and about which parts of "the AI can't break anything" are guaranteed by the code and which parts are my own discipline.
+
+## What the assistant can do
+
+The server registers 61 tools, grouped by app module:
+
+- **Hours**: log, list, edit, approve, reject, delete, see pending entries and a per-employee summary.
+- **Delivery**: clients, projects and tasks (create, edit, move tasks on the board, delete).
+- **Finance**: billing reports by month, by client and by employee, the month-end "ready to invoice" view, and employee management.
+- **Operations**: one-off and recurring expenses, project retainers, and the partner split.
+- **Workspace**: global search, notifications, schedule and company settings.
+
+Every tool has a natural-language description, which is what the model reads to decide which one to use. For example, the one for logging hours says, among other things, that an employee can only log their own, that future dates aren't allowed, and that the entry "stays pending approval". A test checks that every tool has a description longer than 30 characters, because a badly described tool is a tool the model misuses.
+
+## Proof: how it authenticates and who it acts as
+
+The most important decision wasn't which tools to expose, but **who the assistant acts as**. The answer: as you. Never as a superuser.
+
+The flow goes like this:
+
+1. Each user generates a personal API key from the app. The key is shown once; the database stores only its SHA-256 hash.
+2. The key existing isn't enough. An **admin** has to enable MCP access for that user, in a separate table only an admin can write to. Nobody approves themselves.
+3. On every request, the server resolves the key, checks it isn't revoked and that the user has access enabled, and reads their role.
+4. With that, it signs a Supabase JWT for that user, which expires after 5 minutes and is minted fresh on every request.
+
+```typescript
+return new SignJWT({
+  role: 'authenticated',
+  company_id: ctx.companyId,
+  app_role: ctx.appRole,
+})
+  .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+  .setSubject(ctx.userId)
+  .setAudience('authenticated')
+  .setIssuedAt(now)
+  .setExpirationTime(now + 300) // 5 min — minted fresh per request
+  .sign(new TextEncoder().encode(secret));
+```
+
+Every tool query runs with that token. That means Postgres row level security applies exactly as it does when the user signs in on the web: they only see their company's data and what their role allows. The service role is used only to resolve the key, never to read app data.
+
+On top of that there's a second layer, in the domain code. Every tool calls the same service the web app uses, and that service applies the role rules. This isn't redundancy for its own sake. The RLS policy on hours is deliberately permissive so an employee can edit their own pending entry, which means the database alone would let them mark their own entry as approved. The rule "only an admin approves" lives in the domain:
+
+```typescript
+export function assertAdmin(actor: Actor, action = 'realizar esta acción'): void {
+  if (!isAdmin(actor)) {
+    throw new AppError({ code: 'FORBIDDEN', status: 403 /* ... */ });
+  }
+}
+```
+
+## Proof: what requires confirmation
+
+Every tool that permanently deletes or deactivates something (`delete_*`, `remove_*`, `deactivate_*`) requires a `confirm` field that only accepts the value `true`:
+
+```typescript
+const CONFIRM = z
+  .literal(true)
+  .describe('Debe ser true. Acción destructiva: confirmá con el usuario antes de mandarla.');
+```
+
+(The descriptions are in Spanish because the app is.) And there's a test that walks every registered tool and fails if a destructive one is missing it. If tomorrow someone adds a `delete_something` and forgets, CI stops it.
+
+<Callout type="warning" title="What confirm: true is not">
+  Let's be honest: `confirm` is a field the model fills in. It forces the assistant to make the
+  intent explicit and, through the description, to ask you first. But it isn't a human signature.
+  The real human confirmation comes from the MCP client, which asks your permission before running
+  each tool, and from your own judgment not to approve on autopilot.
+</Callout>
+
+## Lesson: the assistant types, a human decides
+
+The rule I wanted was simple: the assistant types, a human decides. Anything that moves money or commits to a client stays with a person. When I went to check which part of that the code guarantees, the answer was more nuanced than I'd have liked to write.
+
+**What the code guarantees:**
+
+- Hours and expenses logged by an employee (or by the assistant on their behalf) always stay **pending**. They don't affect billing or the month's result until an admin approves them.
+- Approving, rejecting, seeing billing by client, changing salaries or the partner split is **admin only**, and that's checked in the domain, not only in the database.
+- Nothing in the MCP server moves money or writes to a client. There's no payment integration, no invoices are sent, no emails go to clients. The notifications that exist are internal: for example, rejecting an entry notifies the employee. A "partner withdrawal" is an accounting record, not a transfer.
+- Destructive actions require explicit confirmation, and a test enforces it.
+
+**What the code doesn't guarantee:**
+
+- The assistant acts as you. If you're an admin, it can approve hours and expenses, because those tools exist and your role allows them. The separation between "types" and "decides" there isn't technical: it's the permission prompt from the MCP client and the decision not to approve anything without looking at it.
+
+[FACU: cómo lo usás vos en la práctica: ¿aprobás horas desde el asistente o siempre desde la web? ¿Qué te negás a delegarle aunque podrías?]
+
+I think it's important to say it this way, because it's easy to write "the AI never touches the money" and have it sound like a guarantee. It isn't one. What there is, is a design where the worst an employee (or a model acting as an employee) can do is log something someone else then has to approve, and where what an admin does goes through the same guards as on the web.
+
+## What it cost
+
+It wasn't free. Every tool had to go through the same domain layer the web app uses, instead of writing one-off queries "because it's faster". We had to maintain natural-language descriptions the model understands, and tests that guard the shape of the whole set. And I had to accept that the most important part of the control isn't in the server, but in how I use it.
+
+In exchange, logging the hours I forgot is one sentence. And if that assistant ever gets it wrong, the worst case is a pending entry someone rejects.
+
+If you're thinking about connecting your assistant to your business, start with three questions: who does it act as? What goes through the same validation as your app? And which decisions depend on your discipline rather than on the code? The first two you solve by programming. The third one, write it down, even if only for yourself.

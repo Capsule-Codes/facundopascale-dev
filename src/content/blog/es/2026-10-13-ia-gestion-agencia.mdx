@@ -1,0 +1,114 @@
+---
+title: 'Le di a mi asistente de IA acceso a la gestión de la agencia'
+description: Orbys, la herramienta con la que gestionamos Capsule Codes, tiene un servidor MCP. Qué puede hacer el asistente, qué no, y qué parte de eso garantiza el código.
+publishedAt: 2026-10-13
+tags: ['ia', 'mcp', 'agencia']
+lang: es
+translationId: ai-agency-mcp-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+Hace poco me di cuenta de que tenía horas sin cargar de un proyecto de un cliente. Antes, eso significaba abrir la app, buscar el cliente, buscar el proyecto, elegir la fecha, escribir la descripción, guardar, y repetir por cada día que me había olvidado. Esta vez le escribí una oración a mi asistente de IA y listo. Las horas quedaron cargadas, pendientes de aprobación.
+
+[FACU: la oración real que escribiste (sin el nombre del cliente) y qué te respondió el asistente]
+
+Eso funciona porque [Orbys](/es/trabajo/orbys/), la herramienta con la que gestionamos la agencia, expone un servidor MCP (Model Context Protocol). Es la forma estándar de darle a un asistente como Claude un conjunto de herramientas que puede llamar: en vez de que el modelo "sepa" cosas de tu negocio, le das funciones concretas, con parámetros concretos, y él decide cuándo llamarlas.
+
+Suena bien. También suena peligroso. Darle a un modelo acceso a las horas, los gastos y la facturación de tu empresa es exactamente el tipo de decisión que hay que pensar dos veces. Este post es sobre cómo lo resolví, y sobre qué partes de "la IA no puede romper nada" son una garantía del código y cuáles son disciplina mía.
+
+## Qué puede hacer el asistente
+
+El servidor registra 61 herramientas, agrupadas por módulo de la app:
+
+- **Horas**: cargar, listar, editar, aprobar, rechazar, borrar, ver las pendientes y un resumen por empleado.
+- **Entrega**: clientes, proyectos y tareas (crear, editar, mover tareas en el tablero, borrar).
+- **Finanzas**: reportes de facturación por mes, por cliente y por empleado, la vista de "listo para facturar" del cierre de mes, y la gestión de empleados.
+- **Operación**: gastos puntuales y recurrentes, retainers de proyectos, y el reparto entre socios.
+- **Workspace**: búsqueda global, notificaciones, agenda y datos de la empresa.
+
+Cada herramienta tiene una descripción en lenguaje natural, que es lo que el modelo lee para decidir cuál usar. Por ejemplo, la de cargar horas dice, entre otras cosas, que un empleado solo puede cargar las propias, que no admite fechas futuras y que el registro "queda pendiente de aprobación". Un test verifica que cada herramienta tenga una descripción de más de 30 caracteres, porque una herramienta mal descrita es una herramienta que el modelo usa mal.
+
+## Prueba: cómo se autentica y como quién actúa
+
+La decisión más importante no fue qué herramientas exponer, sino **como quién actúa el asistente**. La respuesta: como vos. Nunca como un superusuario.
+
+El flujo es así:
+
+1. Cada usuario genera una API key personal desde la app. La key se muestra una sola vez; en la base se guarda solo su hash SHA-256.
+2. Que la key exista no alcanza. Un **admin** tiene que habilitar el acceso MCP de ese usuario, en una tabla aparte que solo un admin puede escribir. Así nadie se auto-aprueba.
+3. En cada request, el servidor resuelve la key, verifica que no esté revocada y que el usuario tenga el acceso habilitado, y lee su rol.
+4. Con eso firma un JWT de Supabase para ese usuario, que vence a los 5 minutos y se genera de nuevo en cada request.
+
+```typescript
+return new SignJWT({
+  role: 'authenticated',
+  company_id: ctx.companyId,
+  app_role: ctx.appRole,
+})
+  .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+  .setSubject(ctx.userId)
+  .setAudience('authenticated')
+  .setIssuedAt(now)
+  .setExpirationTime(now + 300) // 5 min — minted fresh per request
+  .sign(new TextEncoder().encode(secret));
+```
+
+Todas las consultas de las herramientas corren con ese token. Eso significa que el row level security de Postgres aplica exactamente igual que cuando el usuario entra por la web: solo ve los datos de su empresa y lo que su rol le permite. La service role se usa únicamente para resolver la key, nunca para leer datos de la app.
+
+Encima de eso hay una segunda capa, en el código de dominio. Cada herramienta llama al mismo servicio que usa la web, y ese servicio aplica las reglas de rol. Esto no es redundancia por gusto. La política de RLS sobre las horas es deliberadamente permisiva para que un empleado pueda editar su propio registro pendiente, lo que significa que la base sola le permitiría marcar su propia hora como aprobada. La regla "solo un admin aprueba" vive en el dominio:
+
+```typescript
+export function assertAdmin(actor: Actor, action = 'realizar esta acción'): void {
+  if (!isAdmin(actor)) {
+    throw new AppError({ code: 'FORBIDDEN', status: 403 /* ... */ });
+  }
+}
+```
+
+## Prueba: qué requiere confirmación
+
+Toda herramienta que borra o da de baja algo de forma permanente (`delete_*`, `remove_*`, `deactivate_*`) exige un campo `confirm` que solo acepta el valor `true`:
+
+```typescript
+const CONFIRM = z
+  .literal(true)
+  .describe('Debe ser true. Acción destructiva: confirmá con el usuario antes de mandarla.');
+```
+
+Y hay un test que recorre todas las herramientas registradas y falla si alguna destructiva no lo tiene. Si mañana alguien agrega un `delete_algo` y se olvida, el CI lo frena.
+
+<Callout type="warning" title="Lo que confirm: true no es">
+  Seamos honestos: `confirm` es un campo que llena el modelo. Obliga al asistente a hacer explícita
+  la intención y, por la descripción, a preguntarte antes. Pero no es una firma humana. La
+  confirmación humana real la da el cliente MCP, que te pide permiso antes de ejecutar cada
+  herramienta, y tu criterio para no aprobar en automático.
+</Callout>
+
+## Criterio: el asistente escribe, una persona decide
+
+La regla que quería era simple: el asistente tipea, una persona decide. Todo lo que mueve plata o compromete algo con un cliente queda en manos de una persona. Cuando fui a verificar qué de eso garantiza el código, la respuesta fue más matizada de lo que me hubiera gustado escribir.
+
+**Lo que el código garantiza:**
+
+- Las horas y los gastos que carga un empleado (o el asistente en su nombre) quedan siempre **pendientes**. No impactan la facturación ni el resultado del mes hasta que un admin los aprueba.
+- Aprobar, rechazar, ver la facturación por cliente, tocar sueldos o el reparto entre socios es **solo admin**, y eso se chequea en el dominio, no solo en la base.
+- Nada en el servidor MCP mueve plata ni le escribe a un cliente. No hay integración de pagos, no se envían facturas, no se mandan mails a clientes. Las notificaciones que existen son internas: por ejemplo, rechazar una hora avisa al empleado. Un "retiro de socio" es un registro contable, no una transferencia.
+- Las acciones destructivas exigen confirmación explícita, y un test lo hace cumplir.
+
+**Lo que el código no garantiza:**
+
+- El asistente actúa como vos. Si sos admin, puede aprobar horas y gastos, porque esas herramientas existen y tu rol las permite. La separación entre "tipea" y "decide" ahí no es técnica: es el permiso que te pide el cliente MCP y la decisión de no aprobar nada sin mirarlo.
+
+[FACU: cómo lo usás vos en la práctica: ¿aprobás horas desde el asistente o siempre desde la web? ¿Qué te negás a delegarle aunque podrías?]
+
+Me parece importante decirlo así, porque es fácil escribir "la IA nunca toca la plata" y que suene a una garantía. No lo es. Lo que sí hay es un diseño donde lo peor que puede hacer un empleado (o un modelo actuando como empleado) es cargar algo que después alguien tiene que aprobar, y donde lo que hace un admin pasa por los mismos guardias que en la web.
+
+## Lo que costó
+
+No fue gratis. Hubo que pasar todas las herramientas por la misma capa de dominio que usa la web, en vez de escribir queries sueltas "porque es más rápido". Hubo que mantener descripciones en lenguaje natural que el modelo entienda, y tests que cuiden la forma de todo el conjunto. Y hubo que aceptar que la parte más importante del control no está en el servidor, sino en cómo lo uso.
+
+A cambio, cargar las horas que me olvidé es una oración. Y si algún día ese asistente se equivoca, lo peor que puede pasar es un registro pendiente que alguien rechaza.
+
+Si estás pensando en conectar tu asistente a tu negocio, empezá por tres preguntas: ¿como quién actúa?, ¿qué pasa por la misma validación que tu app?, y ¿qué decisiones dependen de tu disciplina y no del código? Las dos primeras se resuelven programando. La tercera, escribila, aunque sea para vos.
