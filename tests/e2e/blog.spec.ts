@@ -30,6 +30,13 @@ test.describe('blog', () => {
     );
   });
 
+  test('OG images exist for published posts only', async ({ request }) => {
+    const published = await request.get('/og/blog/es/2026-10-13-arquitectura-offline-first.png');
+    expect(published.status()).toBe(200);
+    const draft = await request.get('/og/blog/es/2026-10-13-plan-b-sin-renunciar.png');
+    expect(draft.status()).toBe(404);
+  });
+
   test('post page renders with correct heading', async ({ page }) => {
     await page.goto('/es/blog/2026-04-15-hola-mundo/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bienvenido al blog');

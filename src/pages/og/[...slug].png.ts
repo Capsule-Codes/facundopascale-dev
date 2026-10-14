@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createElement, type ReactNode } from 'react';
 
+import { filterPublished } from '../../lib/content';
 import { buildOgSlug, DEFAULT_OG_SLUG } from '../../lib/og';
 import { LOCALES, type Locale } from '../../lib/i18n';
 
@@ -104,7 +105,8 @@ export async function getStaticPaths(): Promise<
 
   const paths: { params: { slug: string }; props: OgRouteProps }[] = [];
 
-  for (const entry of blog) {
+  // Drafts and future-dated posts get no OG image, so their titles are not reachable by URL.
+  for (const entry of filterPublished(blog)) {
     const locale = entry.data.lang;
     paths.push({
       params: { slug: buildOgSlug({ id: entry.id, collection: 'blog', locale }) },
