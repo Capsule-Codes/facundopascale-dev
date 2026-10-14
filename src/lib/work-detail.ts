@@ -83,3 +83,40 @@ export function projectLinks(links: {
   if (links.caseStudy) out.push({ kind: 'caseStudy', href: links.caseStudy });
   return out;
 }
+
+/** Step through `n` items with wrap-around (lightbox prev/next). */
+export function wrapIndex(i: number, delta: number, n: number): number {
+  if (n <= 1) return 0;
+  return (((i + delta) % n) + n) % n;
+}
+
+/** Minimum horizontal travel, in px, for a swipe to change the image. */
+export const SWIPE_THRESHOLD = 50;
+
+/**
+ * Lightbox step for a touch gesture: swipe left → next (1), right → previous (-1).
+ * Short or mostly vertical gestures (scrolling a tall capture) return 0.
+ */
+export function swipeStep(dx: number, dy: number): -1 | 0 | 1 {
+  if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) <= Math.abs(dy)) return 0;
+  return dx < 0 ? 1 : -1;
+}
+
+/** Height/width ratio above which a capture is treated as a long scroll screenshot. */
+const LONG_CAPTURE_RATIO = 2.3;
+/** Room the lightbox toolbar, caption and controls take from the viewport height. */
+const LIGHTBOX_CHROME = 160;
+
+/**
+ * How the lightbox sizes an image at its natural aspect: screen-shaped shots fit the
+ * viewport height; long captures keep a readable width and scroll vertically instead.
+ */
+export function lightboxFit(width: number, height: number): { maxWidth: string; scroll: boolean } {
+  const ratio = height / width;
+  if (ratio > LONG_CAPTURE_RATIO) return { maxWidth: 'min(100%, 440px)', scroll: true };
+  const aspect = Math.round((width / height) * 1000) / 1000;
+  return {
+    maxWidth: `min(1400px, calc((100dvh - ${LIGHTBOX_CHROME}px) * ${aspect}))`,
+    scroll: false,
+  };
+}

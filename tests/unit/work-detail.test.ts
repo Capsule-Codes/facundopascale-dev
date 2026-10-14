@@ -3,8 +3,11 @@ import {
   balancedRows,
   desktopLayout,
   groupGallery,
+  lightboxFit,
   nextProject,
   projectLinks,
+  swipeStep,
+  wrapIndex,
 } from '../../src/lib/work-detail.ts';
 
 describe('balancedRows', () => {
@@ -139,5 +142,50 @@ describe('projectLinks', () => {
 
   it('does not mistake a lookalike host for a store', () => {
     expect(projectLinks({ live: 'https://apps.apple.com.evil.test/x' })[0]?.kind).toBe('live');
+  });
+});
+
+describe('wrapIndex', () => {
+  it('steps forward and backward', () => {
+    expect(wrapIndex(2, 1, 5)).toBe(3);
+    expect(wrapIndex(2, -1, 5)).toBe(1);
+  });
+
+  it('wraps around both ends', () => {
+    expect(wrapIndex(4, 1, 5)).toBe(0);
+    expect(wrapIndex(0, -1, 5)).toBe(4);
+  });
+
+  it('stays at 0 for an empty or single-item list', () => {
+    expect(wrapIndex(0, 1, 1)).toBe(0);
+    expect(wrapIndex(0, -1, 0)).toBe(0);
+  });
+});
+
+describe('swipeStep', () => {
+  it('maps a horizontal swipe left to next and right to previous', () => {
+    expect(swipeStep(-80, 10)).toBe(1);
+    expect(swipeStep(80, -5)).toBe(-1);
+  });
+
+  it('ignores short or mostly vertical gestures (scrolling a tall image)', () => {
+    expect(swipeStep(-30, 0)).toBe(0);
+    expect(swipeStep(-80, 120)).toBe(0);
+  });
+});
+
+describe('lightboxFit', () => {
+  it('fits a screen-shaped capture to the viewport height', () => {
+    const fit = lightboxFit(1920, 1200);
+    expect(fit.scroll).toBe(false);
+    expect(fit.maxWidth).toBe('min(1400px, calc((100dvh - 160px) * 1.6))');
+  });
+
+  it('fits a regular phone screenshot to the viewport height', () => {
+    expect(lightboxFit(780, 1696).scroll).toBe(false);
+  });
+
+  it('lets a long scroll capture keep a readable width and scroll vertically', () => {
+    expect(lightboxFit(390, 1365)).toEqual({ maxWidth: 'min(100%, 440px)', scroll: true });
   });
 });
