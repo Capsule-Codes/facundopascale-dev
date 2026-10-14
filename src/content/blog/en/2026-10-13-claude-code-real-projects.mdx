@@ -1,0 +1,95 @@
+---
+title: 'How I actually use Claude Code on real projects'
+description: A real week of work with Claude Code on my two sites, an audit, a performance pass and a mistake of mine, and why the value is in the process.
+publishedAt: 2026-10-13
+tags: ['ai', 'tools', 'craft']
+lang: en
+translationId: claude-code-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+There are two ways to describe how you use a coding assistant. One is the demo: "I asked it for an app and it built it in ten minutes". The other is showing a real week of work, with what went well and what I broke. This is the second one.
+
+This week I used Claude Code on my two sites: this one, facundopascale.dev, and the agency's, [capsulecodes.com](https://www.capsulecodes.com/#products). No client projects in this post, on purpose. I'll tell you what I did, what numbers came out, and the process around it, which is what actually makes it work.
+
+[FACU: por qué decidiste auditar los dos sitios esta semana: qué viste o qué te hizo sospechar]
+
+## Story: a live audit
+
+The first thing was a full audit of both sites in production. Not of the code: of what a visitor sees. Walking every page, following every link, switching languages, looking at what gets downloaded.
+
+What turned up:
+
+- **Broken links.** Links that led to pages that didn't respond.
+- **A canonical pointing at a host that redirects.** The declared canonical host was the bare domain without `www`, which itself redirects. You're telling Google that the "true" version of your page is a URL that doesn't answer with the page.
+- **The language switcher landing on the wrong page.** You switched from Spanish to English and didn't land on the translated version of the page you were on.
+- **Truncated translations.** Copy that was complete in one language and cut in half in the other.
+- **A 584 KB logo shown at 50 pixels.** Half a megabyte for something the size of a button.
+
+None of this is exotic. It's exactly the kind of thing that piles up on a site you keep changing bit by bit and that nobody walks end to end from the outside. What changes with an assistant is that walking it end to end stops being a boring afternoon.
+
+## Proof: the performance pass
+
+After fixing what the audit found came a performance pass. Every measurement with Lighthouse in mobile mode, on production builds, before and after.
+
+**capsulecodes.com, home:**
+
+- Performance: **80 → 90**.
+- Image bytes: **220 KB → 39 KB**.
+- The HTML is now served from cache (ISR), instead of being generated on every request.
+
+**facundopascale.dev, home:**
+
+- Performance: **92 → 99**.
+- LCP (time until the largest element is painted): **3.1 s → 2.0 s**.
+
+On this site, the changes were concrete things: serving the gallery images and cards through Vercel's image optimizer, replacing a React island that existed only for the theme toggle with an inline script, preloading the font subsets, and marking static assets as immutable in cache. Each one is a separate commit.
+
+[FACU: si querés, cuál de estos cambios te sorprendió más por el impacto que tuvo]
+
+## Proof: the mistake of the week
+
+Not everything went well, and I'd rather tell you.
+
+When I published the offline-first post, the PR was merged before CI finished. There was an old e2e test that checked exactly the opposite of what the PR did: that the post, then a draft, did **not** appear in the blog index.
+
+```typescript
+test('blog index does NOT list the draft post', async ({ page }) => {
+  await page.goto('/es/blog/');
+  await expect(page.getByRole('heading', { level: 2, name: /offline-first/i })).toHaveCount(0);
+});
+```
+
+Publishing the post broke it, and since the merge didn't wait for CI, it stayed broken on `main`. The fix was small (update the test to expect the published post in both languages) but the lesson isn't the test. It's that I skipped a step of the process because I was in a hurry. Since then, merges wait for CI. Always.
+
+## The process around the tool
+
+This is the part I care about most, because it's the part you don't see in a demo. I'll describe it in general terms, without pasting my configuration.
+
+**Every change starts as a task in a document.** Before touching code there's a feature document with the goal, the scope, a task list and the checks that have to pass. If the task is code, it starts with tests. The document lives in the repo: if a session gets cut off, it resumes from there, not from anyone's memory.
+
+**Branches and small commits.** Nothing happens on `main`. Every task is at least one commit, with a message that says what changed. If something goes wrong, you revert a commit, not an afternoon.
+
+**A review before merging.** Every change goes through a review before it reaches `main`. A tool having written the code doesn't exempt it; if anything, it makes it more necessary.
+
+**Delegating broad reading.** When understanding something means reading many files, that reading is done by a sub-agent that returns a short summary. The main thread stays clean for deciding.
+
+**A written list of things it never touches.** Clients' production databases. Secrets and keys. Anything that sends money or messages. It isn't a suggestion the model can interpret: it's a written rule, and anything that needs permission asks for it.
+
+**Verifying in production after deploy.** CI passing doesn't mean the site works. After every deploy, I look at the real site: the pages that changed, the links, the numbers.
+
+<Callout type="info" title="What it doesn't do">
+  None of this is "the AI works on its own". I decide what gets done, in what order and what gets
+  merged. The tool types faster than I do and reads faster than I do. The judgment is still mine,
+  and this week's mistake was mine, not the tool's.
+</Callout>
+
+## Lesson: the value is the process
+
+If you keep one idea: **the value isn't in the tool, it's in the process around it.** Claude Code without written tasks, without tests, without review and without verifying in production is a very fast way to generate code you don't understand. With that process, it's a very fast way to do work you can defend.
+
+What it costs: writing the task before starting, waiting for CI even when you're in a hurry, reviewing code that "already works", and looking at production again after every deploy. It's slower than the demo. It's also the difference between a week with two faster sites and a week with two broken ones.
+
+[FACU: cierre personal: qué le dirías a alguien que está empezando a usar estas herramientas en proyectos reales]

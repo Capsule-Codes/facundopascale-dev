@@ -1,0 +1,120 @@
+---
+title: 'The hardest part of offline-first is deletes'
+description: An upsert-only pull never hears about a remote delete. How to detect deletes without wiping live data when PostgREST silently truncates responses.
+publishedAt: 2026-10-13
+tags: ['architecture', 'offline-first', 'supabase']
+lang: en
+translationId: offline-first-deletes-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+In [the post on offline-first architecture](/en/blog/2026-10-13-offline-first-architecture/) I left a short section called "Deletes are the hard part". It was short because the topic didn't fit. This post is that section, in full.
+
+Picture this. A trainer, at the computer, deletes an old routine for a client. The desktop app marks it as deleted, the sync cycle sends the `DELETE` to the server, and on the server the routine no longer exists. All good. But the client's phone has a local copy of that routine in SQLite. The next pull asks the server "which routines do I have?", gets the list without the deleted routine, and upserts each one. The old routine is still there. Nobody told it to leave. The client opens it at the gym and trains on something their trainer already discarded.
+
+That's the whole problem: **an upsert loop can't notice that something stopped arriving.**
+
+## Why it's hard
+
+The obvious fix is to reconcile: after the pull, delete the local rows the server didn't return. The problem is that "absent" only means "deleted" if the pull saw **everything**. And there are several ways to not see everything without finding out.
+
+The first, and the most treacherous, is PostgREST's row cap. Supabase serves the database through PostgREST, which cuts every response at `max_rows` (1000 in Elevate's configuration). A table with 1500 rows answers HTTP 200, no error, with 1000 rows. The header that signals the cut (`Content-Range`) exists, but supabase-js doesn't show it to you. To your code, it's a success.
+
+Now add reconciliation: the pull got 1000 of 1500 rows, so the other 500 are "absent", so you delete them. You just deleted 500 live rows from a device. Silently, and with a "successful" pull.
+
+Elevate's code has this written in the header of the reconcile module, with a frankness I like:
+
+> ASKING for everything is not RECEIVING everything, and getting this backwards is what made the first version of this module dangerous.
+
+## Proof: three rules in code
+
+Elevate's sync engine (`@elevate/sync`) splits the problem into two files: `paginate.ts` fetches the full scope and **reports whether it made it**, and `reconcile.ts` decides what can be deleted based on that evidence.
+
+### 1. Keyset pagination until a page comes back short
+
+Offset pagination ("skip N rows") reads a moving table wrong: a concurrent insert before the offset shifts everything by one position and the pull skips a row. That row exists on the server and on the phone, so reconciliation sees it as absent, and absent means deleted. Someone else's insert becomes a local delete.
+
+Keyset ("give me the rows after this id") has no such window. The loop asks for pages the size of the server's cap, ordered by `id`, and stops only when a page comes back shorter than requested:
+
+```typescript
+for (let page = 0; page < MAX_PULL_PAGES; page += 1) {
+  const { data, error } = await fetchPage(cursor, pageSize);
+
+  if (error) {
+    return { rows, complete: false, incompleteReason: 'request-failed', error };
+  }
+  // ...
+  rows.push(...batch);
+
+  if (batch.length < pageSize) {
+    return { rows, complete: true, incompleteReason: null, error: null };
+  }
+
+  cursor = batch[batch.length - 1]!.id;
+}
+
+return { rows, complete: false, incompleteReason: 'page-budget-exhausted', error: null };
+```
+
+An exactly-full page is ambiguous by construction ("there's more" and "that was the last one" look the same), so it costs one more request, the one that comes back empty. And the loop has a page budget: if the server keeps returning full pages forever (a cursor that stopped being unique, a filter that stopped applying), the pull declares itself **incomplete** instead of spinning until the app is killed.
+
+### 2. Only a complete pull can delete anything
+
+Reconciliation doesn't take a list of ids. It takes the pull's payload, with its `complete` flag. That design decision is what makes the guard impossible to forget: there's no way to hand it a partial read that looks complete.
+
+```typescript
+function classifyPayload(
+  payload: ReconcilablePayload,
+  emptyPayload: EmptyPayloadMeaning = 'means-scope-is-empty'
+): ReconcileSkipReason | null {
+  if (!payload.complete) return 'payload-incomplete';
+  if (payload.rows.length === 0) return emptyPayload === 'not-evidence' ? 'empty-payload' : null;
+  return null;
+}
+```
+
+The order of those two lines matters. A pull whose first page failed carries zero rows. If you check emptiness before completeness, that payload says "the scope is empty" and you delete everything local. A failed request turned into a wipe.
+
+And emptiness has its own rule: an empty payload is only evidence if that query's RLS policy depends on nothing but the user's identity and the query's own filters. Every call site declares it explicitly, because it varies per table.
+
+### 3. Never delete something with unpushed local changes
+
+```typescript
+function orphansAgainst(localRows: readonly MirrorRow[], serverIds: ReadonlySet<string>): string[] {
+  return localRows
+    .filter((row) => !serverIds.has(row.id) && !hasUnpushedLocalChanges(row))
+    .map((row) => row.id);
+}
+```
+
+A row created offline is legitimately absent from the server: it hasn't been pushed yet. A row with `pendingSync` or a local tombstone belongs to the push, not the pull. This guard lives inside reconciliation, not in every caller, so nobody has to remember it.
+
+<Callout type="warning" title="The cap applies inside too">
+  PostgREST also cuts every embedded array at `max_rows`, separately for each parent. Paginating the
+  plans doesn't change the fact that a plan with more than a thousand days comes back with its days
+  truncated. For those levels the code does look at the count: a parent whose array hit the cap is
+  left entirely alone, and its siblings reconcile normally.
+</Callout>
+
+## Where this stands today
+
+Today this reconciliation is wired into Elevate's nutrition apps: meal plans (with their days, meals and items), professional-patient relationships, measurements and logs. In the trainer app, the client's routine pull is still upsert-only, so the scenario at the top is exactly the next case to cover.
+
+[FACU: confirmar si querés contar esto así, y si ya está planificado llevar la reconciliación a coach y gym]
+
+Keep the context in mind too: Elevate's mobile apps aren't in the stores yet and the desktop one is in pre-release. None of this comes from an incident with users. It comes from reading the code with the question "what happens if this row stops arriving?".
+
+## Lesson: not deleting is the safe failure
+
+If I keep one idea, it's this: in an offline-first system, **when in doubt, don't delete.** An extra row on a phone is an annoying bug. A missing row is lost data, sometimes the only copy there was.
+
+What that costs:
+
+- **More requests.** Fetching the full scope page by page costs more than a `select *`, and the exactly-full page costs an extra request.
+- **Deletes that take longer.** If a pull fails, that cycle reconciles nothing, and the delete lands on the next one. That's the price of not deleting against partial evidence.
+- **Explicit decisions per table.** What an empty payload means depends on each query's RLS policy. There's no default that saves you from thinking about it.
+- **A first version that was wrong.** The first version of the guard inferred truncation from the row count: a payload of exactly 1000 was assumed truncated. That worked for a single request and was wrong for a paginated one, because someone with 1200 real plans would never have reconciled anything. Today completeness is reported by the fetch, not guessed.
+
+If you're building your own sync, plan for deletes before your first user. And write the rule in the module's header, the way it is in Elevate: absence is only evidence of deletion inside the scope you actually fetched.

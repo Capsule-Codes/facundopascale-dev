@@ -1,0 +1,118 @@
+---
+title: 'Un producto en móvil, escritorio y web desde un solo repo'
+description: Cómo está armado el monorepo de Elevate, seis apps y una web, y por qué lo que se comparte es la lógica (modelo, validación, i18n, sync) y no la UI.
+publishedAt: 2026-10-13
+tags: ['arquitectura', 'monorepo', 'mobile']
+lang: es
+translationId: monorepo-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+[Elevate](/es/trabajo/elevate/) son tres productos en uno: una app para entrenadores, una para nutricionistas y una para gimnasios. Cada uno tiene dos lados: el profesional, que trabaja mucho en la computadora, y su cliente, que usa el teléfono en el gimnasio o en la cocina. Eso da seis apps, más la web.
+
+La tentación con un producto así es una de dos: o seis repos que se van separando de a poco hasta que ya no comparten nada, o un único framework "escribí una vez, corré en todos lados" que te obliga a que el escritorio se sienta como un teléfono. No hice ninguna de las dos. Hice un monorepo donde se comparte la lógica y no la UI.
+
+[FACU: el momento concreto en que decidiste armarlo como monorepo: qué estabas por duplicar, o qué se rompió por tenerlo separado]
+
+Hoy la web de Elevate está online. Las apps móviles todavía no están en las tiendas y la versión de escritorio está en pre-release. Así que esto no es un post sobre escala. Es un post sobre cómo está organizado el código para que tres productos en dos plataformas no se conviertan en seis productos distintos.
+
+## Prueba: la estructura
+
+Es un monorepo con pnpm workspaces y Turborepo. Recortado, se ve así:
+
+```
+elevate/
+├── apps/
+│   ├── coach-mobile/     # Expo (React Native)
+│   ├── coach-desktop/    # Tauri v2 + React + Vite
+│   ├── nutri-mobile/     # Expo
+│   ├── nutri-desktop/    # Tauri v2
+│   ├── gym-mobile/       # Expo
+│   ├── gym-desktop/      # Tauri v2
+│   └── web/              # Astro
+├── packages/
+│   ├── shared/           # @elevate/shared: modelos, tipos, validación, i18n
+│   ├── sync/             # @elevate/sync: el motor de sincronización offline-first
+│   ├── supabase/         # @elevate/supabase: tipos generados y helpers
+│   ├── ui/               # @elevate/ui: componentes DOM + hooks headless
+│   ├── anthropometry/    # @elevate/anthropometry: cálculos de composición corporal
+│   └── pdf/              # @elevate/pdf: reportes en PDF
+└── supabase/             # migraciones, seed y Edge Functions (no es un paquete)
+```
+
+El `pnpm-workspace.yaml` es de dos líneas útiles: `apps/*` y `packages/*`. Turborepo corre `build`, `test` y `type-check` en el orden del grafo de dependencias: primero los paquetes, después las apps que los usan.
+
+## Qué se comparte
+
+Lo que vive en los paquetes es todo lo que tiene que dar **el mismo resultado** en cualquier plataforma:
+
+- **El modelo.** Los tipos de dominio (`Routine`, `Exercise`, `MealPlan`, `GymClassTemplate`...) se definen una vez en `@elevate/shared`.
+- **La validación y las reglas.** Qué es un nombre de rutina válido, cómo se calcula el estado de una suscripción, qué licencias tiene un gimnasio.
+- **Las traducciones.** Español, inglés e italiano viven en `@elevate/shared` y las dos apps de un mismo producto las cargan igual.
+- **La sincronización.** El motor que conté en [el post sobre offline-first](/es/blog/2026-10-13-arquitectura-offline-first/) es un paquete, `@elevate/sync`, que usan tanto las apps Expo como las Tauri.
+
+Un ejemplo real: así inicializa i18n la app móvil del entrenador.
+
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import * as Localization from 'expo-localization';
+
+import { en, es, it } from '@elevate/shared';
+```
+
+Y así la de escritorio:
+
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import { en, es, it } from '@elevate/shared';
+```
+
+Las traducciones son las mismas. Lo que cambia es cómo cada plataforma averigua el idioma: el teléfono le pregunta al sistema con `expo-localization`, el escritorio lee `localStorage` y `navigator.language`. La lógica compartida, la integración con la plataforma en cada app.
+
+Otro ejemplo, más interesante. En gimnasios, las clases de una semana se generan a partir de una plantilla y una fecha. Si dos dispositivos generan la misma semana con IDs aleatorios, chocan en el servidor. La solución es un ID determinístico, y vive en `@elevate/shared`:
+
+```typescript
+import { gymClassInstanceId } from '@elevate/shared';
+// ...
+const id = gymClassInstanceId(tpl.id, dateIso);
+```
+
+Esa misma línea está en `gym-mobile` y en `gym-desktop`. Y el detalle importante está en la implementación: es aritmética pura con `BigInt`, sin `crypto.subtle` ni el paquete `uuid`, para que dé exactamente el mismo resultado bajo Hermes (el motor de JavaScript de Expo) y en el webview de Tauri. Compartir lógica no es solo moverla a un paquete; es asegurarte de que no dependa de nada que una plataforma tenga y la otra no.
+
+## Qué no se comparte
+
+La UI. Las pantallas de cada app están escritas para su plataforma: React Native con NativeWind en el teléfono, React con Vite en el escritorio. El entrenador en la computadora trabaja con tablas y pantallas de gestión de clientes. El cliente en el teléfono registra series con un temporizador de descanso en la mano. Son experiencias distintas porque el uso es distinto.
+
+Hay un matiz que conviene contar, porque el árbol de arriba tiene un paquete `ui`. `@elevate/ui` sí tiene componentes (botones, modales, tablas), pero son componentes DOM y solo los usan las apps de escritorio, que comparten plataforma entre sí. Lo que las apps móviles importan de ese paquete es otra cosa: los **hooks headless** de `@elevate/ui/hooks`, que no tocan ni `react-native` ni `react-dom`. El archivo que los exporta lo dice explícitamente:
+
+```typescript
+// Headless hooks — safe for both React Native and React web consumers.
+// None of these files may import from react-native, react-dom, expo-*, or
+// any app-specific module. Only `react` + `@elevate/shared` are allowed.
+```
+
+Así, por ejemplo, `useRoutineBuilder` (el estado y las reglas para armar una rutina) lo usan tanto la app móvil del entrenador como la del gimnasio, y cada una dibuja su propio formulario arriba.
+
+La regla queda así: se comparte UI solo entre apps de la **misma** plataforma, y entre plataformas se comparte solo lo que no dibuja nada.
+
+<Callout type="info" title="Y la web">
+  La web de Elevate, hecha con Astro, no depende de ningún paquete compartido. Es el sitio del
+  producto, no una séptima app. Meterla en el mismo grafo de dependencias le habría sumado acople
+  sin darle nada a cambio.
+</Callout>
+
+## Criterio: lo que costó y lo que me llevo
+
+No todo es gratis. Tres costos concretos:
+
+1. **La base local no se comparte del todo.** El teléfono usa `expo-sqlite` y el escritorio `tauri-plugin-sql`, las dos con Drizzle encima, pero cada app tiene su propio esquema y sus migraciones. En las de escritorio el DDL vive en varios lugares a la vez, y que se desincronicen falla en silencio. Por eso `@elevate/shared` tiene un chequeo de "schema drift" que compara al arrancar lo que el código espera con lo que SQLite realmente tiene.
+2. **Un cambio en un paquete compartido toca seis apps.** Eso es la ventaja y es el costo. Sin tests en los paquetes y sin Turborepo corriendo lo que corresponde, un cambio "chiquito" en `shared` es una forma rápida de romper algo que no estabas mirando.
+3. **La disciplina de los límites.** Que los hooks headless no importen `react-native` no lo garantiza la buena voluntad: es una regla escrita, y hay que hacerla cumplir en cada review.
+
+[FACU: algún caso concreto donde compartir te ahorró trabajo, o donde un cambio en un paquete compartido rompió algo en otra app]
+
+Lo que me llevo: compartí el modelo, la validación, las traducciones y la sincronización, porque eso tiene que dar el mismo resultado en todos lados y un bug ahí es un bug en seis apps. No compartas la UI entre plataformas, porque un escritorio y un teléfono no se usan igual, y forzarlos a verse igual termina en dos apps mediocres en vez de dos buenas. Y cuando compartas, asegurate de que lo compartido no dependa de nada que una de las plataformas no tenga.

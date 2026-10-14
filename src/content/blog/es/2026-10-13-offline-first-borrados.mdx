@@ -1,0 +1,122 @@
+---
+title: 'Lo más difícil del offline-first son los borrados'
+description: Un pull que solo hace upsert nunca se entera de un borrado remoto. Cómo detectarlos sin borrar datos vivos cuando PostgREST corta las respuestas en silencio.
+publishedAt: 2026-10-13
+tags: ['arquitectura', 'offline-first', 'supabase']
+lang: es
+translationId: offline-first-deletes-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+En [el post sobre arquitectura offline-first](/es/blog/2026-10-13-arquitectura-offline-first/) dejé una sección corta que se llamaba "Los borrados son lo difícil". Era corta porque el tema no entraba. Este post es esa sección, completa.
+
+Imaginate esto. Un entrenador, en la computadora, borra una rutina vieja de un cliente. La app de escritorio la marca como borrada, el ciclo de sync manda el `DELETE` al servidor, y en el servidor la rutina ya no existe. Todo bien. Pero el teléfono del cliente tiene una copia local de esa rutina en SQLite. El próximo pull le pregunta al servidor "¿qué rutinas tengo?", recibe la lista sin la rutina borrada, y hace upsert de cada una. La rutina vieja sigue ahí. Nadie le dijo que se fuera. El cliente la abre en el gimnasio y entrena con algo que su entrenador ya descartó.
+
+Ese es el problema entero: **un loop de upsert no puede darse cuenta de que algo dejó de llegar.**
+
+## Por qué es difícil
+
+La solución obvia es reconciliar: después del pull, borrar las filas locales que el servidor ya no devolvió. El problema es que "ausente" solo significa "borrado" si el pull vio **todo**. Y hay varias formas de no ver todo sin enterarte.
+
+La primera, y la más traicionera, es el límite de filas de PostgREST. Supabase sirve la base a través de PostgREST, que corta cada respuesta en `max_rows` (1000 en la configuración de Elevate). Una tabla con 1500 filas responde HTTP 200, sin error, con 1000 filas. El header que indica el corte (`Content-Range`) existe, pero supabase-js no te lo muestra. Para tu código es un éxito.
+
+Ahora sumá la reconciliación: el pull recibió 1000 de 1500 filas, así que las otras 500 están "ausentes", así que las borrás. Acabás de borrar 500 filas vivas de un dispositivo. En silencio, y con un pull "exitoso".
+
+El código de Elevate tiene esto escrito en la cabecera del módulo de reconciliación, con una franqueza que me gusta:
+
+> ASKING for everything is not RECEIVING everything, and getting this backwards is what made the first version of this module dangerous.
+
+Pedir todo no es recibir todo, y confundirlos es lo que hizo peligrosa a la primera versión de ese módulo.
+
+## Prueba: tres reglas en código
+
+El motor de sync de Elevate (`@elevate/sync`) separa el problema en dos archivos: `paginate.ts` trae el scope completo y **reporta si lo logró**, y `reconcile.ts` decide qué se puede borrar a partir de esa evidencia.
+
+### 1. Paginar con keyset hasta que una página venga corta
+
+La paginación por offset ("saltá N filas") lee mal una tabla que se mueve: un insert concurrente antes del offset corre todo una posición y el pull se saltea una fila. Esa fila existe en el servidor y en el teléfono, así que la reconciliación la ve ausente, y ausente significa borrada. Un insert ajeno se convierte en un borrado local.
+
+Keyset ("dame las filas después de este id") no tiene esa ventana. El loop pide páginas del tamaño del límite del servidor, ordenadas por `id`, y termina solo cuando una página viene más corta de lo pedido:
+
+```typescript
+for (let page = 0; page < MAX_PULL_PAGES; page += 1) {
+  const { data, error } = await fetchPage(cursor, pageSize);
+
+  if (error) {
+    return { rows, complete: false, incompleteReason: 'request-failed', error };
+  }
+  // ...
+  rows.push(...batch);
+
+  if (batch.length < pageSize) {
+    return { rows, complete: true, incompleteReason: null, error: null };
+  }
+
+  cursor = batch[batch.length - 1]!.id;
+}
+
+return { rows, complete: false, incompleteReason: 'page-budget-exhausted', error: null };
+```
+
+Una página exactamente llena es ambigua por construcción ("hay más" y "esa era la última" se ven igual), así que cuesta un request más, el que vuelve vacío. Y el loop tiene un presupuesto de páginas: si el servidor sigue devolviendo páginas llenas para siempre (un cursor que dejó de ser único, un filtro que dejó de aplicar), el pull se declara **incompleto** en vez de girar hasta que maten la app.
+
+### 2. Solo un pull completo puede borrar algo
+
+La reconciliación no recibe una lista de ids. Recibe el payload del pull, con su flag `complete`. Esa decisión de diseño es la que hace que el guardia no se pueda olvidar: no hay forma de pasarle una lectura parcial que parezca completa.
+
+```typescript
+function classifyPayload(
+  payload: ReconcilablePayload,
+  emptyPayload: EmptyPayloadMeaning = 'means-scope-is-empty'
+): ReconcileSkipReason | null {
+  if (!payload.complete) return 'payload-incomplete';
+  if (payload.rows.length === 0) return emptyPayload === 'not-evidence' ? 'empty-payload' : null;
+  return null;
+}
+```
+
+El orden de esas dos líneas importa. Un pull cuya primera página falló trae cero filas. Si chequeás vacío antes que completo, ese payload dice "el scope está vacío" y borrás todo lo local. Un request fallido convertido en un borrado total.
+
+Y el vacío tiene su propia regla: un payload vacío solo es evidencia si la política de RLS de esa consulta no depende de nada más que la identidad del usuario y los filtros de la consulta. Cada lugar que llama a la reconciliación lo declara explícitamente, porque varía por tabla.
+
+### 3. Nunca borrar algo con cambios locales sin subir
+
+```typescript
+function orphansAgainst(localRows: readonly MirrorRow[], serverIds: ReadonlySet<string>): string[] {
+  return localRows
+    .filter((row) => !serverIds.has(row.id) && !hasUnpushedLocalChanges(row))
+    .map((row) => row.id);
+}
+```
+
+Una fila creada offline está legítimamente ausente del servidor: todavía no se subió. Una fila con `pendingSync` o con un tombstone local le pertenece al push, no al pull. Este guardia vive dentro de la reconciliación, no en cada llamador, para que nadie lo tenga que recordar.
+
+<Callout type="warning" title="El límite también aplica adentro">
+  PostgREST corta en `max_rows` también cada array embebido, por separado para cada padre. Paginar
+  los planes no cambia que un plan con más de mil días vuelva con sus días truncados. Para esos
+  niveles el código sí mira la cantidad: un padre cuyo array llegó al límite se deja intacto entero,
+  y sus hermanos se reconcilian normalmente.
+</Callout>
+
+## Dónde está esto hoy
+
+Hoy esta reconciliación está conectada en las apps de nutrición de Elevate: planes de comida (con sus días, comidas e items), relaciones profesional-paciente, mediciones y registros. En la app de entrenadores, el pull de rutinas del cliente todavía es solo upsert, así que el escenario del principio es exactamente el siguiente caso a cubrir.
+
+[FACU: confirmar si querés contar esto así, y si ya está planificado llevar la reconciliación a coach y gym]
+
+Recordá también el contexto: las apps móviles de Elevate todavía no están en las tiendas y la de escritorio está en pre-release. Nada de esto viene de un incidente con usuarios. Viene de leer el código con la pregunta "¿qué pasa si esta fila deja de llegar?".
+
+## Criterio: no borrar es la falla segura
+
+Si me quedo con una sola idea es esta: en un sistema offline-first, **cuando dudás, no borres.** Una fila de más en un teléfono es un bug molesto. Una fila de menos es un dato perdido, a veces el único que había.
+
+Lo que eso cuesta:
+
+- **Más requests.** Traer el scope completo por páginas es más caro que un `select *`, y la página exactamente llena cuesta un request extra.
+- **Borrados que tardan.** Si un pull falla, ese ciclo no reconcilia nada, y el borrado llega en el próximo. Es el precio de no borrar contra evidencia parcial.
+- **Decisiones explícitas por tabla.** Qué significa un payload vacío depende de la política de RLS de cada consulta. No hay un default que te salve de pensarlo.
+- **Una primera versión equivocada.** La primera versión del guardia infería el corte por la cantidad de filas: un payload de exactamente 1000 se asumía truncado. Funcionaba para un request suelto y era incorrecto para uno paginado, porque alguien con 1200 planes reales nunca habría reconciliado nada. Hoy la completitud la reporta el fetch, no se adivina.
+
+Si estás armando sync propio, planeá los borrados antes del primer usuario. Y dejá escrita la regla en la cabecera del módulo, como está en Elevate: la ausencia solo es evidencia de borrado dentro del scope que efectivamente trajiste.

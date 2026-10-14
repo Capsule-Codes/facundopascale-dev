@@ -1,0 +1,103 @@
+---
+title: 'Las portadas de mis proyectos salen del código'
+description: Cada portada de los casos de estudio es una plantilla HTML, una captura con Playwright y una conversión con sharp. Cambiar una es editar una línea y correr un comando.
+publishedAt: 2026-10-13
+tags: ['craft', 'herramientas', 'automatización']
+lang: es
+translationId: covers-code-2026-10
+draft: true
+---
+
+import Callout from '@/components/mdx/Callout.astro';
+
+Esta semana terminó la migración de [Horus](/es/trabajo/horus/) a AWS. La portada del caso de estudio decía "now moving to AWS", y ya no era verdad. Había que cambiarla.
+
+Cambiar la portada fue editar una línea y correr un comando:
+
+```bash
+pnpm covers horus
+```
+
+Con eso, `public/images/work/horus/cover.webp` quedó regenerada con el texto nuevo, "now running on AWS", con el mismo fondo, el mismo logo, la misma captura y la misma tipografía que el resto de las portadas. Sin abrir un editor de diseño.
+
+[FACU: cómo hacías las portadas antes de esto (Figma, a mano, plantillas) y qué te llevó a automatizarlas]
+
+Este post es sobre cómo funciona eso, y sobre la idea que hay atrás: si un diseño se repite, es código.
+
+## Historia: once portadas que tienen que parecerse
+
+Las portadas de la sección de [trabajo](/es/trabajo/) siguen todas el mismo diseño: un fondo con un degradé radial con los colores del proyecto, el logo en una tarjeta blanca, el nombre grande, una línea de descripción, una etiqueta en mayúsculas abajo y, a la derecha, el producto: uno o dos teléfonos inclinados, o una ventana de navegador.
+
+Hoy son once proyectos. Once veces el mismo diseño con distintos colores, textos y capturas. Hacerlas a mano significa que cada una se aleja un poquito de las otras: un margen distinto, una sombra que no es igual, un texto que quedó medio píxel más arriba. Y significa que cambiar algo, aunque sea una palabra, es volver a abrir el archivo de diseño.
+
+## Prueba: la configuración de un proyecto
+
+Cada portada es una entrada en `scripts/covers/projects.ts`. Esta es la de Horus, tal como está hoy:
+
+```typescript
+{
+  slug: 'horus',
+  title: 'Horus',
+  tagline: 'Cataract lens education,\nnow running on AWS.',
+  pill: 'HEALTHCARE SAAS · AWS',
+  gradient: ['#2FA3A0', '#0F7C7C', '#0A4A4D', '#05262A'],
+  textColor: '#ffffff',
+  logo: 'assets/horus/logo.png',
+  screenshots: ['assets/horus/screenshot.png'],
+  frame: 'browser',
+},
+```
+
+Y este fue el cambio entero en ese archivo cuando la migración terminó:
+
+```diff
+-    tagline: 'Cataract lens education,\nnow moving to AWS.',
++    tagline: 'Cataract lens education,\nnow running on AWS.',
+```
+
+Todo lo que define una portada está ahí: el slug (que también es la carpeta de salida), el título, la descripción con `\n` para el salto de línea, la etiqueta, de dos a cinco colores para el degradé, el color del texto, el logo, una o dos capturas, y el marco: `phone` o `browser`.
+
+## Prueba: el pipeline
+
+El comando `covers` corre `scripts/covers/render.ts`, un script de Node de unas cincuenta líneas que usa una plantilla y un validador que viven al lado. Entre los tres hacen cuatro cosas:
+
+1. **Valida la configuración.** Slug en kebab-case, título y descripción no vacíos, de dos a cinco colores hexadecimales, una o dos capturas, y el marco de navegador con exactamente una. Si algo está mal, falla antes de dibujar nada.
+2. **Arma el HTML.** Una plantilla con el lienzo fijo de 1600×1000 píxeles, el degradé radial, el logo, el texto escapado y el marco que corresponde. Las imágenes entran como data URIs, así que el HTML no depende de ningún servidor.
+3. **Lo fotografía con Playwright.** Abre Chromium con un viewport de exactamente 1600×1000, carga el HTML y saca una captura en PNG.
+4. **Lo convierte con sharp.** El PNG pasa a WebP con calidad 88 y se guarda en `public/images/work/<slug>/cover.webp`.
+
+El núcleo del render es casi literal eso:
+
+```typescript
+const html = buildCoverHtml(config, {
+  logo: await toDataUri(config.logo),
+  screenshots: await Promise.all(config.screenshots.map(toDataUri)),
+});
+await page.setContent(html, { waitUntil: 'load' });
+const png = await page.screenshot({ type: 'png' });
+const out = coverOutputPath(root, config.slug);
+await mkdir(path.dirname(out), { recursive: true });
+await sharp(png).webp({ quality: 88 }).toFile(out);
+```
+
+Con un slug, `pnpm covers horus` regenera una sola portada. Sin argumentos, regenera todas. Si le pasás un slug que no existe, te dice cuáles existen.
+
+<Callout type="info" title="También tiene tests">
+  La validación, el escapado de HTML, la plantilla (lienzo, degradé, marco de teléfono, de navegador
+  o dos teléfonos superpuestos) y la ruta de salida tienen tests unitarios. Lo único que no se
+  testea en CI es la captura misma, que depende de un navegador. Esa se verifica mirándola.
+</Callout>
+
+## Criterio: si un diseño se repite, es código
+
+La regla que me llevo es simple: **si vas a hacer el mismo diseño más de dos o tres veces, escribilo como código.** Una plantilla con datos te da tres cosas que un archivo de diseño no:
+
+- **Consistencia gratis.** Las once portadas comparten los mismos márgenes, sombras y tipografía porque salen de la misma plantilla. No hay que acordarse de nada.
+- **Cambios baratos.** Corregir un texto es editar una línea. Cambiar una sombra en todas es editar una regla de CSS y correr un comando.
+- **Historia.** Cada portada tiene su configuración en git. El commit que cambió la de Horus dice qué cambió, cuándo y por qué, junto con el cambio en el caso de estudio.
+
+Lo que cuesta: armar la plantilla la primera vez lleva más que hacer una portada a mano. El diseño queda acotado a lo que la plantilla sabe hacer: si un proyecto necesita algo distinto, hay que extender la plantilla, no improvisar. Y la tipografía depende de lo que tenga instalado la máquina que corre el script, porque la plantilla usa fuentes del sistema.
+
+[FACU: si alguna portada te pidió algo que la plantilla no sabía hacer, y cómo lo resolviste]
+
+No es un sistema de diseño ni pretende serlo. Es un script chico que convierte una tarea repetitiva en un comando. Y la próxima vez que cambie algo en un proyecto, la portada va a estar al día en lo que tardo en escribir una línea.
