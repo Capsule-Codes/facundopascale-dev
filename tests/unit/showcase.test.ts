@@ -30,6 +30,15 @@ describe('resolveProjectHref', () => {
     });
   });
 
+  it('skips empty-string links', () => {
+    const p = project('Nope', { live: '', appStore: '', playStore: 'https://play.google.com/x' });
+    expect(resolveProjectHref(p, studies, 'es')).toEqual({
+      href: 'https://play.google.com/x',
+      external: true,
+    });
+    expect(resolveProjectHref(project('Nope', { live: '' }), studies, 'es')).toBeNull();
+  });
+
   it('falls back to the website, then the App Store, then Google Play', () => {
     const all = {
       live: 'https://a.dev',

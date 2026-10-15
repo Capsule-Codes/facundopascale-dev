@@ -17,7 +17,8 @@ export function resolveProjectHref(
   const study = findCaseStudy(project.title, studies);
   if (study) return { href: localizedPath('work', locale, study.slug), external: false };
   const { live, appStore, playStore } = project.links;
-  const external = live ?? appStore ?? playStore;
+  // `||` (not `??`): CMS rows may store an unset link as an empty string.
+  const external = live || appStore || playStore;
   return external ? { href: external, external: true } : null;
 }
 
