@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { deviceFrameFor, resolveProjectHref, showcaseScreens } from '../../src/lib/showcase';
+import {
+  deviceFrameFor,
+  nextTabIndex,
+  resolveProjectHref,
+  showcaseScreens,
+} from '../../src/lib/showcase';
 import type { CaseStudyRef } from '../../src/lib/case-studies';
 
 const studies: CaseStudyRef[] = [
@@ -91,5 +96,33 @@ describe('showcaseScreens', () => {
 
   it('is empty without any image', () => {
     expect(showcaseScreens({ title: 'T', image: null, gallery: [] })).toEqual([]);
+  });
+});
+
+describe('nextTabIndex', () => {
+  it('moves forward with ArrowRight / ArrowDown and wraps at the end', () => {
+    expect(nextTabIndex(0, 'ArrowRight', 3)).toBe(1);
+    expect(nextTabIndex(1, 'ArrowDown', 3)).toBe(2);
+    expect(nextTabIndex(2, 'ArrowRight', 3)).toBe(0);
+  });
+
+  it('moves back with ArrowLeft / ArrowUp and wraps at the start', () => {
+    expect(nextTabIndex(2, 'ArrowLeft', 3)).toBe(1);
+    expect(nextTabIndex(1, 'ArrowUp', 3)).toBe(0);
+    expect(nextTabIndex(0, 'ArrowLeft', 3)).toBe(2);
+  });
+
+  it('jumps to the ends with Home / End', () => {
+    expect(nextTabIndex(1, 'Home', 4)).toBe(0);
+    expect(nextTabIndex(1, 'End', 4)).toBe(3);
+  });
+
+  it('ignores other keys', () => {
+    expect(nextTabIndex(1, 'Enter', 3)).toBeNull();
+    expect(nextTabIndex(1, 'a', 3)).toBeNull();
+  });
+
+  it('stays at 0 with a single tab', () => {
+    expect(nextTabIndex(0, 'ArrowRight', 1)).toBe(0);
   });
 });

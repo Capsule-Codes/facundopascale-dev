@@ -1,0 +1,292 @@
+---
+import { Image } from 'astro:assets';
+import type { CaseStudyRef } from '../lib/case-studies';
+import type { Locale } from '../lib/i18n';
+import type { ShowcaseProject } from '../lib/site-data';
+import { deviceFrameFor, resolveProjectHref, showcaseScreens } from '../lib/showcase';
+
+interface Props {
+  projects: ShowcaseProject[];
+  studies: CaseStudyRef[];
+  locale: Locale;
+}
+
+const { projects, studies, locale } = Astro.props;
+
+const copy = {
+  es: {
+    list: 'Proyectos destacados',
+    viewProject: 'Ver proyecto',
+    prev: 'Captura anterior',
+    next: 'Captura siguiente',
+    shots: 'capturas',
+  },
+  en: {
+    list: 'Highlighted projects',
+    viewProject: 'View project',
+    prev: 'Previous screenshot',
+    next: 'Next screenshot',
+    shots: 'screenshots',
+  },
+}[locale];
+
+const MAX_TECH = 4;
+const pad = (n: number) => String(n).padStart(2, '0');
+
+const items = projects.map((p, i) => {
+  const frame = deviceFrameFor(p.imageOrientation);
+  const fallback = frame === 'phone' ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+  return {
+    p,
+    n: pad(i + 1),
+    frame,
+    href: resolveProjectHref(p, studies, locale),
+    screens: showcaseScreens(p).map((s) => ({
+      ...s,
+      width: s.width || fallback.width,
+      height: s.height || fallback.height,
+    })),
+  };
+});
+
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
+const chip = 'border-[1.5px] border-rule px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide';
+const stepBtn = `grid size-9 place-items-center border-[1.5px] border-rule bg-bg-elevated font-mono text-sm transition-colors hover:border-accent hover:text-accent ${focus}`;
+// Horizontal snap strip of screenshots inside a device frame.
+const strip =
+  'flex h-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden';
+---
+
+<div
+  data-showcase
+  class="grid min-w-0 border-[1.5px] border-rule bg-bg-elevated lg:grid-cols-[340px_minmax(0,1fr)]"
+>
+  <div
+    role="tablist"
+    aria-label={copy.list}
+    class="flex min-w-0 snap-x snap-mandatory overflow-x-auto border-b-[1.5px] border-rule [scrollbar-width:none] lg:flex-col lg:overflow-visible lg:border-r-[1.5px] lg:border-b-0 [&::-webkit-scrollbar]:hidden"
+  >
+    {
+      items.map(({ p, n }, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`showcase-tab-${i}`}
+          aria-controls={`showcase-panel-${i}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          tabindex={i === 0 ? 0 : -1}
+          data-showcase-tab
+          class={`group/tab relative flex shrink-0 snap-start items-baseline gap-3 px-4 py-3 text-left text-text-muted transition-colors hover:text-text aria-selected:bg-paper aria-selected:text-text lg:grid lg:grid-cols-[28px_minmax(0,1fr)] lg:border-b lg:border-rule lg:px-5 lg:py-5 lg:last:border-b-0 ${focus} focus-visible:-outline-offset-2`}
+        >
+          <span
+            aria-hidden="true"
+            class="absolute inset-x-0 bottom-0 h-[3px] bg-accent opacity-0 group-aria-selected/tab:opacity-100 lg:inset-x-auto lg:inset-y-0 lg:left-0 lg:h-auto lg:w-[3px]"
+          />
+          <span class="font-mono text-xs group-aria-selected/tab:text-accent">{n}</span>
+          <span class="flex min-w-0 flex-col gap-1">
+            <span class="text-lg leading-tight whitespace-nowrap lg:truncate lg:text-xl">
+              {p.title}
+            </span>
+            {p.subtitle && (
+              <span class="hidden truncate text-sm text-text-muted lg:block">{p.subtitle}</span>
+            )}
+            {p.category && <span class={`${meta} mt-1 hidden lg:block`}>{p.category}</span>}
+          </span>
+        </button>
+      ))
+    }
+  </div>
+
+  {
+    items.map(({ p, n, frame, href, screens }, i) => (
+      <div
+        role="tabpanel"
+        id={`showcase-panel-${i}`}
+        aria-labelledby={`showcase-tab-${i}`}
+        tabindex="0"
+        hidden={i !== 0}
+        data-showcase-panel
+        class={`flex min-w-0 flex-col ${focus} focus-visible:-outline-offset-2`}
+      >
+        <div class="flex flex-col items-center gap-4 border-b-[1.5px] border-rule bg-blueprint px-5 py-8 md:px-10">
+          {frame === 'phone' ? (
+            <div class="w-[200px] rounded-[26px] border-[1.5px] border-rule bg-bg-elevated p-2 md:w-[220px]">
+              <div
+                class="mx-auto mb-2 h-1.5 w-12 rounded-full border border-rule"
+                aria-hidden="true"
+              />
+              <div class="aspect-[9/19.5] overflow-hidden rounded-[18px] border border-rule bg-blueprint">
+                {screens.length > 0 ? (
+                  <div class={strip} data-showcase-strip>
+                    {screens.map((s) => (
+                      <Image
+                        src={s.src}
+                        alt={s.alt}
+                        width={s.width}
+                        height={s.height}
+                        widths={[320, 480]}
+                        sizes="220px"
+                        quality={75}
+                        loading="lazy"
+                        decoding="async"
+                        class="h-full w-full shrink-0 snap-center object-cover object-top"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <span
+                    class={`${meta} grid h-full place-items-center px-3 text-center`}
+                    aria-hidden="true"
+                  >
+                    [{p.title}]
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div class="w-full max-w-[640px] border-[1.5px] border-rule bg-bg-elevated">
+              <div
+                class="flex items-center gap-1.5 border-b-[1.5px] border-rule px-3 py-2"
+                aria-hidden="true"
+              >
+                <span class="size-2 rounded-full border border-rule" />
+                <span class="size-2 rounded-full border border-rule" />
+                <span class="size-2 rounded-full border border-rule" />
+              </div>
+              <div class="aspect-[16/10] overflow-hidden bg-blueprint">
+                {screens.length > 0 ? (
+                  <div class={strip} data-showcase-strip>
+                    {screens.map((s) => (
+                      <Image
+                        src={s.src}
+                        alt={s.alt}
+                        width={s.width}
+                        height={s.height}
+                        widths={[480, 640, 960, 1200]}
+                        sizes="(min-width: 1240px) 640px, (min-width: 1024px) 50vw, calc(100vw - 92px)"
+                        quality={75}
+                        loading="lazy"
+                        decoding="async"
+                        class="h-full w-full shrink-0 snap-center object-cover object-top"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <span class={`${meta} grid h-full place-items-center`} aria-hidden="true">
+                    [{p.title}]
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          {screens.length > 1 && (
+            <div class="flex items-center gap-3">
+              <button type="button" class={stepBtn} data-showcase-step="-1" aria-label={copy.prev}>
+                ←
+              </button>
+              <span class={meta}>
+                {screens.length} {copy.shots}
+              </span>
+              <button type="button" class={stepBtn} data-showcase-step="1" aria-label={copy.next}>
+                →
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div class="flex flex-col gap-4 p-5 md:p-8">
+          <p class={`${meta} m-0`}>
+            {n}
+            {p.category ? ` · ${p.category}` : ''}
+          </p>
+          <h3 class="m-0 text-[32px] leading-tight font-normal md:text-[40px]">{p.title}</h3>
+          {p.summary && (
+            <p class="m-0 max-w-[60ch] text-lg leading-snug text-text-muted">{p.summary}</p>
+          )}
+          {p.technologies.length > 0 && (
+            <ul class="m-0 flex list-none flex-wrap gap-2 p-0">
+              {p.technologies.slice(0, MAX_TECH).map((t) => (
+                <li class={chip}>{t}</li>
+              ))}
+            </ul>
+          )}
+          {href && (
+            <a
+              href={href.href}
+              {...(href.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              class={`group/cta mt-2 self-start border-b-[1.5px] border-accent pb-1 font-mono text-sm transition-colors hover:text-accent ${focus}`}
+            >
+              {copy.viewProject}{' '}
+              <span
+                aria-hidden="true"
+                class="inline-block transition-transform group-hover/cta:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover/cta:translate-x-0"
+              >
+                {href.external ? '↗' : '→'}
+              </span>
+            </a>
+          )}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  import { nextTabIndex } from '../lib/showcase';
+
+  // WAI-ARIA tabs with automatic activation; every panel is server-rendered, so without
+  // this script the first project simply stays visible.
+  for (const root of document.querySelectorAll<HTMLElement>('[data-showcase]')) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-showcase-tab]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[data-showcase-panel]')];
+    let current = Math.max(
+      0,
+      tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true')
+    );
+
+    const select = (i: number, moveFocus: boolean) => {
+      current = i;
+      tabs.forEach((t, j) => {
+        const on = j === i;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach((p, j) => (p.hidden = j !== i));
+      const tab = tabs[i];
+      if (!tab) return;
+      if (moveFocus) tab.focus();
+      // Keep the active tab in view on the mobile horizontal scroller.
+      tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+
+    tabs.forEach((t, i) => t.addEventListener('click', () => select(i, false)));
+    root.querySelector('[role="tablist"]')?.addEventListener('keydown', (e) => {
+      const ev = e as KeyboardEvent;
+      const next = nextTabIndex(current, ev.key, tabs.length);
+      if (next === null) return;
+      ev.preventDefault();
+      select(next, true);
+    });
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-showcase-step]')) {
+      btn.addEventListener('click', () => {
+        const panel = btn.closest('[data-showcase-panel]');
+        const stripEl = panel?.querySelector<HTMLElement>('[data-showcase-strip]');
+        if (!stripEl) return;
+        const dir = Number(btn.dataset.showcaseStep);
+        const atEnd = stripEl.scrollLeft + stripEl.clientWidth >= stripEl.scrollWidth - 1;
+        const atStart = stripEl.scrollLeft <= 0;
+        // Wrap around at either end so both buttons always do something.
+        const left =
+          dir > 0 && atEnd
+            ? 0
+            : dir < 0 && atStart
+              ? stripEl.scrollWidth
+              : stripEl.scrollLeft + dir * stripEl.clientWidth;
+        stripEl.scrollTo({ left, behavior: reduced ? 'auto' : 'smooth' });
+      });
+    }
+  }
+</script>

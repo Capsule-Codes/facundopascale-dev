@@ -1,6 +1,7 @@
 import { findCaseStudy, type CaseStudyRef } from './case-studies';
 import { localizedPath, type Locale } from './i18n';
 import type { GalleryImage, ShowcaseProject } from './site-data';
+import { wrapIndex } from './work-detail';
 
 export type ProjectHref = { href: string; external: boolean };
 
@@ -35,4 +36,22 @@ export function showcaseScreens(
     return project.gallery.map((img) => ({ ...img, alt: img.alt || project.title }));
   }
   return project.image ? [{ src: project.image, alt: project.title, width: 0, height: 0 }] : [];
+}
+
+const TAB_STEPS: Record<string, number> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+};
+
+/**
+ * Roving-tabindex target for a key press in a tablist (WAI-ARIA tabs pattern):
+ * arrows step and wrap, Home / End jump to the ends, any other key returns `null`.
+ */
+export function nextTabIndex(current: number, key: string, count: number): number | null {
+  if (key === 'Home') return 0;
+  if (key === 'End') return Math.max(0, count - 1);
+  const step = TAB_STEPS[key];
+  return step === undefined ? null : wrapIndex(current, step, count);
 }
