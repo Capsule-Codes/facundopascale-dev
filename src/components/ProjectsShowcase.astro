@@ -3,7 +3,7 @@ import { Image } from 'astro:assets';
 import type { CaseStudyRef } from '../lib/case-studies';
 import type { Locale } from '../lib/i18n';
 import type { ShowcaseProject } from '../lib/site-data';
-import { projectFrame, resolveProjectHref, showcaseScreens } from '../lib/showcase';
+import { deviceFrameFor, resolveProjectHref, showcaseScreens } from '../lib/showcase';
 
 interface Props {
   projects: ShowcaseProject[];
@@ -34,7 +34,7 @@ const MAX_TECH = 4;
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const items = projects.map((p, i) => {
-  const frame = projectFrame(p);
+  const frame = deviceFrameFor(p.imageOrientation);
   const fallback = frame === 'phone' ? { width: 390, height: 844 } : { width: 1440, height: 900 };
   return {
     p,
