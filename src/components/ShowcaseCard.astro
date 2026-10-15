@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { ShowcaseProject } from '../lib/site-data';
-import { deviceFrameFor, showcaseScreens, type ProjectHref } from '../lib/showcase';
+import { projectFrame, showcaseScreens, type ProjectHref } from '../lib/showcase';
 
 interface Props {
   project: ShowcaseProject;
@@ -16,7 +16,7 @@ interface Props {
 const { project: p, label, href, cta } = Astro.props;
 
 const cover = showcaseScreens(p)[0];
-const portrait = deviceFrameFor(p.imageOrientation) === 'phone';
+const portrait = projectFrame(p) === 'phone';
 // Remote images need intrinsic dimensions; fall back to typical phone / desktop ratios.
 const fallback = portrait ? { width: 390, height: 844 } : { width: 1440, height: 900 };
 const width = cover?.width || fallback.width;

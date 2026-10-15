@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   deviceFrameFor,
   nextTabIndex,
+  projectFrame,
   resolveProjectHref,
   showcaseScreens,
 } from '../../src/lib/showcase';
@@ -73,12 +74,29 @@ describe('deviceFrameFor', () => {
   it('uses a phone frame for portrait screenshots', () => {
     expect(deviceFrameFor('portrait')).toBe('phone');
     expect(deviceFrameFor('Portrait')).toBe('phone');
+    expect(deviceFrameFor('vertical')).toBe('phone');
   });
 
   it('uses a browser frame for everything else', () => {
     expect(deviceFrameFor('landscape')).toBe('browser');
     expect(deviceFrameFor(null)).toBe('browser');
     expect(deviceFrameFor(undefined)).toBe('browser');
+  });
+});
+
+describe('projectFrame', () => {
+  const img = (width: number, height: number) => ({ src: 'x', alt: '', width, height });
+
+  it('reads the first screenshot dimensions before the stored orientation', () => {
+    expect(projectFrame({ imageOrientation: null, gallery: [img(1080, 2424)] })).toBe('phone');
+    expect(projectFrame({ imageOrientation: 'portrait', gallery: [img(1600, 1000)] })).toBe(
+      'browser'
+    );
+  });
+
+  it('falls back to the stored orientation when dimensions are unknown', () => {
+    expect(projectFrame({ imageOrientation: 'vertical', gallery: [img(0, 0)] })).toBe('phone');
+    expect(projectFrame({ imageOrientation: null, gallery: [] })).toBe('browser');
   });
 });
 
