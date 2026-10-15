@@ -24,9 +24,25 @@ export function resolveProjectHref(
 
 export type DeviceFrame = 'phone' | 'browser';
 
+const PORTRAIT_VALUES = new Set(['portrait', 'vertical']);
+
 /** Portrait screenshots sit in a phone frame; everything else in a browser window. */
 export function deviceFrameFor(orientation: string | null | undefined): DeviceFrame {
-  return orientation?.toLowerCase() === 'portrait' ? 'phone' : 'browser';
+  return PORTRAIT_VALUES.has(orientation?.toLowerCase() ?? '') ? 'phone' : 'browser';
+}
+
+/**
+ * Frame for a project: the first screenshot's real dimensions win, because the
+ * stored orientation is often unset; fall back to it when dimensions are unknown.
+ */
+export function projectFrame(
+  project: Pick<ShowcaseProject, 'imageOrientation' | 'gallery'>
+): DeviceFrame {
+  const first = project.gallery[0];
+  if (first && first.width > 0 && first.height > 0) {
+    return first.height > first.width ? 'phone' : 'browser';
+  }
+  return deviceFrameFor(project.imageOrientation);
 }
 
 /** Screenshots to show for a project: the gallery, else the cover image, else none. */
