@@ -5,17 +5,11 @@ const COPY = {
     h1: 'Software que se diseña antes de construirse.',
     skip: 'Saltar al contenido',
     sections: ['agency', 'products', 'content', 'contact'],
-    viewProject: 'Ver proyecto',
-    allProjects: 'Ver todos los proyectos',
-    workPath: '/es/trabajo/',
   },
   en: {
     h1: "Software that's designed before it's built.",
     skip: 'Skip to content',
     sections: ['agency', 'products', 'content', 'contact'],
-    viewProject: 'View project',
-    allProjects: 'See all projects',
-    workPath: '/en/work/',
   },
 } as const;
 
@@ -37,52 +31,12 @@ test.describe('home', () => {
         }
       });
 
-      test('shows the highlighted projects as a tablist with one visible panel', async ({
-        page,
-      }) => {
+      test('shows the highlighted showcase projects as cards', async ({ page }) => {
         await page.goto(`/${locale}/`);
-        const section = page.locator('section#agency');
-        const tabs = section.getByRole('tab');
+        const cards = page.locator('section#agency article');
         // Fixtures provide 3 highlighted projects.
-        await expect(tabs).toHaveCount(3);
-        await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
-        await expect(section.getByRole('tabpanel')).toHaveCount(1);
-        const panel = section.getByRole('tabpanel');
-        await expect(panel.getByRole('heading', { level: 3 })).toHaveText('Investamind');
-        await expect(panel.getByRole('link', { name: COPY[locale].viewProject })).toHaveAttribute(
-          'href',
-          /investamind\/$/
-        );
-      });
-
-      test('switches projects on click and with the arrow keys', async ({ page }) => {
-        await page.goto(`/${locale}/`);
-        const section = page.locator('section#agency');
-        const tabs = section.getByRole('tab');
-        const heading = section.getByRole('tabpanel').getByRole('heading', { level: 3 });
-
-        await tabs.nth(1).click();
-        await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
-        await expect(tabs.first()).toHaveAttribute('aria-selected', 'false');
-        await expect(heading).toHaveText('Festival PRO');
-
-        await page.keyboard.press('ArrowRight');
-        await expect(tabs.nth(2)).toBeFocused();
-        await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'true');
-        await expect(tabs.nth(2)).toHaveAttribute('tabindex', '0');
-        await expect(tabs.nth(1)).toHaveAttribute('tabindex', '-1');
-        await expect(heading).toHaveText('Horus Surgical');
-
-        await page.keyboard.press('ArrowRight');
-        await expect(tabs.first()).toBeFocused();
-        await expect(heading).toHaveText('Investamind');
-      });
-
-      test('links to the full work index below the showcase', async ({ page }) => {
-        await page.goto(`/${locale}/`);
-        await expect(
-          page.locator('section#agency').getByRole('link', { name: COPY[locale].allProjects })
-        ).toHaveAttribute('href', COPY[locale].workPath);
+        await expect(cards).toHaveCount(3);
+        await expect(cards.first().getByRole('heading', { level: 3 })).toBeVisible();
       });
 
       test('renders the featured testimonial in the agency lámina', async ({ page }) => {
