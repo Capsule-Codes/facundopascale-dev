@@ -40,3 +40,5 @@ The user finds fp's projects section very different from capsule's and asked to 
 - Evidence (after T2): `pnpm test` 336 passed; `pnpm build` complete; `pnpm test:e2e` 106 passed; `pnpm check` 0 errors.
 - Notes: no-JS fallback keeps the first panel visible with focusable tabs (list items do not link out). Fixtures carry no images, so screenshots show the blueprint placeholders; the phone frame was checked by temporarily marking a fixture portrait (reverted).
 - Next step: native review / PR decision (not pushed).
+- RDD review `20db8f4..029144b` (medium, consent granted): reliability lens approved, acknowledged (lineage `review-6d10826c13632a06`). Advisory R3-empty-link-fallback fixed in `13e91e5` (RED→GREEN, 337 tests).
+- PR #31 open, CI green (checks + Vercel). Preview is SSO-protected; real-image visual check pending.
