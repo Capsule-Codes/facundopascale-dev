@@ -3,9 +3,10 @@ import { getCollection } from 'astro:content';
 import Layout from './Layout.astro';
 import ShowcaseCard from './ShowcaseCard.astro';
 import { byLocale } from '../lib/content';
-import { findCaseStudy, unmatchedCaseStudies } from '../lib/case-studies';
+import { unmatchedCaseStudies } from '../lib/case-studies';
 import { localizedPath, type Locale } from '../lib/i18n';
 import { getShowcase, getSiteSettings } from '../lib/site-data';
+import { resolveProjectHref } from '../lib/showcase';
 
 interface Props {
   locale: Locale;
@@ -48,7 +49,7 @@ const copy = {
       'Capsule Codes construye apps móviles y web para startups. Estos son proyectos reales, con sus enlaces para verlos funcionando.',
     highlighted: 'Destacados',
     more: 'Más proyectos',
-    caseStudy: 'Caso de estudio',
+    viewProject: 'Ver proyecto',
     studiesPlate: 'CASOS DE ESTUDIO',
     studiesTitle: 'Casos de estudio',
     empty: 'Pronto habrá proyectos aquí.',
@@ -56,9 +57,6 @@ const copy = {
     contactBefore: '¿Tenés un proyecto? ',
     contactAccent: 'Dibujémoslo.',
     cta: 'Agendar una call',
-    live: 'Sitio web',
-    appStore: 'App Store',
-    playStore: 'Google Play',
   },
   en: {
     title: 'Work — Facundo Pascale',
@@ -71,7 +69,7 @@ const copy = {
       'Capsule Codes builds mobile and web apps for startups. These are real projects, with links to see them running.',
     highlighted: 'Highlighted',
     more: 'More projects',
-    caseStudy: 'Case study',
+    viewProject: 'View project',
     studiesPlate: 'CASE STUDIES',
     studiesTitle: 'Case studies',
     empty: 'Projects coming soon.',
@@ -79,24 +77,13 @@ const copy = {
     contactBefore: 'Got a project? ',
     contactAccent: "Let's draw it.",
     cta: 'Book a call',
-    live: 'Website',
-    appStore: 'App Store',
-    playStore: 'Google Play',
   },
 }[loc];
-
-const linkLabels = { live: copy.live, appStore: copy.appStore, playStore: copy.playStore };
-const caseStudyFor = (title: string) => {
-  const match = findCaseStudy(title, studies);
-  return match
-    ? { href: localizedPath('work', loc, match.slug), label: copy.caseStudy }
-    : undefined;
-};
 
 const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const plateLabel = 'font-mono text-xs uppercase tracking-wide text-accent';
 const h2Class = 'font-display text-4xl leading-none font-normal md:text-5xl';
-const grid = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5';
+const grid = 'grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3';
 const btnPrimary = `inline-block bg-accent px-5 py-3.5 font-mono text-sm text-paper transition-colors hover:bg-accent-hover ${focus}`;
 const pad = (n: number) => String(n).padStart(2, '0');
 ---
@@ -129,8 +116,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
                 <ShowcaseCard
                   project={p}
                   label={`A.${pad(i + 1)}`}
-                  linkLabels={linkLabels}
-                  caseStudy={caseStudyFor(p.title)}
+                  href={resolveProjectHref(p, studies, loc)}
+                  cta={copy.viewProject}
                 />
               ))}
             </div>
@@ -153,8 +140,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
                 <ShowcaseCard
                   project={p}
                   label={`A.${pad(highlighted.length + i + 1)}`}
-                  linkLabels={linkLabels}
-                  caseStudy={caseStudyFor(p.title)}
+                  href={resolveProjectHref(p, studies, loc)}
+                  cta={copy.viewProject}
                 />
               ))}
             </div>
