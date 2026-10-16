@@ -98,6 +98,22 @@ pre {
 }
 
 /*
+ * The typography plugin wraps inline code in literal backticks. Drop them and
+ * mark inline code with a subtle chip instead; code blocks are left alone.
+ */
+.prose :where(code):not(:where(pre *))::before,
+.prose :where(code):not(:where(pre *))::after {
+  content: none;
+}
+
+.prose :where(code):not(:where(pre *)) {
+  padding: 0.1em 0.35em;
+  border: 1px solid color-mix(in srgb, var(--color-rule) 25%, transparent);
+  background: var(--color-bg-elevated);
+  font-weight: 500;
+}
+
+/*
  * Shiki dual-theme bridge.
  * `astro.config.ts` configures Shiki with `themes: { light: 'vitesse-light',
  * dark: 'vesper' }` and `defaultColor: false`, so every token carries both

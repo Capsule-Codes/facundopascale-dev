@@ -30,6 +30,17 @@ test.describe('blog', () => {
     );
   });
 
+  test('inline code renders without literal backticks', async ({ page }) => {
+    await page.goto('/es/blog/2026-10-13-arquitectura-offline-first/');
+    const code = page.locator('article .prose :not(pre) > code').first();
+    await expect(code).toBeVisible();
+    const marks = await code.evaluate((el) => [
+      getComputedStyle(el, '::before').content,
+      getComputedStyle(el, '::after').content,
+    ]);
+    expect(marks).toEqual(['none', 'none']);
+  });
+
   test('OG images exist for published posts only', async ({ request }) => {
     const published = await request.get('/og/blog/es/2026-10-13-arquitectura-offline-first.png');
     expect(published.status()).toBe(200);
