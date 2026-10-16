@@ -6,6 +6,7 @@ import ShowcaseCard from '../../components/ShowcaseCard.astro';
 import portrait from '../../assets/facundo-portrait.jpg';
 import { isLocale, type Locale, localizedPath } from '../../lib/i18n';
 import { filterPublished, byLocale } from '../../lib/content';
+import { findCaseStudy } from '../../lib/case-studies';
 import {
   buildLog,
   getContentLog,
@@ -34,8 +35,19 @@ const [showcase, products, contentLog, settings, testimonials, allBlog] = await 
   getTestimonials(loc),
   getCollection('blog'),
 ]);
+const work = await getCollection('work');
 
 const projects = showcase.filter((p) => p.highlighted).slice(0, 3);
+const studies = byLocale(work, loc).map((e) => ({
+  slug: e.id.replace(`${loc}/`, '').replace(/\.mdx$/, ''),
+  title: e.data.title,
+}));
+const caseStudyFor = (title: string) => {
+  const match = findCaseStudy(title, studies);
+  return match
+    ? { href: localizedPath('work', loc, match.slug), label: copy.caseStudy }
+    : undefined;
+};
 const log = buildLog(contentLog, filterPublished(byLocale(allBlog, loc)), loc, 6);
 const testimonial = pickFeaturedTestimonial(testimonials, 'Ricardo Mejia');
 const youtubeUrl = settings.socials.youtube;
@@ -73,6 +85,7 @@ const copy = {
     agencyCta: 'Contratar a la agencia',
     agencyAll: 'Ver todo el trabajo',
     live: 'Sitio web',
+    caseStudy: 'Caso de estudio',
     appStore: 'App Store',
     playStore: 'Google Play',
     productsPlate: 'LÁMINA B · PRODUCTOS PROPIOS',
@@ -137,6 +150,7 @@ const copy = {
     agencyCta: 'Hire the agency',
     agencyAll: 'See all work',
     live: 'Website',
+    caseStudy: 'Case study',
     appStore: 'App Store',
     playStore: 'Google Play',
     productsPlate: 'SHEET B · OWN PRODUCTS',
@@ -400,6 +414,7 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
                 project={p}
                 label={`A.${String(i + 1).padStart(2, '0')}`}
                 linkLabels={{ live: copy.live, appStore: copy.appStore, playStore: copy.playStore }}
+                caseStudy={caseStudyFor(p.title)}
               />
             ))
           }

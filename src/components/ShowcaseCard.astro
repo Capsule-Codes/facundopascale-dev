@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import { cardCover } from '../lib/card-cover';
 import type { ShowcaseProject } from '../lib/site-data';
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 
 const { project: p, label, linkLabels, caseStudy } = Astro.props;
 
-const cover = p.gallery[0];
+const cover = cardCover(p);
 const links = [
   p.links.live && { href: p.links.live, label: linkLabels.live },
   p.links.appStore && { href: p.links.appStore, label: linkLabels.appStore },
@@ -28,23 +29,28 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
     class="relative flex h-[180px] items-center justify-center overflow-hidden border-b-[1.5px] border-rule bg-blueprint"
   >
     {
-      p.image ? (
+      cover ? (
         <Image
-          src={cover?.src ?? p.image}
-          alt={cover?.alt || p.title}
-          width={cover?.width || 640}
-          height={cover?.height || 360}
+          src={cover.src}
+          alt={cover.alt}
+          width={1600}
+          height={1000}
           widths={[320, 480, 640, 750, 960]}
           sizes="(min-width: 1240px) 400px, (min-width: 640px) 45vw, 100vw"
           quality={75}
           loading="lazy"
           decoding="async"
-          class="h-full w-full object-cover object-top"
+          class="h-full w-full object-cover"
         />
       ) : (
         <span class={meta} aria-hidden="true">
           [{p.title}]
         </span>
+      )
+    }
+    {
+      caseStudy && (
+        <a href={caseStudy.href} class="absolute inset-0" tabindex="-1" aria-hidden="true" />
       )
     }
   </div>
@@ -53,7 +59,17 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
       {label}
       {p.category ? ` · ${p.category}` : ''}
     </p>
-    <h3 class="m-0 text-[28px] leading-tight font-normal">{p.title}</h3>
+    <h3 class="m-0 text-[28px] leading-tight font-normal">
+      {
+        caseStudy ? (
+          <a href={caseStudy.href} class={`hover:text-accent ${focus}`}>
+            {p.title}
+          </a>
+        ) : (
+          p.title
+        )
+      }
+    </h3>
     <p class="m-0 line-clamp-4 text-base leading-snug text-text-muted">
       {p.summary}
     </p>
