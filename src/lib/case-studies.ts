@@ -16,10 +16,10 @@ function titlesMatch(a: string, b: string): boolean {
 }
 
 /** First case study whose title prefix-matches the project title (normalized). */
-export function findCaseStudy(
+export function findCaseStudy<T extends CaseStudyRef>(
   projectTitle: string,
-  studies: CaseStudyRef[]
-): CaseStudyRef | undefined {
+  studies: T[]
+): T | undefined {
   return studies.find((s) => titlesMatch(projectTitle, s.title));
 }
 

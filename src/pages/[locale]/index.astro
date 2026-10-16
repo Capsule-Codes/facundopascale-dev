@@ -41,6 +41,7 @@ const projects = showcase.filter((p) => p.highlighted).slice(0, 3);
 const studies = byLocale(work, loc).map((e) => ({
   slug: e.id.replace(`${loc}/`, '').replace(/\.mdx$/, ''),
   title: e.data.title,
+  coverImage: e.data.coverImage,
 }));
 const caseStudyFor = (title: string) => {
   const match = findCaseStudy(title, studies);
@@ -457,39 +458,79 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
           class="m-0 grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5 p-0"
         >
           {
-            products.map((p, i) => (
-              <li class="flex">
-                {p.url ? (
-                  <a
-                    href={p.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class={`${surface} group flex w-full min-w-0 flex-col gap-3.5 p-6 transition-colors hover:border-accent ${focus}`}
-                  >
-                    <div class="flex justify-between font-mono text-[11px] uppercase">
-                      <span class="text-text-muted">B.{String(i + 1).padStart(2, '0')}</span>
-                      <span class={statusColor[p.status]}>● {copy.status[p.status]}</span>
+            products.map((p, i) => {
+              const study = findCaseStudy(p.name, studies);
+              const href = study && localizedPath('work', loc, study.slug);
+              return (
+                <li class="flex">
+                  <article class={`${surface} flex w-full min-w-0 flex-col`}>
+                    {study && (
+                      <a
+                        href={href}
+                        class="block h-[180px] overflow-hidden border-b-[1.5px] border-rule bg-blueprint"
+                        tabindex="-1"
+                        aria-hidden="true"
+                      >
+                        <Image
+                          src={study.coverImage}
+                          alt=""
+                          width={1600}
+                          height={1000}
+                          widths={[320, 480, 640, 750, 960]}
+                          sizes="(min-width: 1240px) 400px, (min-width: 640px) 45vw, 100vw"
+                          quality={75}
+                          loading="lazy"
+                          decoding="async"
+                          class="h-full w-full object-cover"
+                        />
+                      </a>
+                    )}
+                    <div class="flex flex-1 flex-col gap-3.5 p-6">
+                      <div class="flex justify-between font-mono text-[11px] uppercase">
+                        <span class="text-text-muted">B.{String(i + 1).padStart(2, '0')}</span>
+                        <span class={statusColor[p.status]}>● {copy.status[p.status]}</span>
+                      </div>
+                      <h3 class="m-0 text-[32px] leading-tight font-normal">
+                        {href ? (
+                          <a href={href} class={`hover:text-accent ${focus}`}>
+                            {p.name}
+                          </a>
+                        ) : (
+                          p.name
+                        )}
+                      </h3>
+                      <p class="m-0 text-base leading-snug text-text-muted">{p.tagline}</p>
+                      {(p.url || href) && (
+                        <ul class="m-0 mt-auto flex list-none flex-wrap gap-x-4 gap-y-1 p-0 pt-2 font-mono text-xs">
+                          {p.url && (
+                            <li>
+                              <a
+                                href={p.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class={`break-all underline underline-offset-4 hover:text-accent ${focus}`}
+                              >
+                                {p.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
+                              </a>
+                            </li>
+                          )}
+                          {href && (
+                            <li>
+                              <a
+                                href={href}
+                                class={`underline underline-offset-4 hover:text-accent ${focus}`}
+                              >
+                                {copy.caseStudy} →
+                              </a>
+                            </li>
+                          )}
+                        </ul>
+                      )}
                     </div>
-                    <h3 class="m-0 text-[32px] leading-tight font-normal group-hover:text-accent">
-                      {p.name}
-                    </h3>
-                    <p class="m-0 text-base leading-snug text-text-muted">{p.tagline}</p>
-                    <span class="mt-auto font-mono text-xs break-all">
-                      {p.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
-                    </span>
-                  </a>
-                ) : (
-                  <div class={`${surface} flex w-full min-w-0 flex-col gap-3.5 p-6`}>
-                    <div class="flex justify-between font-mono text-[11px] uppercase">
-                      <span class="text-text-muted">B.{String(i + 1).padStart(2, '0')}</span>
-                      <span class={statusColor[p.status]}>● {copy.status[p.status]}</span>
-                    </div>
-                    <h3 class="m-0 text-[32px] leading-tight font-normal">{p.name}</h3>
-                    <p class="m-0 text-base leading-snug text-text-muted">{p.tagline}</p>
-                  </div>
-                )}
-              </li>
-            ))
+                  </article>
+                </li>
+              );
+            })
           }
         </ul>
       </section>

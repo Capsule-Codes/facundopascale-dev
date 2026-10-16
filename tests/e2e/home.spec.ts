@@ -67,6 +67,15 @@ test.describe('home', () => {
         }
       });
 
+      test('products show their cover and link to the case study', async ({ page }) => {
+        await page.goto(`/${locale}/`);
+        const card = page.locator('section#products article').filter({ hasText: 'Elevate' });
+        await expect(card.locator('img')).toHaveAttribute('src', /elevate%2Fcover|elevate\/cover/);
+        await expect(
+          card.getByRole('heading', { name: 'Elevate' }).getByRole('link')
+        ).toHaveAttribute('href', /elevate\/$/);
+      });
+
       test('contact section has a primary call to action', async ({ page }) => {
         await page.goto(`/${locale}/`);
         await expect(page.locator('section#contact a[data-cta="book-call"]')).toBeVisible();
