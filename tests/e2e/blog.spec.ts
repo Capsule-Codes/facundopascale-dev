@@ -52,4 +52,17 @@ test.describe('blog', () => {
     await page.goto('/es/blog/2026-04-15-hola-mundo/');
     await expect(page.locator('time')).toBeVisible();
   });
+
+  test('table of contents never overlaps the post body', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/es/blog/2026-10-13-arquitectura-offline-first/');
+    const toc = page.getByRole('navigation', { name: 'Tabla de contenidos' });
+    await expect(toc).toBeVisible();
+    for (const y of [0, 1500, 3000]) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      const t = await toc.boundingBox();
+      const a = await page.locator('article').boundingBox();
+      expect(t && a && t.x >= a.x + a.width).toBe(true);
+    }
+  });
 });
