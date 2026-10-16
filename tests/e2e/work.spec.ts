@@ -54,7 +54,11 @@ test.describe('work list', () => {
 
       test('keeps unmatched case studies reachable', async ({ page }) => {
         await page.goto(c.path);
-        await expect(page.locator('section#case-studies a[href*="elevate"]')).toHaveCount(1);
+        const card = page.locator('section#case-studies article').filter({ hasText: 'Elevate' });
+        await expect(
+          card.getByRole('heading', { name: 'Elevate' }).getByRole('link')
+        ).toHaveAttribute('href', /elevate\/$/);
+        await expect(card.locator('img')).toHaveAttribute('src', /elevate%2Fcover|elevate\/cover/);
       });
 
       test('has no horizontal overflow at 375px', async ({ page }) => {

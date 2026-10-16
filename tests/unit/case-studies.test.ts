@@ -3,6 +3,7 @@ import {
   normalizeTitle,
   findCaseStudy,
   unmatchedCaseStudies,
+  studyAsShowcase,
   type CaseStudyRef,
 } from '../../src/lib/case-studies';
 
@@ -67,5 +68,45 @@ describe('Elevate case study', () => {
 
   it('does not match unrelated titles', () => {
     expect(findCaseStudy('Elena', elevate)).toBeUndefined();
+  });
+});
+
+describe('studyAsShowcase', () => {
+  it('maps an internal case study onto a showcase card with its cover', () => {
+    expect(
+      studyAsShowcase({
+        slug: 'elevate',
+        title: 'Elevate',
+        tagline: 'Offline-first coaching suite',
+        stack: ['Expo', 'Tauri v2'],
+        coverImage: '/images/work/elevate/cover.webp',
+        live: 'https://byelevate.app',
+      })
+    ).toEqual({
+      id: 'elevate',
+      title: 'Elevate',
+      subtitle: '',
+      summary: 'Offline-first coaching suite',
+      description: 'Offline-first coaching suite',
+      image: '/images/work/elevate/cover.webp',
+      imageOrientation: null,
+      gallery: [],
+      technologies: ['Expo', 'Tauri v2'],
+      category: null,
+      links: { live: 'https://byelevate.app' },
+      highlighted: false,
+      position: 0,
+    });
+  });
+
+  it('omits the website link when the study has none', () => {
+    const card = studyAsShowcase({
+      slug: 'orbys',
+      title: 'Orbys',
+      tagline: 'Agency suite',
+      stack: [],
+      coverImage: '/images/work/orbys/cover.webp',
+    });
+    expect(card.links).toEqual({});
   });
 });

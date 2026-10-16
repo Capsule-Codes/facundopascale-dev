@@ -1,3 +1,5 @@
+import type { ShowcaseProject } from './site-data';
+
 export type CaseStudyRef = { slug: string; title: string };
 
 const MIN_LENGTH = 3;
@@ -27,4 +29,32 @@ export function unmatchedCaseStudies(
   studies: CaseStudyRef[]
 ): CaseStudyRef[] {
   return studies.filter((s) => !projectTitles.some((t) => titlesMatch(t, s.title)));
+}
+
+export type InternalStudy = {
+  slug: string;
+  title: string;
+  tagline: string;
+  stack: string[];
+  coverImage: string;
+  live?: string | undefined;
+};
+
+/** Present an internal case study (no showcase row) with the same card as client projects. */
+export function studyAsShowcase(study: InternalStudy): ShowcaseProject {
+  return {
+    id: study.slug,
+    title: study.title,
+    subtitle: '',
+    summary: study.tagline,
+    description: study.tagline,
+    image: study.coverImage,
+    imageOrientation: null,
+    gallery: [],
+    technologies: study.stack,
+    category: null,
+    links: study.live ? { live: study.live } : {},
+    highlighted: false,
+    position: 0,
+  };
 }
