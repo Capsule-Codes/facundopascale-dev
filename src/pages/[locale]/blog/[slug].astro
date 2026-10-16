@@ -35,9 +35,10 @@ const rt = (entry.data as unknown as { readingTime?: number }).readingTime;
   currentDocId={entry.id}
   currentCollection="blog"
 >
-  <div class="mx-auto max-w-3xl px-6 py-24">
-    <Toc headings={headings} locale={loc} />
-    <article>
+  <div
+    class="mx-auto max-w-3xl px-6 py-24 lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,48rem)_14rem] lg:justify-center lg:gap-16"
+  >
+    <article class="min-w-0">
       <h1 class="text-4xl md:text-5xl font-display mb-4">{entry.data.title}</h1>
       <PostMeta
         locale={loc}
@@ -50,5 +51,6 @@ const rt = (entry.data as unknown as { readingTime?: number }).readingTime;
         <Content />
       </div>
     </article>
+    <Toc headings={headings} locale={loc} />
   </div>
 </Layout>

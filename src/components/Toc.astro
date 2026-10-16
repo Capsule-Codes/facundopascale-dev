@@ -10,14 +10,15 @@ interface Heading {
 interface Props {
   headings: Heading[];
   locale: Locale;
-  /** Positioning classes; defaults to the blog's floated sidebar. */
+  /** Positioning classes; defaults to the blog's sticky sidebar column. */
   class?: string;
 }
 
 const {
   headings,
   locale,
-  class: position = 'hidden lg:block sticky top-24 float-right ml-8 w-56',
+  class:
+    position = 'hidden lg:block sticky top-24 self-start max-h-[calc(100vh-8rem)] overflow-y-auto',
 } = Astro.props;
 const filtered = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
 const label = locale === 'es' ? 'En esta página' : 'On this page';
