@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import Layout from './Layout.astro';
 import ShowcaseCard from './ShowcaseCard.astro';
 import { byLocale } from '../lib/content';
-import { findCaseStudy, unmatchedCaseStudies } from '../lib/case-studies';
+import { findCaseStudy, studyAsShowcase, unmatchedCaseStudies } from '../lib/case-studies';
 import { localizedPath, type Locale } from '../lib/i18n';
 import { getShowcase, getSiteSettings } from '../lib/site-data';
 
@@ -25,6 +25,9 @@ const studies = byLocale(work, loc)
     slug: e.id.replace(`${loc}/`, '').replace(/\.mdx$/, ''),
     title: e.data.title,
     tagline: e.data.tagline,
+    stack: e.data.stack,
+    coverImage: e.data.coverImage,
+    live: e.data.links.live,
   }));
 
 const highlighted = showcase.filter((p) => p.highlighted);
@@ -173,22 +176,19 @@ const pad = (n: number) => String(n).padStart(2, '0');
             <h2 id="case-studies-title" class={h2Class}>
               {copy.studiesTitle}
             </h2>
-            <ul class="m-0 flex list-none flex-col p-0">
-              {leftover.map((s) => {
+            <div class={grid}>
+              {leftover.map((s, i) => {
                 const full = studies.find((x) => x.slug === s.slug);
-                return (
-                  <li class="border-t border-rule first:border-t-0">
-                    <a
-                      href={localizedPath('work', loc, s.slug)}
-                      class={`flex flex-wrap items-baseline gap-x-4 gap-y-1 py-4 hover:text-accent ${focus}`}
-                    >
-                      <span class="text-2xl">{s.title}</span>
-                      <span class="min-w-0 font-mono text-xs text-text-muted">{full?.tagline}</span>
-                    </a>
-                  </li>
-                );
+                return full ? (
+                  <ShowcaseCard
+                    project={studyAsShowcase(full)}
+                    label={`C.${pad(i + 1)}`}
+                    linkLabels={linkLabels}
+                    caseStudy={{ href: localizedPath('work', loc, s.slug), label: copy.caseStudy }}
+                  />
+                ) : null;
               })}
-            </ul>
+            </div>
           </section>
         )
       }
