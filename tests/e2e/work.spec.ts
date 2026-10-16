@@ -5,13 +5,13 @@ const PAGES = {
     path: '/es/trabajo/',
     highlighted: 'Destacados',
     more: 'Más proyectos',
-    viewProject: 'Ver proyecto',
+    caseStudy: 'Caso de estudio',
   },
   en: {
     path: '/en/work/',
     highlighted: 'Highlighted',
     more: 'More projects',
-    viewProject: 'View project',
+    caseStudy: 'Case study',
   },
 } as const;
 
@@ -43,22 +43,13 @@ test.describe('work list', () => {
         }
       });
 
-      test('each card is a single link to its case study', async ({ page }) => {
+      test('links a matched project to its case study', async ({ page }) => {
         await page.goto(c.path);
-        const card = page.locator('article', { hasText: 'Festival PRO' });
-        const links = card.getByRole('link');
-        await expect(links).toHaveCount(1);
-        await expect(links).toHaveAttribute('href', /festivalpro\/$/);
-        await expect(links).not.toHaveAttribute('target', '_blank');
-        await expect(links).toContainText(c.viewProject);
-        await expect(links.getByRole('heading', { level: 3, name: 'Festival PRO' })).toBeVisible();
-      });
-
-      test('a card without a case study links to the project website', async ({ page }) => {
-        await page.goto(c.path);
-        const links = page.locator('article', { hasText: 'Capsule Dashboard' }).getByRole('link');
-        await expect(links).toHaveCount(1);
-        await expect(links).toHaveAttribute('href', /^https:\/\//);
+        const link = page
+          .locator('article', { hasText: 'Festival PRO' })
+          .getByRole('link', { name: new RegExp(c.caseStudy) });
+        await expect(link).toHaveCount(1);
+        await expect(link).toHaveAttribute('href', /festivalpro\/$/);
       });
 
       test('keeps unmatched case studies reachable', async ({ page }) => {

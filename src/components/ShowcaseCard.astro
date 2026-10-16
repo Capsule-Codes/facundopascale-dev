@@ -1,117 +1,110 @@
 ---
 import { Image } from 'astro:assets';
+import { cardCover } from '../lib/card-cover';
 import type { ShowcaseProject } from '../lib/site-data';
-import { projectFrame, showcaseScreens, type ProjectHref } from '../lib/showcase';
 
 interface Props {
   project: ShowcaseProject;
   /** Plate label such as `A.01`. */
   label: string;
-  /** Case study or primary external link; `null` renders a non-link card. */
-  href: ProjectHref | null;
-  /** CTA text, e.g. "Ver proyecto". */
-  cta: string;
+  linkLabels: { live: string; appStore: string; playStore: string };
+  caseStudy?: { href: string; label: string } | undefined;
 }
 
-const { project: p, label, href, cta } = Astro.props;
+const { project: p, label, linkLabels, caseStudy } = Astro.props;
 
-const cover = showcaseScreens(p)[0];
-const portrait = projectFrame(p) === 'phone';
-// Remote images need intrinsic dimensions; fall back to typical phone / desktop ratios.
-const fallback = portrait ? { width: 390, height: 844 } : { width: 1440, height: 900 };
-const width = cover?.width || fallback.width;
-const height = cover?.height || fallback.height;
-const body = p.summary || p.subtitle;
-
-const Tag = href ? 'a' : 'div';
-const linkAttrs = href
-  ? {
-      href: href.href,
-      ...(href.external ? { target: '_blank', rel: 'noopener noreferrer' } : {}),
-    }
-  : {};
+const cover = cardCover(p);
+const links = [
+  p.links.live && { href: p.links.live, label: linkLabels.live },
+  p.links.appStore && { href: p.links.appStore, label: linkLabels.appStore },
+  p.links.playStore && { href: p.links.playStore, label: linkLabels.playStore },
+].filter((l): l is { href: string; label: string } => Boolean(l));
 
 const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
-const zoom =
-  'transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100';
 ---
 
-<article
-  class="group min-w-0 border-[1.5px] border-rule bg-bg-elevated transition-colors hover:border-accent focus-within:border-accent motion-reduce:transition-none"
->
-  <Tag {...linkAttrs} class={`flex h-full flex-col ${href ? focus : ''}`}>
-    <div
-      class="relative flex aspect-[16/10] items-center justify-center overflow-hidden border-b-[1.5px] border-rule bg-blueprint"
-    >
+<article class="border-[1.5px] border-rule bg-bg-elevated flex min-w-0 flex-col">
+  <div
+    class="relative flex h-[180px] items-center justify-center overflow-hidden border-b-[1.5px] border-rule bg-blueprint"
+  >
+    {
+      cover ? (
+        <Image
+          src={cover.src}
+          alt={cover.alt}
+          width={1600}
+          height={1000}
+          widths={[320, 480, 640, 750, 960]}
+          sizes="(min-width: 1240px) 400px, (min-width: 640px) 45vw, 100vw"
+          quality={75}
+          loading="lazy"
+          decoding="async"
+          class="h-full w-full object-cover"
+        />
+      ) : (
+        <span class={meta} aria-hidden="true">
+          [{p.title}]
+        </span>
+      )
+    }
+    {
+      caseStudy && (
+        <a href={caseStudy.href} class="absolute inset-0" tabindex="-1" aria-hidden="true" />
+      )
+    }
+  </div>
+  <div class="flex flex-1 flex-col gap-2.5 p-5">
+    <p class={meta}>
+      {label}
+      {p.category ? ` · ${p.category}` : ''}
+    </p>
+    <h3 class="m-0 text-[28px] leading-tight font-normal">
       {
-        cover && portrait && (
-          <Image
-            src={cover.src}
-            alt=""
-            aria-hidden="true"
-            width={width}
-            height={height}
-            widths={[320]}
-            sizes="320px"
-            quality={40}
-            loading="lazy"
-            decoding="async"
-            class="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-xl"
-          />
-        )
-      }
-      {
-        cover ? (
-          <Image
-            src={cover.src}
-            alt={cover.alt}
-            width={width}
-            height={height}
-            widths={portrait ? [320, 480, 640] : [320, 480, 640, 750, 960]}
-            sizes={
-              portrait
-                ? '(min-width: 1024px) 160px, (min-width: 768px) 20vw, 40vw'
-                : '(min-width: 1240px) 380px, (min-width: 768px) 45vw, 100vw'
-            }
-            quality={75}
-            loading="lazy"
-            decoding="async"
-            class={`relative h-full w-full ${portrait ? 'object-contain py-3' : 'object-cover object-top'} ${zoom}`}
-          />
+        caseStudy ? (
+          <a href={caseStudy.href} class={`hover:text-accent ${focus}`}>
+            {p.title}
+          </a>
         ) : (
-          <span class={meta} aria-hidden="true">
-            [{p.title}]
-          </span>
+          p.title
         )
       }
-    </div>
-    <div class="flex flex-1 flex-col gap-3 p-5">
-      <div class="flex items-center justify-between gap-3">
-        {
-          p.category && (
-            <span class="border-[1.5px] border-rule px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide">
-              {p.category}
-            </span>
-          )
-        }
-        <span class={`${meta} ml-auto`}>{label}</span>
-      </div>
-      <h3 class="m-0 text-[28px] leading-tight font-normal">{p.title}</h3>
-      {body && <p class="m-0 line-clamp-3 text-base leading-snug text-text-muted">{body}</p>}
-      {
-        href && (
-          <span class="mt-auto pt-2 font-mono text-xs uppercase tracking-wide text-accent">
-            {cta}{' '}
-            <span
-              aria-hidden="true"
-              class="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
-            >
-              {href.external ? '↗' : '→'}
-            </span>
-          </span>
-        )
-      }
-    </div>
-  </Tag>
+    </h3>
+    <p class="m-0 line-clamp-4 text-base leading-snug text-text-muted">
+      {p.summary}
+    </p>
+    {
+      p.technologies.length > 0 && (
+        <p class="m-0 font-mono text-[11px] leading-relaxed">{p.technologies.join(' · ')}</p>
+      )
+    }
+    {
+      (links.length > 0 || caseStudy) && (
+        <ul class="m-0 mt-auto flex list-none flex-wrap gap-x-4 gap-y-1 p-0 pt-2 font-mono text-xs">
+          {links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class={`underline underline-offset-4 hover:text-accent ${focus}`}
+              >
+                {l.label} ↗
+              </a>
+            </li>
+          ))}
+          {caseStudy && (
+            <li>
+              <a
+                href={caseStudy.href}
+                class={`underline underline-offset-4 hover:text-accent ${focus}`}
+              >
+                {caseStudy.label} →
+              </a>
+            </li>
+          )}
+        </ul>
+      )
+    }
+  </div>
 </article>

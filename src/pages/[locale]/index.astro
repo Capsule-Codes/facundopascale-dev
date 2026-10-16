@@ -2,10 +2,11 @@
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 import Layout from '../../components/Layout.astro';
-import ProjectsShowcase from '../../components/ProjectsShowcase.astro';
+import ShowcaseCard from '../../components/ShowcaseCard.astro';
 import portrait from '../../assets/facundo-portrait.jpg';
 import { isLocale, type Locale, localizedPath } from '../../lib/i18n';
 import { filterPublished, byLocale } from '../../lib/content';
+import { findCaseStudy } from '../../lib/case-studies';
 import {
   buildLog,
   getContentLog,
@@ -26,22 +27,27 @@ const { locale } = Astro.params;
 if (!locale || !isLocale(locale)) return Astro.redirect('/');
 const loc: Locale = locale;
 
-const [showcase, products, contentLog, settings, testimonials, allBlog, work] = await Promise.all([
+const [showcase, products, contentLog, settings, testimonials, allBlog] = await Promise.all([
   getShowcase(loc),
   getProducts(loc),
   getContentLog(loc),
   getSiteSettings(loc),
   getTestimonials(loc),
   getCollection('blog'),
-  getCollection('work'),
 ]);
+const work = await getCollection('work');
 
-// The home showcase is a master/detail over the highlighted projects (capped for the list).
-const projects = showcase.filter((p) => p.highlighted).slice(0, 6);
+const projects = showcase.filter((p) => p.highlighted).slice(0, 3);
 const studies = byLocale(work, loc).map((e) => ({
   slug: e.id.replace(`${loc}/`, '').replace(/\.mdx$/, ''),
   title: e.data.title,
 }));
+const caseStudyFor = (title: string) => {
+  const match = findCaseStudy(title, studies);
+  return match
+    ? { href: localizedPath('work', loc, match.slug), label: copy.caseStudy }
+    : undefined;
+};
 const log = buildLog(contentLog, filterPublished(byLocale(allBlog, loc)), loc, 6);
 const testimonial = pickFeaturedTestimonial(testimonials, 'Ricardo Mejia');
 const youtubeUrl = settings.socials.youtube;
@@ -77,7 +83,11 @@ const copy = {
     agencyBefore: 'Capsule Codes. ',
     agencyAccent: 'Apps móviles y web para startups.',
     agencyCta: 'Contratar a la agencia',
-    agencyAll: 'Ver todos los proyectos',
+    agencyAll: 'Ver todo el trabajo',
+    live: 'Sitio web',
+    caseStudy: 'Caso de estudio',
+    appStore: 'App Store',
+    playStore: 'Google Play',
     productsPlate: 'LÁMINA B · PRODUCTOS PROPIOS',
     productsBefore: 'Lo que construyo ',
     productsAccent: 'para mí.',
@@ -138,7 +148,11 @@ const copy = {
     agencyBefore: 'Capsule Codes. ',
     agencyAccent: 'Mobile and web apps for startups.',
     agencyCta: 'Hire the agency',
-    agencyAll: 'See all projects',
+    agencyAll: 'See all work',
+    live: 'Website',
+    caseStudy: 'Case study',
+    appStore: 'App Store',
+    playStore: 'Google Play',
     productsPlate: 'SHEET B · OWN PRODUCTS',
     productsBefore: 'What I build ',
     productsAccent: 'for myself.',
@@ -393,11 +407,18 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
           <a href={contactHref} class={linkAccent}>{copy.agencyCta} →</a>
         </div>
 
-        {
-          projects.length > 0 && (
-            <ProjectsShowcase projects={projects} studies={studies} locale={loc} />
-          )
-        }
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-5">
+          {
+            projects.map((p, i) => (
+              <ShowcaseCard
+                project={p}
+                label={`A.${String(i + 1).padStart(2, '0')}`}
+                linkLabels={{ live: copy.live, appStore: copy.appStore, playStore: copy.playStore }}
+                caseStudy={caseStudyFor(p.title)}
+              />
+            ))
+          }
+        </div>
 
         <div>
           <a href={workHref} class={linkAccent}>{copy.agencyAll} →</a>
