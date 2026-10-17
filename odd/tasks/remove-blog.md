@@ -19,6 +19,7 @@ Take the blog ("Notas" / "Writing") off facundopascale.dev. The owner believes n
 ## Tasks
 
 - [x] T1 — Remove the blog surface, redirect old URLs, update tests. Route: delegated direct.
+- [x] T2 — Hide the home build log when it is empty (production has no published content items, so it was fed only by blog posts). Route: direct inline (one file plus its test).
 
 ## Acceptance criteria
 
@@ -30,3 +31,4 @@ Take the blog ("Notas" / "Writing") off facundopascale.dev. The owner believes n
 
 - Created 2026-10-17.
 - T1 done 2026-10-17. RED: new home e2e (no blog/RSS links) failed in es and en before implementation. GREEN: `astro check` 0 errors; `pnpm test` 321 passed; `playwright test` 91 passed; `pnpm lint` clean. Left on purpose: `@astrojs/rss` dependency, `src/content/blog/**`, `blog` collection, admin `blog` channel, `blog` log-kind label on home.
+- T2 done 2026-10-17. RED: "hides the build log when nothing is published" failed in es and en. GREEN: `astro check` 0 errors; `playwright test` 91 passed; lint clean.

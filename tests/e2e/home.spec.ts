@@ -48,18 +48,11 @@ test.describe('home', () => {
         await expect(figure.locator('figcaption')).toContainText('Ricardo Mejia');
       });
 
-      test('renders the build log in the content lámina', async ({ page }) => {
+      test('hides the build log when nothing is published', async ({ page }) => {
+        // Without Supabase env the content log fixture is empty.
         await page.goto(`/${locale}/`);
-        const log = page.locator('section#content #log');
-        await expect(log).toBeVisible();
-        // Without Supabase env the content log is empty and shows its empty state.
-        const entries = log.locator('ul > li');
-        if ((await entries.count()) > 0) {
-          await expect(entries.first().locator('time')).toBeVisible();
-          await expect(entries.first().locator('a')).toHaveAttribute('href', /.+/);
-        } else {
-          await expect(log.locator('p')).toHaveCount(1);
-        }
+        await expect(page.locator('section#content')).toBeVisible();
+        await expect(page.locator('section#content #log')).toHaveCount(0);
       });
 
       test('has no blog or RSS links in the nav or the page', async ({ page }) => {

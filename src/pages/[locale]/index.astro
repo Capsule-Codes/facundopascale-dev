@@ -98,7 +98,6 @@ const copy = {
     youtubeFallback: 'Sigue el proceso en video',
     youtubeCta: 'Ver en YouTube',
     logTitle: 'BUILD LOG · todo lo publicado',
-    logEmpty: 'Todavía no hay entradas publicadas.',
     contactPlate: 'LÁMINA D · CONTACTO',
     contactBefore: '¿Tenés un proyecto? ',
     contactAccent: 'Dibujémoslo.',
@@ -162,7 +161,6 @@ const copy = {
     youtubeFallback: 'Follow the process on video',
     youtubeCta: 'Watch on YouTube',
     logTitle: 'BUILD LOG · everything published',
-    logEmpty: 'Nothing published yet.',
     contactPlate: 'SHEET D · CONTACT',
     contactBefore: 'Got a project? ',
     contactAccent: "Let's draw it.",
@@ -565,17 +563,15 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
           }
         </div>
 
-        <div
-          id="log"
-          class="flex min-w-0 flex-[1_1_340px] scroll-mt-4 flex-col font-mono text-[13px]"
-        >
-          <h3 class="m-0 pb-3 font-mono text-[13px] font-normal tracking-normal text-text-muted">
-            {copy.logTitle}
-          </h3>
-          {
-            log.length === 0 ? (
-              <p class="m-0 border-t border-rule py-3.5 text-text-muted">{copy.logEmpty}</p>
-            ) : (
+        {
+          log.length > 0 && (
+            <div
+              id="log"
+              class="flex min-w-0 flex-[1_1_340px] scroll-mt-4 flex-col font-mono text-[13px]"
+            >
+              <h3 class="m-0 pb-3 font-mono text-[13px] font-normal tracking-normal text-text-muted">
+                {copy.logTitle}
+              </h3>
               <ul class="m-0 list-none p-0">
                 {log.map((e) => (
                   <li class="border-t border-rule">
@@ -593,9 +589,9 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
                   </li>
                 ))}
               </ul>
-            )
-          }
-        </div>
+            </div>
+          )
+        }
       </section>
 
       <!-- Lámina D · contact -->
