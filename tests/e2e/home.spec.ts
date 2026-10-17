@@ -39,13 +39,33 @@ test.describe('home', () => {
         await expect(cards.first().getByRole('heading', { level: 3 })).toBeVisible();
       });
 
-      test('renders the featured testimonial in the agency lámina', async ({ page }) => {
+      test('rotates through every testimonial with one visible at a time', async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.goto(`/${locale}/`);
-        const figure = page.locator('section#agency figure');
-        await expect(figure).toHaveCount(1);
-        await expect(figure.locator('blockquote')).toBeVisible();
-        await expect(figure.locator('blockquote')).not.toBeEmpty();
-        await expect(figure.locator('figcaption')).toContainText('Ricardo Mejia');
+        const figures = page.locator('section#agency [data-testimonial]');
+        const dots = page.locator('section#agency [data-testimonial-dot]');
+        // Fixtures provide 2 testimonials.
+        await expect(figures).toHaveCount(2);
+        await expect(dots).toHaveCount(2);
+        await expect(figures.locator('visible=true')).toHaveCount(1);
+
+        await dots.nth(1).click();
+        await expect(figures.locator('visible=true')).toHaveCount(1);
+        await expect(figures.nth(1)).toBeVisible();
+        await expect(figures.nth(1).locator('blockquote')).not.toBeEmpty();
+        await expect(dots.nth(1)).toHaveAttribute('aria-pressed', 'true');
+        await expect(dots.nth(0)).toHaveAttribute('aria-pressed', 'false');
+      });
+
+      test.describe('without JavaScript', () => {
+        test.use({ javaScriptEnabled: false });
+
+        test('shows the preferred testimonial', async ({ page }) => {
+          await page.goto(`/${locale}/`);
+          const visible = page.locator('section#agency [data-testimonial]:visible');
+          await expect(visible).toHaveCount(1);
+          await expect(visible.locator('figcaption')).toContainText('Ricardo Mejia');
+        });
       });
 
       test('hides the build log when nothing is published', async ({ page }) => {
@@ -81,6 +101,22 @@ test.describe('home', () => {
         await expect(
           card.getByRole('heading', { name: 'Elevate' }).getByRole('link')
         ).toHaveAttribute('href', /elevate\/$/);
+      });
+
+      test('testimonials auto-advance and pause while hovered', async ({ page }) => {
+        await page.clock.install();
+        await page.goto(`/${locale}/`);
+        const visibleIndex = () =>
+          page
+            .locator('section#agency [data-testimonial]')
+            .evaluateAll((els) => els.findIndex((e) => !(e as HTMLElement).hidden));
+        const first = await visibleIndex();
+        await page.clock.runFor(9_100);
+        const second = await visibleIndex();
+        expect(second).not.toBe(first);
+        await page.locator('section#agency [data-testimonials]').hover();
+        await page.clock.runFor(20_000);
+        expect(await visibleIndex()).toBe(second);
       });
 
       test('contact section has a primary call to action', async ({ page }) => {

@@ -1,0 +1,121 @@
+---
+import type { Testimonial } from '../lib/site-data';
+
+interface Props {
+  items: Testimonial[];
+  /** Accessible label for the dot that shows testimonial `n` of `total` (1-based). */
+  dotLabel: (n: number, total: number) => string;
+}
+
+const { items, dotLabel } = Astro.props;
+const focus = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+---
+
+{
+  items.length > 0 && (
+    <div data-testimonials class="flex flex-col gap-4 border-t border-dashed border-rule pt-6">
+      {items.map((testimonial, i) => (
+        <figure
+          data-testimonial
+          hidden={i > 0}
+          class="m-0 flex flex-wrap items-baseline gap-6 motion-safe:transition-opacity motion-safe:duration-300"
+        >
+          <blockquote class="m-0 flex-[999_1_480px] text-2xl leading-snug italic md:text-[26px]">
+            “{testimonial.quote}”
+          </blockquote>
+          <figcaption class="flex-[1_1_220px] font-mono text-xs uppercase text-text-muted">
+            {testimonial.author}
+            {testimonial.position || testimonial.company
+              ? ` — ${[testimonial.position, testimonial.company].filter(Boolean).join(', ')}`
+              : ''}
+          </figcaption>
+        </figure>
+      ))}
+      {items.length > 1 && (
+        <div class="flex gap-2">
+          {items.map((_, i) => (
+            <button
+              type="button"
+              data-testimonial-dot
+              aria-label={dotLabel(i + 1, items.length)}
+              aria-pressed={i === 0 ? 'true' : 'false'}
+              class={`h-2.5 w-2.5 rounded-full border-[1.5px] border-rule transition-colors hover:border-accent aria-pressed:border-accent aria-pressed:bg-accent ${focus}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+<script>
+  const INTERVAL_MS = 9000;
+
+  document.querySelectorAll<HTMLElement>('[data-testimonials]').forEach((root) => {
+    const figures = [...root.querySelectorAll<HTMLElement>('[data-testimonial]')];
+    const dots = [...root.querySelectorAll<HTMLButtonElement>('[data-testimonial-dot]')];
+    if (figures.length < 2) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let current = 0;
+    let stopped = false;
+    let paused = false;
+    let timer: number | undefined;
+
+    const show = (next: number, fade: boolean) => {
+      const incoming = figures[next]!;
+      figures.forEach((f, i) => {
+        f.hidden = i !== next;
+      });
+      dots.forEach((d, i) => d.setAttribute('aria-pressed', String(i === next)));
+      current = next;
+      if (fade && !reduced.matches) {
+        incoming.style.opacity = '0';
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            incoming.style.opacity = '';
+          })
+        );
+      }
+    };
+
+    const stopTimer = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+    const sync = () => {
+      stopTimer();
+      if (stopped || paused || document.hidden || reduced.matches) return;
+      timer = window.setInterval(() => show((current + 1) % figures.length, true), INTERVAL_MS);
+    };
+
+    show(Math.floor(Math.random() * figures.length), false);
+
+    dots.forEach((dot, i) =>
+      dot.addEventListener('click', () => {
+        stopped = true;
+        stopTimer();
+        show(i, true);
+      })
+    );
+    root.addEventListener('mouseenter', () => {
+      paused = true;
+      sync();
+    });
+    root.addEventListener('mouseleave', () => {
+      paused = root.matches(':focus-within');
+      sync();
+    });
+    root.addEventListener('focusin', () => {
+      paused = true;
+      sync();
+    });
+    root.addEventListener('focusout', () => {
+      paused = root.matches(':hover');
+      sync();
+    });
+    document.addEventListener('visibilitychange', sync);
+    reduced.addEventListener('change', sync);
+    sync();
+  });
+</script>

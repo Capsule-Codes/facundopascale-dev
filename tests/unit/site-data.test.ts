@@ -10,6 +10,7 @@ import {
   getShowcase,
   getSiteSettings,
   getTestimonials,
+  orderTestimonials,
   pickFeaturedTestimonial,
   resetSiteDataCache,
   toLogEntry,
@@ -278,6 +279,46 @@ describe('pickFeaturedTestimonial', () => {
     const list = [t('A', 1, '2026-01-01'), t('B', 5, '2026-01-01')];
     pickFeaturedTestimonial(list);
     expect(list.map((x) => x.author)).toEqual(['A', 'B']);
+  });
+});
+
+describe('orderTestimonials', () => {
+  const t = (author: string, rating: number, date: string | null): Testimonial => ({
+    id: author,
+    quote: 'q',
+    author,
+    company: '',
+    position: '',
+    rating,
+    date: date === null ? null : new Date(date),
+  });
+  const authors = (list: Testimonial[]) => list.map((x) => x.author);
+
+  it('returns an empty list for an empty list', () => {
+    expect(orderTestimonials([])).toEqual([]);
+    expect(orderTestimonials([], 'Ricardo')).toEqual([]);
+  });
+
+  it('puts the preferred author first, then the rest by rating and recency', () => {
+    const list = [
+      t('A', 4, '2026-07-01'),
+      t('Ricardo Mejia', 3, '2025-01-01'),
+      t('B', 5, '2026-01-01'),
+      t('C', 5, '2026-03-01'),
+    ];
+    expect(authors(orderTestimonials(list, 'ricardo'))).toEqual(['Ricardo Mejia', 'C', 'B', 'A']);
+  });
+
+  it('orders by rating then recency when there is no preferred match', () => {
+    const list = [t('A', 4, '2026-07-01'), t('B', 5, '2026-01-01'), t('C', 5, '2026-03-01')];
+    expect(authors(orderTestimonials(list))).toEqual(['C', 'B', 'A']);
+    expect(authors(orderTestimonials(list, 'nobody'))).toEqual(['C', 'B', 'A']);
+  });
+
+  it('keeps every testimonial and does not mutate the input', () => {
+    const list = [t('A', 1, '2026-01-01'), t('B', 5, '2026-01-01')];
+    expect(orderTestimonials(list)).toHaveLength(2);
+    expect(authors(list)).toEqual(['A', 'B']);
   });
 });
 
