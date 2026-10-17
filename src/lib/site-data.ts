@@ -277,23 +277,30 @@ export function toTestimonial(row: TestimonialRow, locale: Locale): Testimonial 
 }
 
 /**
- * Pick the testimonial to feature: the one whose author contains
- * `preferredAuthor` (case-insensitive) if any, otherwise highest rating, then
- * most recent.
+ * All testimonials in display order: the one whose author contains
+ * `preferredAuthor` (case-insensitive) first, then the rest by highest rating
+ * and most recent.
  */
-export function pickFeaturedTestimonial(
-  list: Testimonial[],
-  preferredAuthor?: string
-): Testimonial | undefined {
+export function orderTestimonials(list: Testimonial[], preferredAuthor?: string): Testimonial[] {
   const needle = preferredAuthor?.trim().toLowerCase();
   const preferred = needle ? list.find((t) => t.author.toLowerCase().includes(needle)) : undefined;
-  if (preferred) return preferred;
   const time = (t: Testimonial): number => t.date?.getTime() ?? Number.NEGATIVE_INFINITY;
   // Array#sort is stable, so full ties keep input order. Compare (not subtract)
   // because -Infinity - -Infinity is NaN.
   const byRecency = (a: Testimonial, b: Testimonial): number =>
     time(a) === time(b) ? 0 : time(b) > time(a) ? 1 : -1;
-  return [...list].sort((a, b) => b.rating - a.rating || byRecency(a, b))[0];
+  const rest = list
+    .filter((t) => t !== preferred)
+    .sort((a, b) => b.rating - a.rating || byRecency(a, b));
+  return preferred ? [preferred, ...rest] : rest;
+}
+
+/** The testimonial to feature: the first of `orderTestimonials`. */
+export function pickFeaturedTestimonial(
+  list: Testimonial[],
+  preferredAuthor?: string
+): Testimonial | undefined {
+  return orderTestimonials(list, preferredAuthor)[0];
 }
 
 /** Published content items for `locale` as a newest-first timeline, capped at `limit`. */
