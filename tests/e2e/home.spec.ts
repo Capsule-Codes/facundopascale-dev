@@ -103,6 +103,22 @@ test.describe('home', () => {
         ).toHaveAttribute('href', /elevate\/$/);
       });
 
+      test('testimonials auto-advance and pause while hovered', async ({ page }) => {
+        await page.clock.install();
+        await page.goto(`/${locale}/`);
+        const visibleIndex = () =>
+          page
+            .locator('section#agency [data-testimonial]')
+            .evaluateAll((els) => els.findIndex((e) => !(e as HTMLElement).hidden));
+        const first = await visibleIndex();
+        await page.clock.runFor(9_100);
+        const second = await visibleIndex();
+        expect(second).not.toBe(first);
+        await page.locator('section#agency [data-testimonials]').hover();
+        await page.clock.runFor(20_000);
+        expect(await visibleIndex()).toBe(second);
+      });
+
       test('contact section has a primary call to action', async ({ page }) => {
         await page.goto(`/${locale}/`);
         await expect(page.locator('section#contact a[data-cta="book-call"]')).toBeVisible();
