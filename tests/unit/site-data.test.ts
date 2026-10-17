@@ -282,34 +282,23 @@ describe('pickFeaturedTestimonial', () => {
 });
 
 describe('buildLog', () => {
-  const post = (id: string, lang: 'es' | 'en', publishedAt: string) => ({
-    id: `${lang}/${id}.mdx`,
-    data: { title: `Post ${id}`, publishedAt: new Date(publishedAt), lang },
-  });
-
-  it('merges content entries and blog posts, newest first, with internal blog hrefs', () => {
+  it('keeps only entries of the requested locale, newest first', () => {
     const entries = [
       toLogEntry(contentRow),
       toLogEntry({ ...contentRow, id: 'c2', published_at: '2026-06-01T00:00:00Z' }),
+      toLogEntry({ ...contentRow, id: 'c3', locale: 'en' }),
     ];
-    const log = buildLog(entries, [post('hello', 'es', '2026-05-20')], 'es', 10);
-    expect(log.map((e) => e.id)).toEqual(['c2', 'blog:es/hello.mdx', 'c1']);
-    const blog = log[1]!;
-    expect(blog.kind).toBe('blog');
-    expect(blog.url).toBe('/es/blog/hello/');
-    expect(blog.date).toEqual(new Date('2026-05-20'));
-  });
-
-  it('keeps only content entries of the requested locale', () => {
-    const entries = [toLogEntry(contentRow), toLogEntry({ ...contentRow, id: 'c3', locale: 'en' })];
-    expect(buildLog(entries, [], 'en', 10).map((e) => e.id)).toEqual(['c3']);
+    expect(buildLog(entries, 'es', 10).map((e) => e.id)).toEqual(['c2', 'c1']);
+    expect(buildLog(entries, 'en', 10).map((e) => e.id)).toEqual(['c3']);
   });
 
   it('applies the limit after sorting', () => {
-    const posts = [post('a', 'en', '2026-01-01'), post('b', 'en', '2026-03-01')];
-    const log = buildLog([], posts, 'en', 1);
-    expect(log).toHaveLength(1);
-    expect(log[0]!.title).toBe('Post b');
+    const entries = [
+      toLogEntry({ ...contentRow, id: 'old', published_at: '2026-01-01T00:00:00Z' }),
+      toLogEntry({ ...contentRow, id: 'new', published_at: '2026-03-01T00:00:00Z' }),
+    ];
+    const log = buildLog(entries, 'es', 1);
+    expect(log.map((e) => e.id)).toEqual(['new']);
   });
 });
 

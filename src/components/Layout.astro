@@ -14,7 +14,7 @@ import {
   type PageDescriptor,
 } from '../lib/hreflang';
 import { findTranslation } from '../lib/translations';
-import { buildBlogPostingJsonLd, buildHomeJsonLd, serializeJsonLd } from '../lib/json-ld';
+import { buildHomeJsonLd, serializeJsonLd } from '../lib/json-ld';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 
@@ -23,15 +23,14 @@ interface Props {
   description: string;
   locale: Locale;
   /**
-   * For static pages (home, about, work index, blog index, uses, contact)
+   * For static pages (home, about, work index, uses, contact)
    * pass the matching `PageKey` so Layout can compute hreflang alternates
-   * via `localizedPath`. For collection entries (a blog post or a work case
-   * study) leave this undefined and pass `currentDocId` + `currentCollection`
+   * via `localizedPath`. For collection entries (a work case study) leave this undefined and pass `currentDocId` + `currentCollection`
    * instead — Layout will resolve the sibling translation on its own.
    */
   currentPageKey?: PageKey;
   currentDocId?: string;
-  currentCollection?: 'blog' | 'work';
+  currentCollection?: 'work';
   /** Use the wide (1240px) page container in header and footer, as the home page does. */
   wide?: boolean;
   /** Keep the page out of search indexes (transactional pages such as newsletter confirmation). */
@@ -53,7 +52,7 @@ const {
 // `src/pages/og/[...slug].png.ts` endpoint emits — `buildOgSlug` is the
 // single source of truth for that convention.
 //
-// When the current page is a content entry (blog post or work case study),
+// When the current page is a content entry (work case study),
 // we derive the slug from `currentDocId` + `currentCollection`. Otherwise
 // we fall back to the locale-aware default image (`/og/default/<loc>.png`),
 // which the endpoint also prerenders.
@@ -92,27 +91,9 @@ if (currentPageKey) {
   // Collection entry: resolve the sibling via `findTranslation`. If the
   // current doc or its sibling is missing we emit NO hreflang (the orphan
   // case documented in the plan — a blind regex replace would 404).
-  const all =
-    currentCollection === 'blog' ? await getCollection('blog') : await getCollection('work');
+  const all = await getCollection('work');
   const current = all.find((d) => d.id === currentDocId);
   if (current) {
-    if (currentCollection === 'blog' && Astro.site && canonicalUrl) {
-      const d = current.data as unknown as {
-        title: string;
-        description: string;
-        publishedAt: Date;
-        updatedAt: Date | null;
-      };
-      jsonLd = buildBlogPostingJsonLd(Astro.site, {
-        title: d.title,
-        description: d.description,
-        url: canonicalUrl,
-        imageUrl: ogImageUrl,
-        publishedAt: d.publishedAt,
-        updatedAt: d.updatedAt,
-        locale,
-      });
-    }
     const other: Locale = locale === 'es' ? 'en' : 'es';
     const sibling = findTranslation(current, all, other);
     const currentSlug = currentDocId.replace(`${locale}/`, '').replace(/\.mdx$/, '');
@@ -161,7 +142,7 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
         </>
       )
     }
-    <meta property="og:type" content={currentCollection === 'blog' ? 'article' : 'website'} />
+    <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Facundo Pascale" />
     <meta property="og:locale" content={locale === 'es' ? 'es_AR' : 'en_US'} />
     <meta property="og:title" content={title} />
@@ -190,18 +171,6 @@ const hreflangXDefaultHref = hreflangPair ? hreflangHref(X_DEFAULT_PATH) : null;
       )
     }
     {jsonLd && <script is:inline type="application/ld+json" set:html={serializeJsonLd(jsonLd)} />}
-    <link
-      rel="alternate"
-      type="application/rss+xml"
-      title="Facundo Pascale — Notas (ES)"
-      href="/es/rss.xml"
-    />
-    <link
-      rel="alternate"
-      type="application/rss+xml"
-      title="Facundo Pascale — Writing (EN)"
-      href="/en/rss.xml"
-    />
     <script is:inline>
       (function () {
         try {

@@ -5,7 +5,7 @@ import Layout from '../../components/Layout.astro';
 import ShowcaseCard from '../../components/ShowcaseCard.astro';
 import portrait from '../../assets/facundo-portrait.jpg';
 import { isLocale, type Locale, localizedPath } from '../../lib/i18n';
-import { filterPublished, byLocale } from '../../lib/content';
+import { byLocale } from '../../lib/content';
 import { findCaseStudy } from '../../lib/case-studies';
 import {
   buildLog,
@@ -27,13 +27,12 @@ const { locale } = Astro.params;
 if (!locale || !isLocale(locale)) return Astro.redirect('/');
 const loc: Locale = locale;
 
-const [showcase, products, contentLog, settings, testimonials, allBlog] = await Promise.all([
+const [showcase, products, contentLog, settings, testimonials] = await Promise.all([
   getShowcase(loc),
   getProducts(loc),
   getContentLog(loc),
   getSiteSettings(loc),
   getTestimonials(loc),
-  getCollection('blog'),
 ]);
 const work = await getCollection('work');
 
@@ -49,7 +48,7 @@ const caseStudyFor = (title: string) => {
     ? { href: localizedPath('work', loc, match.slug), label: copy.caseStudy }
     : undefined;
 };
-const log = buildLog(contentLog, filterPublished(byLocale(allBlog, loc)), loc, 6);
+const log = buildLog(contentLog, loc, 6);
 const testimonial = pickFeaturedTestimonial(testimonials, 'Ricardo Mejia');
 const youtubeUrl = settings.socials.youtube;
 const youtubeEntry = log.find((e) => e.kind === 'youtube');
@@ -77,7 +76,7 @@ const copy = {
     planAgency: 'A · Capsule Codes',
     planAgencyTag: 'agencia',
     planContent: 'C · Contenido',
-    planContentTag: 'YT · IG · Blog',
+    planContentTag: 'YT · IG',
     planProducts: 'B · Productos',
     logTail: '$ tail -f build.log',
     agencyPlate: 'LÁMINA A · AGENCIA',
@@ -100,7 +99,6 @@ const copy = {
     youtubeCta: 'Ver en YouTube',
     logTitle: 'BUILD LOG · todo lo publicado',
     logEmpty: 'Todavía no hay entradas publicadas.',
-    logAll: 'Ver todos los artículos',
     contactPlate: 'LÁMINA D · CONTACTO',
     contactBefore: '¿Tenés un proyecto? ',
     contactAccent: 'Dibujémoslo.',
@@ -142,7 +140,7 @@ const copy = {
     planAgency: 'A · Capsule Codes',
     planAgencyTag: 'agency',
     planContent: 'C · Content',
-    planContentTag: 'YT · IG · Blog',
+    planContentTag: 'YT · IG',
     planProducts: 'B · Products',
     logTail: '$ tail -f build.log',
     agencyPlate: 'SHEET A · AGENCY',
@@ -165,7 +163,6 @@ const copy = {
     youtubeCta: 'Watch on YouTube',
     logTitle: 'BUILD LOG · everything published',
     logEmpty: 'Nothing published yet.',
-    logAll: 'See all posts',
     contactPlate: 'SHEET D · CONTACT',
     contactBefore: 'Got a project? ',
     contactAccent: "Let's draw it.",
@@ -598,12 +595,6 @@ const meta = 'font-mono text-[11px] uppercase tracking-wide text-text-muted';
               </ul>
             )
           }
-          <a
-            href={localizedPath('blog', loc)}
-            class={`border-t border-rule py-3.5 underline underline-offset-4 hover:text-accent ${focus}`}
-          >
-            {copy.logAll} →
-          </a>
         </div>
       </section>
 
