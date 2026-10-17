@@ -2,18 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { buildOgSlug, buildOgUrl, DEFAULT_OG_SLUG } from '../../src/lib/og';
 
 describe('buildOgSlug', () => {
-  it('builds a blog slug that keeps the locale prefix and strips the .mdx extension', () => {
-    expect(buildOgSlug({ id: 'es/hola-mundo.mdx', collection: 'blog', locale: 'es' })).toBe(
-      'blog/es/hola-mundo'
-    );
-  });
-
-  it('builds an english blog slug with the locale prefix', () => {
-    expect(buildOgSlug({ id: 'en/hello-world.mdx', collection: 'blog', locale: 'en' })).toBe(
-      'blog/en/hello-world'
-    );
-  });
-
   it('builds a work slug that keeps the locale prefix', () => {
     expect(buildOgSlug({ id: 'en/festivalpro.mdx', collection: 'work', locale: 'en' })).toBe(
       'work/en/festivalpro'
@@ -23,23 +11,23 @@ describe('buildOgSlug', () => {
   it('tolerates ids without the locale prefix already stripped', () => {
     // The glob loader in Astro 6 strips `.mdx` already — the helper must stay
     // idempotent so both shapes produce the same output.
-    expect(buildOgSlug({ id: 'hola-mundo', collection: 'blog', locale: 'es' })).toBe(
-      'blog/es/hola-mundo'
+    expect(buildOgSlug({ id: 'festivalpro', collection: 'work', locale: 'es' })).toBe(
+      'work/es/festivalpro'
     );
   });
 
   it('strips an existing locale prefix from the id before re-prefixing', () => {
     // Defensive: the plan's other routes sometimes replace `${loc}/` in the id.
     // The helper must not double-prefix.
-    expect(buildOgSlug({ id: 'es/notas.mdx', collection: 'blog', locale: 'es' })).toBe(
-      'blog/es/notas'
+    expect(buildOgSlug({ id: 'es/festivalpro.mdx', collection: 'work', locale: 'es' })).toBe(
+      'work/es/festivalpro'
     );
   });
 
   it('rejects ids containing path separators that would break URL segments', () => {
     // Any nested directory under a locale is not a shape the content collections
     // produce today, and it would smuggle extra URL segments into the slug.
-    expect(() => buildOgSlug({ id: 'es/sub/post.mdx', collection: 'blog', locale: 'es' })).toThrow(
+    expect(() => buildOgSlug({ id: 'es/sub/post.mdx', collection: 'work', locale: 'es' })).toThrow(
       /nested/i
     );
   });
@@ -54,8 +42,8 @@ describe('DEFAULT_OG_SLUG', () => {
 describe('buildOgUrl', () => {
   it('composes an absolute URL from a slug and an Astro site URL', () => {
     const site = new URL('https://facundopascale.dev/');
-    expect(buildOgUrl('blog/es/hola-mundo', site)).toBe(
-      'https://facundopascale.dev/og/blog/es/hola-mundo.png'
+    expect(buildOgUrl('work/es/festivalpro', site)).toBe(
+      'https://facundopascale.dev/og/work/es/festivalpro.png'
     );
   });
 
@@ -68,13 +56,13 @@ describe('buildOgUrl', () => {
     // Under strictest TS, `Astro.site` is typed optional even though the
     // project sets it in astro.config.ts. The Layout is expected to skip the
     // og:image tag when the site is missing rather than emit a relative URL.
-    expect(buildOgUrl('blog/es/hola-mundo', undefined)).toBeNull();
+    expect(buildOgUrl('work/es/festivalpro', undefined)).toBeNull();
   });
 
   it('works when the site URL has no trailing slash', () => {
     const site = new URL('https://facundopascale.dev');
-    expect(buildOgUrl('blog/es/hola-mundo', site)).toBe(
-      'https://facundopascale.dev/og/blog/es/hola-mundo.png'
+    expect(buildOgUrl('work/es/festivalpro', site)).toBe(
+      'https://facundopascale.dev/og/work/es/festivalpro.png'
     );
   });
 });

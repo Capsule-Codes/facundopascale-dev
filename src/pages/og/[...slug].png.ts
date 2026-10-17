@@ -5,7 +5,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createElement, type ReactNode } from 'react';
 
-import { filterPublished } from '../../lib/content';
 import { buildOgSlug, DEFAULT_OG_SLUG } from '../../lib/og';
 import { LOCALES, type Locale } from '../../lib/i18n';
 
@@ -61,7 +60,7 @@ import { LOCALES, type Locale } from '../../lib/i18n';
 
 type OgEntry = {
   id: string;
-  collection: 'blog' | 'work';
+  collection: 'work';
   data: {
     title: string;
     description?: string;
@@ -101,29 +100,9 @@ const DEFAULT_COPY: Record<Locale, { title: string; subtitle: string }> = {
 export async function getStaticPaths(): Promise<
   { params: { slug: string }; props: OgRouteProps }[]
 > {
-  const [blog, work] = await Promise.all([getCollection('blog'), getCollection('work')]);
+  const work = await getCollection('work');
 
   const paths: { params: { slug: string }; props: OgRouteProps }[] = [];
-
-  // Drafts and future-dated posts get no OG image, so their titles are not reachable by URL.
-  for (const entry of filterPublished(blog)) {
-    const locale = entry.data.lang;
-    paths.push({
-      params: { slug: buildOgSlug({ id: entry.id, collection: 'blog', locale }) },
-      props: {
-        entry: {
-          id: entry.id,
-          collection: 'blog',
-          data: {
-            title: entry.data.title,
-            description: entry.data.description,
-            lang: locale,
-          },
-        },
-        locale,
-      },
-    });
-  }
 
   for (const entry of work) {
     const locale = entry.data.lang;
@@ -175,15 +154,14 @@ export const GET: APIRoute = async ({ props }) => {
   const fallback = DEFAULT_COPY[locale];
   const title = entry?.data.title ?? fallback.title;
   // Work entries carry BOTH a long `description` and a punchy `tagline`; the
-  // OG card has limited room so prefer the tagline. Blog entries only have
-  // `description`, and the fallback catches the no-entry case.
-  const rawSubtitle =
-    entry?.collection === 'work'
-      ? (entry.data.tagline ?? entry.data.description ?? fallback.subtitle)
-      : (entry?.data.description ?? fallback.subtitle);
+  // OG card has limited room so prefer the tagline. The fallback catches the
+  // no-entry case.
+  const rawSubtitle = entry
+    ? (entry.data.tagline ?? entry.data.description ?? fallback.subtitle)
+    : fallback.subtitle;
   // Overflow guard: at 30px Fraunces in a 1040px column (1200 − 160 padding),
   // roughly 45-55 chars fit per line. 3 lines ≈ 135-165 chars. We cap at 160
-  // chars + ellipsis so a worst-case 200-char blog description cannot push
+  // chars + ellipsis so a worst-case 200-char description cannot push
   // the subtitle into the footer. String-level cap is chosen over Satori CSS
   // line-clamp because Satori's CSS subset is version-dependent and a hard
   // truncation is 100% deterministic across any `@vercel/og` version.
@@ -200,11 +178,7 @@ export const GET: APIRoute = async ({ props }) => {
       ? locale === 'es'
         ? '// trabajo'
         : '// work'
-      : entry?.collection === 'blog'
-        ? locale === 'es'
-          ? '// notas'
-          : '// writing'
-        : '// facundopascale.dev';
+      : '// facundopascale.dev';
 
   const footerLeft =
     locale === 'es'

@@ -1,8 +1,45 @@
 {
+  "redirects": [
+    {
+      "source": "/es/blog",
+      "destination": "/es/",
+      "permanent": true
+    },
+    {
+      "source": "/es/blog/:path*",
+      "destination": "/es/",
+      "permanent": true
+    },
+    {
+      "source": "/es/rss.xml",
+      "destination": "/es/",
+      "permanent": true
+    },
+    {
+      "source": "/en/blog",
+      "destination": "/en/",
+      "permanent": true
+    },
+    {
+      "source": "/en/blog/:path*",
+      "destination": "/en/",
+      "permanent": true
+    },
+    {
+      "source": "/en/rss.xml",
+      "destination": "/en/",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/_astro/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }

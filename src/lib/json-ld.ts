@@ -40,33 +40,6 @@ export function buildHomeJsonLd(site: URL, locale: Locale, description: string) 
   };
 }
 
-export interface BlogPostingInput {
-  title: string;
-  description: string;
-  url: string;
-  imageUrl: string | null;
-  publishedAt: Date;
-  updatedAt: Date | null;
-  locale: Locale;
-}
-
-/** BlogPosting for a single blog post. */
-export function buildBlogPostingJsonLd(site: URL, input: BlogPostingInput) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: input.title,
-    description: input.description,
-    url: input.url,
-    mainEntityOfPage: input.url,
-    inLanguage: input.locale,
-    datePublished: input.publishedAt.toISOString(),
-    dateModified: (input.updatedAt ?? input.publishedAt).toISOString(),
-    ...(input.imageUrl ? { image: input.imageUrl } : {}),
-    author: { '@type': 'Person', name: PERSON_NAME, url: absolute(site, `/${input.locale}/`) },
-  };
-}
-
 /** Serialize for an inline `<script type="application/ld+json">` (escapes `<`). */
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');

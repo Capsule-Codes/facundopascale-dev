@@ -15,9 +15,8 @@ import type { Locale } from './i18n';
  *   Titles and descriptions are localized per entry, so the rendered image
  *   must be too — serving one image for both locales would ship the wrong
  *   language to Twitter/Slack/LinkedIn previews.
- * - The collection prefix (`blog` / `work`) disambiguates posts that share
- *   a bare slug between collections (unlikely today, but the cost is one
- *   extra segment and it makes the scheme future-proof).
+ * - The collection prefix (`work`) keeps the scheme extensible to other
+ *   collections at the cost of one extra segment.
  * - `.mdx` is stripped; nested directories under a locale are rejected —
  *   the content collections flatten to `<locale>/<file>.mdx` today and we
  *   want to fail loudly if that ever changes.
@@ -33,7 +32,7 @@ export interface OgSlugInput {
    * bare id like `hola-mundo` also works.
    */
   id: string;
-  collection: 'blog' | 'work';
+  collection: 'work';
   locale: Locale;
 }
 

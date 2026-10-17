@@ -2,7 +2,7 @@ import { localizedPath, type Locale, type PageKey, LOCALES, DEFAULT_LOCALE } fro
 
 /**
  * A resolved pair of hreflang alternates for the current page. Both sides are
- * absolute-ish path strings (site-rooted, e.g. `/es/blog/foo`). The consumer
+ * absolute-ish path strings (site-rooted, e.g. `/es/trabajo/foo`). The consumer
  * (Layout.astro) converts them to absolute URLs via `new URL(path, Astro.site)`.
  *
  * Why a pair instead of an array? Because the two locales are fixed, known at
@@ -15,7 +15,7 @@ export type HreflangPair = Record<Locale, string>;
 /**
  * Descriptor for a "static" page — one that has a stable `PageKey` in the
  * `PATHS` map and a 1:1 sibling in the other locale. Examples: home, about,
- * uses, contact, the blog index, the work index.
+ * uses, contact, the work index.
  */
 export type StaticPageDescriptor = {
   kind: 'static';
@@ -23,14 +23,14 @@ export type StaticPageDescriptor = {
 };
 
 /**
- * Descriptor for a content-collection entry (blog post or work case study)
+ * Descriptor for a content-collection entry (work case study)
  * whose sibling existence depends on `translationId`. The caller MUST resolve
  * the sibling slug (via `findTranslation` from `src/lib/translations.ts`) and
  * pass it in — this module stays pure and avoids importing from `astro:content`.
  */
 export type CollectionPageDescriptor = {
   kind: 'collection';
-  collection: 'blog' | 'work';
+  collection: 'work';
   currentLocale: Locale;
   currentSlug: string;
   /** Slug of the sibling in the OTHER locale, or `null` if no sibling exists. */
@@ -61,7 +61,7 @@ export function computeHreflangPair(descriptor: PageDescriptor): HreflangPair | 
   // Collection entry: we need BOTH sides to exist.
   if (descriptor.siblingSlug === null) return null;
 
-  const key = descriptor.collection; // 'blog' | 'work' — both are PageKey values
+  const key = descriptor.collection; // 'work' is a PageKey value
   const otherLocale: Locale = descriptor.currentLocale === 'es' ? 'en' : 'es';
 
   const pair: Partial<HreflangPair> = {

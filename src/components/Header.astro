@@ -8,7 +8,7 @@ interface Props {
   locale: Locale;
   currentPageKey?: PageKey;
   currentDocId?: string;
-  currentCollection?: 'blog' | 'work';
+  currentCollection?: 'work';
   wide?: boolean;
 }
 const { locale, currentPageKey, currentDocId, currentCollection, wide = false } = Astro.props;
@@ -23,26 +23,19 @@ type TranslatableEntry = { id: string; data: { lang: Locale; translationId: stri
 let targetPath: string | null = currentPageKey ? localizedPath(currentPageKey, other) : null;
 
 if (currentDocId && currentCollection) {
-  let all: TranslatableEntry[] = [];
-  if (currentCollection === 'blog') {
-    all = await getCollection('blog');
-  } else if (currentCollection === 'work') {
-    all = await getCollection('work');
-  }
+  const all: TranslatableEntry[] = await getCollection('work');
   const current = all.find((d) => d.id === currentDocId);
   if (current) {
     const sibling = findTranslation(current, all, other);
     if (sibling) {
       const slug = sibling.id.replace(`${other}/`, '').replace(/\.mdx$/, '');
-      const key = currentCollection === 'blog' ? 'blog' : 'work';
-      targetPath = localizedPath(key, other, slug);
+      targetPath = localizedPath('work', other, slug);
     }
   }
 }
 
 const nav = [
   { key: 'work' as const, label: locale === 'es' ? 'Trabajo' : 'Work' },
-  { key: 'blog' as const, label: locale === 'es' ? 'Notas' : 'Writing' },
   { key: 'uses' as const, label: locale === 'es' ? 'Herramientas' : 'Uses' },
   { key: 'about' as const, label: locale === 'es' ? 'Sobre mí' : 'About' },
   { key: 'contact' as const, label: locale === 'es' ? 'Contacto' : 'Contact' },

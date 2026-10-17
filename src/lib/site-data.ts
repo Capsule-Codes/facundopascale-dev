@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-import { localizedPath, type Locale } from './i18n';
+import type { Locale } from './i18n';
 import {
   fixtureContentItems,
   fixtureProducts,
@@ -140,7 +140,7 @@ export type LogEntry = {
   kind: ContentChannel;
   title: string;
   date: Date;
-  /** Internal href for blog posts, external URL for everything else. */
+  /** External URL of the published item. */
   url: string;
   locale: Locale;
 };
@@ -296,37 +296,10 @@ export function pickFeaturedTestimonial(
   return [...list].sort((a, b) => b.rating - a.rating || byRecency(a, b))[0];
 }
 
-/** Minimal shape of an Astro `blog` collection entry (already published and locale-filtered). */
-export type BlogPostInput = {
-  id: string;
-  data: { title: string; publishedAt: Date; lang: Locale };
-};
-
-/**
- * Merge published content items for `locale` with blog posts into one
- * newest-first timeline. Blog posts must already be filtered with
- * `filterPublished` / `byLocale`.
- */
-export function buildLog(
-  entries: LogEntry[],
-  blogPosts: BlogPostInput[],
-  locale: Locale,
-  limit: number
-): LogEntry[] {
-  const posts: LogEntry[] = blogPosts.map((post) => ({
-    id: `blog:${post.id}`,
-    kind: 'blog',
-    title: post.data.title,
-    date: post.data.publishedAt,
-    url: localizedPath(
-      'blog',
-      locale,
-      post.id.replace(`${post.data.lang}/`, '').replace(/\.mdx$/, '')
-    ),
-    locale: post.data.lang,
-  }));
-
-  return [...entries.filter((e) => e.locale === locale), ...posts]
+/** Published content items for `locale` as a newest-first timeline, capped at `limit`. */
+export function buildLog(entries: LogEntry[], locale: Locale, limit: number): LogEntry[] {
+  return entries
+    .filter((e) => e.locale === locale)
     .sort((a, b) => b.date.getTime() - a.date.getTime())
     .slice(0, limit);
 }
@@ -459,7 +432,7 @@ export async function getProducts(locale: Locale): Promise<Product[]> {
   return (await load('products')).map((row) => toProduct(row, locale));
 }
 
-/** Published content-calendar items for `locale`; merge with blog posts via `buildLog`. */
+/** Published content-calendar items for `locale`; shape them with `buildLog`. */
 export async function getContentLog(locale: Locale): Promise<LogEntry[]> {
   return (await load('contentItems')).map(toLogEntry).filter((entry) => entry.locale === locale);
 }

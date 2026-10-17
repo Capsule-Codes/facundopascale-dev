@@ -29,11 +29,7 @@ describe('computeHreflangPair — static pages', () => {
     expect(pair).toEqual({ es: '/es/contacto/', en: '/en/contact/' });
   });
 
-  it('handles blog and uses which share the same segment in both locales', () => {
-    expect(computeHreflangPair({ kind: 'static', pageKey: 'blog' })).toEqual({
-      es: '/es/blog/',
-      en: '/en/blog/',
-    });
+  it('handles uses, which shares the same segment in both locales', () => {
     expect(computeHreflangPair({ kind: 'static', pageKey: 'uses' })).toEqual({
       es: '/es/uses/',
       en: '/en/uses/',
@@ -42,17 +38,6 @@ describe('computeHreflangPair — static pages', () => {
 });
 
 describe('computeHreflangPair — collection entries', () => {
-  it('emits both sides when a sibling exists for blog', () => {
-    const pair = computeHreflangPair({
-      kind: 'collection',
-      collection: 'blog',
-      currentLocale: 'es',
-      currentSlug: 'mi-post',
-      siblingSlug: 'my-post',
-    });
-    expect(pair).toEqual({ es: '/es/blog/mi-post/', en: '/en/blog/my-post/' });
-  });
-
   it('emits both sides when a sibling exists for work (trabajo ↔ work)', () => {
     const pair = computeHreflangPair({
       kind: 'collection',
@@ -67,7 +52,7 @@ describe('computeHreflangPair — collection entries', () => {
   it('returns null for an orphan (no sibling)', () => {
     const pair = computeHreflangPair({
       kind: 'collection',
-      collection: 'blog',
+      collection: 'work',
       currentLocale: 'es',
       currentSlug: 'orphan',
       siblingSlug: null,

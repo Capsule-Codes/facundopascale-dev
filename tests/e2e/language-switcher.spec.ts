@@ -4,12 +4,6 @@ const switcherFor = (page: import('@playwright/test').Page, label: string) =>
   page.getByRole('link', { name: label, exact: true });
 
 test.describe('language switcher', () => {
-  test('navigates from ES blog post to EN translation', async ({ page }) => {
-    await page.goto('/es/blog/2026-04-15-hola-mundo/');
-    await switcherFor(page, 'ES → EN').click();
-    await expect(page).toHaveURL(/\/en\/blog\/2026-04-15-hello-world\/?/);
-  });
-
   test('navigates from EN to ES on home page', async ({ page }) => {
     await page.goto('/en/');
     await switcherFor(page, 'EN → ES').click();
@@ -32,8 +26,6 @@ test.describe('language switcher', () => {
   const twins: Array<[string, string]> = [
     ['/es/sobre-mi/', '/en/about/'],
     ['/en/about/', '/es/sobre-mi/'],
-    ['/es/blog/', '/en/blog/'],
-    ['/en/blog/', '/es/blog/'],
     ['/es/contacto/', '/en/contact/'],
     ['/en/contact/', '/es/contacto/'],
     ['/es/uses/', '/en/uses/'],

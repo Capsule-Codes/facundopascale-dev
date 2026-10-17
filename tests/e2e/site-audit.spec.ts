@@ -46,10 +46,4 @@ test.describe('site audit regressions', () => {
       expect(overflow).toBeLessThanOrEqual(0);
     }
   });
-
-  test('blog index headings do not skip levels', async ({ page }) => {
-    await page.goto('/en/blog/');
-    expect(await page.locator('h3').count()).toBe(0);
-    expect(await page.locator('h2').count()).toBeGreaterThan(0);
-  });
 });
